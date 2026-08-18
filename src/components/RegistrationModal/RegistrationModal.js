@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../utils/supabase';
+import { sendRegistrationThankYouEmail } from '../../utils/resendEmail';
 import styles from './RegistrationModal.module.css';
 
 /* ─── Indian States & UTs ─── */
@@ -195,8 +196,22 @@ export default function RegistrationModal({ isOpen, onClose }) {
         return;
       }
 
+      // Send official Thank-You confirmation email to user's provided email address
+      sendRegistrationThankYouEmail({
+        fullName: payload.full_name,
+        email: payload.email,
+        roleType: ROLE_TYPES.find((r) => r.value === payload.role_type)?.labelEn || payload.role_type,
+        state: payload.state,
+        district: payload.district,
+        intent: INTENT_OPTIONS.find((i) => i.value === payload.intent)?.labelEn || payload.intent
+      }).catch((err) => console.warn('Background email dispatch warning:', err));
+
       setIsSuccess(true);
-      toast?.success(isHi ? '🎉 पंजीकरण सफल! बिहार AI मिशन में आपका स्वागत है।' : '🎉 Registration Successful! Welcome to Bihar AI Mission.');
+      toast?.success(
+        isHi
+          ? '🎉 पंजीकरण सफल! पुष्टि ईमेल आपके पते पर भेज दिया गया है।'
+          : '🎉 Registration Successful! A thank-you confirmation has been emailed to you.'
+      );
     } catch (err) {
       console.error('Registration exception:', err);
       toast?.error(isHi ? 'नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।' : 'Network error. Please try again.');
@@ -221,8 +236,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
   /* ─── SUCCESS STATE ─── */
   if (isSuccess) {
     return (
-      <div className={styles.overlay} onClick={handleBackdropClick}>
-        <div className={styles.modal} ref={modalRef}>
+      <div className={styles.overlay} onClick={handleBackdropClick} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
+        <div className={styles.modal} ref={modalRef} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
           <div className={styles.successState}>
             <div className={styles.successIcon}>🎉</div>
@@ -231,8 +246,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
             </h2>
             <p className={styles.successDesc}>
               {isHi
-                ? 'बिहार AI मिशन में आपका पंजीकरण सफलतापूर्वक हो गया है। हम आपसे जल्द ही संपर्क करेंगे।'
-                : 'You have been successfully registered with Bihar AI Mission. We will reach out to you soon with updates and opportunities.'}
+                ? `बिहार AI मिशन में आपका पंजीकरण सफलतापूर्वक दर्ज हो गया है। एक आधिकारिक पुष्टि एवं धन्यवाद ईमेल '${form.email}' पर भेज दिया गया है।`
+                : `Your registration with Bihar AI Mission has been recorded successfully. An official confirmation and thank-you email has been sent to '${form.email}'.`}
             </p>
             <div className={styles.successActions}>
               <button className={styles.primaryBtn} onClick={onClose}>

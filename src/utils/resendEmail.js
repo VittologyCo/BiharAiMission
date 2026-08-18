@@ -143,3 +143,136 @@ export const sendWelcomeEmailViaResend = async ({ fullName, email }) => {
     return { success: false, error };
   }
 };
+
+export const sendRegistrationThankYouEmail = async ({
+  fullName,
+  email,
+  roleType = '',
+  state = 'Bihar',
+  district = '',
+  intent = ''
+}) => {
+  const apiKey = process.env.REACT_APP_RESEND_API_KEY || '';
+  if (!apiKey || !email) return { success: false, reason: 'Missing API key or email' };
+
+  const payload = {
+    from: 'Bihar AI Mission <onboarding@resend.dev>',
+    to: [email],
+    subject: `🎉 Registration Confirmed — Welcome to Bihar AI Mission, ${fullName}!`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #E2D7C3; border-radius: 16px; overflow: hidden; background: #FAF7F2; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <div style="background: #181512; padding: 36px 28px; text-align: center; color: #FFFFFF;">
+          <div style="display: inline-block; background: rgba(217, 155, 38, 0.18); border: 1px solid rgba(217, 155, 38, 0.4); color: #FBE6A2; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 14px; border-radius: 9999px; margin-bottom: 12px;">
+            BIHAR AI MISSION · A CIVIC AI INITIATIVE
+          </div>
+          <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #FFFFFF; font-family: Georgia, serif;">
+            Registration Confirmed! 🎉
+          </h1>
+          <p style="margin: 8px 0 0 0; font-size: 14px; color: #C8BFB3;">
+            Empowering Bihar with AI Literacy & Technological Opportunity
+          </p>
+        </div>
+
+        <!-- Main Body -->
+        <div style="padding: 32px 28px; color: #181512; line-height: 1.7; text-align: left;">
+          <h2 style="font-size: 19px; color: #181512; margin-top: 0; font-weight: 700;">
+            Dear ${fullName},
+          </h2>
+          <p style="font-size: 14.5px; color: #4A4036; margin-bottom: 20px;">
+            Thank you for registering with the <strong>Bihar AI Mission</strong>. Your profile has been successfully recorded in our registry. We are delighted to welcome you into our community of officers, students, researchers, and innovators shaping Bihar's digital future.
+          </p>
+
+          <!-- Details Card -->
+          <div style="background: #FFFFFF; border: 1px solid #E2D7C3; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #C1552C; margin-bottom: 12px; border-bottom: 1px solid #F0E8DC; padding-bottom: 6px;">
+              📋 Your Registered Profile Summary
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; color: #2D241E;">
+              <tr>
+                <td style="padding: 6px 0; font-weight: 600; width: 120px; color: #73675C;">Full Name:</td>
+                <td style="padding: 6px 0; font-weight: 700; color: #181512;">${fullName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: 600; color: #73675C;">Email:</td>
+                <td style="padding: 6px 0; font-weight: 700; color: #C1552C;">${email}</td>
+              </tr>
+              ${roleType ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #73675C;">Role Category:</td><td style="padding: 6px 0;">${roleType}</td></tr>` : ''}
+              ${district || state ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #73675C;">Location:</td><td style="padding: 6px 0;">${district ? district + ', ' : ''}${state || 'Bihar'}</td></tr>` : ''}
+              ${intent ? `<tr><td style="padding: 6px 0; font-weight: 600; color: #73675C;">Primary Goal:</td><td style="padding: 6px 0;">${intent}</td></tr>` : ''}
+            </table>
+          </div>
+
+          <!-- What's Next -->
+          <div style="background: rgba(217, 155, 38, 0.08); border-left: 4px solid #D99B26; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: #181512; margin-bottom: 4px;">
+              ✨ What Happens Next?
+            </div>
+            <p style="font-size: 13px; color: #5E554D; margin: 0; line-height: 1.6;">
+              You will receive priority invitations for upcoming Level 1 Masterclasses, District-level AI workshops, verifiable digital certifications, and exclusive prompt engineering libraries.
+            </p>
+          </div>
+
+          <!-- Action Button -->
+          <div style="text-align: center; margin: 32px 0 16px;">
+            <a href="https://biharaimission.org/tools" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #C1552C 0%, #A3411B 100%); color: #FFFFFF; text-decoration: none; padding: 13px 32px; font-size: 14px; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 14px rgba(193, 85, 44, 0.35);">
+              Explore Ready AI Tools & Commands →
+            </a>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #E2D7C3; margin: 32px 0 20px;" />
+
+          <p style="font-size: 12px; color: #8A7E72; text-align: center; margin: 0; line-height: 1.6;">
+            <strong>Bihar AI Mission</strong> · A Citizen-Led Civic AI Initiative<br/>
+            Aligned with IndiaAI Mission · Patna, Bihar, India<br/>
+            <a href="https://biharaimission.org" style="color: #C1552C; text-decoration: none;">biharaimission.org</a>
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    const directRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (directRes.ok) {
+      return { success: true };
+    }
+
+    try {
+      const p1 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.resend.com/emails')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (p1.ok) return { success: true };
+    } catch (e) {}
+
+    try {
+      const p2 = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://api.resend.com/emails')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (p2.ok) return { success: true };
+    } catch (e) {}
+
+    return { success: false, reason: 'Failed to send confirmation email' };
+  } catch (error) {
+    console.error('Error sending registration thank you email:', error);
+    return { success: false, error };
+  }
+};
