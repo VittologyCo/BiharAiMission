@@ -209,8 +209,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
       setIsSuccess(true);
       toast?.success(
         isHi
-          ? '🎉 पंजीकरण सफल! पुष्टि ईमेल आपके पते पर भेज दिया गया है।'
-          : '🎉 Registration Successful! A thank-you confirmation has been emailed to you.'
+          ? '🎉 पंजीकरण सफल! बिहार AI मिशन में आपका स्वागत है।'
+          : '🎉 Registration Successful! Welcome to Bihar AI Mission.'
       );
     } catch (err) {
       console.error('Registration exception:', err);
@@ -246,8 +246,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
             </h2>
             <p className={styles.successDesc}>
               {isHi
-                ? `बिहार AI मिशन में आपका पंजीकरण सफलतापूर्वक दर्ज हो गया है। एक आधिकारिक पुष्टि एवं धन्यवाद ईमेल '${form.email}' पर भेज दिया गया है।`
-                : `Your registration with Bihar AI Mission has been recorded successfully. An official confirmation and thank-you email has been sent to '${form.email}'.`}
+                ? 'बिहार AI मिशन में आपका पंजीकरण सफलतापूर्वक हो गया है। हम आपसे जल्द ही संपर्क करेंगे।'
+                : 'You have been successfully registered with Bihar AI Mission. We will review your profile and reach out to you soon with updates and opportunities.'}
             </p>
             <div className={styles.successActions}>
               <button className={styles.primaryBtn} onClick={onClose}>
