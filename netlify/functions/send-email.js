@@ -25,9 +25,9 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields' }) };
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.RESEND_API_KEY || process.env.REACT_APP_RESEND_API_KEY;
     if (!apiKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'RESEND_API_KEY not configured in Netlify env' }) };
+      return { statusCode: 500, body: JSON.stringify({ error: 'RESEND_API_KEY or REACT_APP_RESEND_API_KEY not configured in Netlify env' }) };
     }
 
     const senderEmail = from || 'Bihar AI Mission <onboarding@resend.dev>';
