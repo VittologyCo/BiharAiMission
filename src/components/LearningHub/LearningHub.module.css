@@ -1,0 +1,613 @@
+/* ============================================================================
+   LearningHub.module.css — Bihar AI Mission Luxury Civic Design System
+   Comprehensive Styling for Masterclasses, Courses & Verification Desk
+   ============================================================================ */
+
+.section {
+  padding: 48px 24px 60px 24px;
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+  color: var(--color-sand-50, #FBF8F3);
+  position: relative;
+  z-index: 1;
+}
+
+/* SECTION HEADER */
+.header {
+  margin-bottom: 40px;
+  max-width: 800px;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-terracotta-500, #C1552C);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.badgeLine {
+  width: 16px;
+  height: 2px;
+  background-color: var(--color-terracotta-500, #C1552C);
+  border-radius: 2px;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-sand-50, #FBF8F3);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.62;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+/* MASTERCLASS HORIZONTAL CARD */
+.liveClassCard {
+  background: linear-gradient(145deg, rgba(38, 32, 28, 0.92) 0%, rgba(24, 21, 18, 0.96) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 215, 195, 0.16);
+  border-radius: var(--radius-lg, 24px);
+  padding: 32px;
+  margin-bottom: 36px;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.55);
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 32px;
+  align-items: stretch;
+  position: relative;
+  overflow: hidden;
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.liveClassCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.65), 0 0 25px rgba(193, 85, 44, 0.15);
+  border-color: rgba(226, 139, 92, 0.4);
+}
+
+.liveClassCard.isLiveActive {
+  border: 1.5px solid var(--color-terracotta-500, #C1552C);
+  box-shadow: 0 16px 40px -10px rgba(193, 85, 44, 0.35);
+}
+
+/* LEFT DETAILS PANEL */
+.detailsPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.statusBadgesRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.statusBadge {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.719rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badgeLive {
+  background: rgba(193, 85, 44, 0.2);
+  border: 1px solid var(--color-terracotta-400, #E28B5C);
+  color: var(--color-terracotta-300, #E28B5C);
+}
+
+.badgeEnded {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(226, 215, 195, 0.2);
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+.badgeUpcoming {
+  background: rgba(217, 155, 38, 0.18);
+  border: 1px solid rgba(217, 155, 38, 0.4);
+  color: var(--color-ochre-400, #D99B26);
+}
+
+.badgeEnrolled {
+  background: rgba(45, 106, 79, 0.22);
+  border: 1px solid #52B788;
+  color: #52B788;
+}
+
+.badgePaid {
+  background: rgba(217, 155, 38, 0.18);
+  border: 1px solid rgba(217, 155, 38, 0.4);
+  color: var(--color-ochre-400, #D99B26);
+}
+
+.badgeFree {
+  background: rgba(193, 85, 44, 0.16);
+  border: 1px solid rgba(193, 85, 44, 0.35);
+  color: var(--color-terracotta-300, #E28B5C);
+}
+
+.courseTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.courseDesc {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.938rem;
+  line-height: 1.6;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  margin: 0 0 16px 0;
+}
+
+/* INSTRUCTOR PILL */
+.instructorCard {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(24, 21, 18, 0.6);
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  width: fit-content;
+  margin-bottom: 8px;
+}
+
+.instructorAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-terracotta-500, #C1552C);
+  box-shadow: 0 2px 8px rgba(193, 85, 44, 0.3);
+}
+
+.instructorName {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+}
+
+.instructorTitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+/* METADATA TILES GRID */
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: auto;
+}
+
+.metaTile {
+  background: rgba(24, 21, 18, 0.6);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 215, 195, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaIcon {
+  font-size: 1.2rem;
+}
+
+.metaLabel {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.688rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  margin-bottom: 2px;
+}
+
+.metaValue {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.844rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+}
+
+/* RIGHT STATUS & ACTION PANEL */
+.actionPanel {
+  background: rgba(28, 24, 21, 0.9);
+  border: 1px solid rgba(226, 215, 195, 0.15);
+  border-radius: 20px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.panelHeader {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.719rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ochre-400, #D99B26);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* COUNTDOWN TILES */
+.countdownRow {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.timerTile {
+  background: rgba(20, 17, 15, 0.9);
+  border: 1.5px solid rgba(217, 155, 38, 0.35);
+  padding: 8px 10px;
+  border-radius: 12px;
+  min-width: 56px;
+  text-align: center;
+}
+
+.timerNum {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--color-ochre-400, #D99B26);
+  display: block;
+  line-height: 1;
+}
+
+.timerUnit {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.625rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+/* ACTION BUTTONS */
+.btnLiveJoin {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(193, 85, 44, 0.4);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.btnLiveJoin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(193, 85, 44, 0.55);
+}
+
+.btnEnroll {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(193, 85, 44, 0.4);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.btnEnroll:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(193, 85, 44, 0.55);
+}
+
+.btnEnrolledDisabled {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(45, 106, 79, 0.2);
+  color: #52B788;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 1px solid #52B788;
+  cursor: default;
+}
+
+.statusCardEnded {
+  background: rgba(24, 21, 18, 0.6);
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.813rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* EXAM SECTION IN ACTION PANEL */
+.examSubSection {
+  border-top: 1px solid rgba(226, 215, 195, 0.12);
+  padding-top: 14px;
+  margin-top: 4px;
+}
+
+.examLabel {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.719rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ochre-400, #D99B26);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.btnStartExam {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.844rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.35);
+  transition: all 200ms ease;
+}
+
+.btnStartExam:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(193, 85, 44, 0.45);
+}
+
+.examLockedPill {
+  background: rgba(24, 21, 18, 0.5);
+  border: 1px solid rgba(226, 215, 195, 0.1);
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* OFFICIAL CERTIFICATE VERIFICATION DESK BOX (#F3EADA SAND BOX) */
+.verificationBox {
+  background-color: #F3EADA;
+  border-radius: var(--radius-lg, 28px);
+  padding: 52px 44px;
+  border: 1.5px solid rgba(226, 215, 195, 0.9);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.4);
+  color: var(--color-charcoal-900, #181512);
+  margin-top: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.verifyHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.verifyBrandLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.verifyIconBox {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(193, 85, 44, 0.12);
+  border: 1.5px solid rgba(193, 85, 44, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: var(--color-terracotta-500, #C1552C);
+}
+
+.verifyEye {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.719rem;
+  font-weight: 800;
+  color: var(--color-terracotta-500, #C1552C);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.verifyTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--color-charcoal-900, #181512);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.liveEngineBadge {
+  background: rgba(45, 106, 79, 0.14);
+  border: 1.5px solid #2D6A4F;
+  color: #2D6A4F;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveEngineDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #2D6A4F;
+  box-shadow: 0 0 8px #2D6A4F;
+}
+
+.verifyDesc {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.938rem;
+  line-height: 1.6;
+  color: var(--color-ink-muted, #5E554D);
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+
+/* SEARCH INPUT ROW */
+.verifyInputRow {
+  background: #FFFFFF;
+  border: 1.5px solid rgba(24, 21, 18, 0.15);
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.verifyInputWrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 16px;
+  font-size: 1.1rem;
+}
+
+.verifyInput {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.938rem;
+  font-weight: 700;
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  color: var(--color-charcoal-900, #181512);
+  background: transparent;
+  outline: none;
+  letter-spacing: 0.04em;
+}
+
+.clearInputBtn {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btnVerifySubmit {
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.938rem;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 200ms ease;
+  white-space: nowrap;
+}
+
+.btnVerifySubmit:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--color-terracotta-400, #E28B5C) 0%, var(--color-terracotta-500, #C1552C) 100%);
+  box-shadow: 0 6px 20px rgba(193, 85, 44, 0.45);
+}
+
+/* RESPONSIVE */
+@media (max-width: 992px) {
+  .liveClassCard {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+  .verificationBox {
+    padding: 36px 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .verifyInputRow {
+    flex-direction: column;
+    padding: 12px;
+  }
+  .btnVerifySubmit {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,431 @@
+/* ============================================================================
+   PhonePePaymentModal.css — Bihar AI Mission Luxury Civic Design System
+   Zero-Blue / Zero-Purple Palette: Espresso Charcoal, Terracotta, Golden Ochre
+   ============================================================================ */
+
+.phonepe-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(24, 21, 18, 0.86);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  animation: phonepeFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes phonepeFadeIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.phonepe-payment-wrapper {
+  background: linear-gradient(165deg, var(--color-charcoal-900, #181512) 0%, var(--color-charcoal-800, #231F1B) 100%);
+  border-radius: var(--radius-lg, 20px);
+  padding: 24px;
+  color: var(--color-text-on-dark, #FBF8F3);
+  margin: -16px;
+}
+
+.phonepe-modal-card {
+  background: linear-gradient(165deg, var(--color-charcoal-900, #181512) 0%, var(--color-charcoal-800, #231F1B) 100%);
+  border: 1px solid rgba(226, 215, 195, 0.18);
+  border-radius: var(--radius-lg, 24px);
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 
+    0 30px 70px rgba(0, 0, 0, 0.75),
+    0 0 50px rgba(193, 85, 44, 0.12),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+  color: var(--color-text-on-dark, #FBF8F3);
+}
+
+.phonepe-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(226, 215, 195, 0.15);
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.phonepe-modal-close:hover {
+  background: rgba(179, 52, 28, 0.2);
+  color: var(--color-error, #B3341C);
+  border-color: rgba(179, 52, 28, 0.4);
+  transform: rotate(90deg);
+}
+
+/* Header Section */
+.phonepe-modal-header {
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid rgba(226, 215, 195, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.phonepe-header-content {
+  margin-bottom: 12px;
+}
+
+.phonepe-brand-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-terracotta-300, #E28B5C);
+  background: rgba(193, 85, 44, 0.16);
+  border: 1px solid rgba(226, 139, 92, 0.32);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.phonepe-course-title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  margin: 0;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  padding-right: 28px;
+}
+
+.phonepe-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(35, 31, 27, 0.85);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid rgba(226, 215, 195, 0.15);
+}
+
+.phonepe-price-label {
+  font-size: 12px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.phonepe-price-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-ochre-400, #D99B26);
+  letter-spacing: -0.02em;
+}
+
+/* Modal Body */
+.phonepe-modal-body {
+  padding: 22px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* QR Container */
+.phonepe-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.phonepe-qr-box {
+  background: #FFFFFF;
+  padding: 14px;
+  border-radius: 24px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(193, 85, 44, 0.08);
+  position: relative;
+  overflow: hidden;
+  width: 210px;
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--color-sand-100, #F3ECE0);
+}
+
+.phonepe-qr-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.phonepe-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-terracotta-500, #C1552C) 50%, transparent 100%);
+  box-shadow: 0 0 14px var(--color-terracotta-500, #C1552C);
+  animation: phonepeScan 2.4s infinite linear;
+}
+
+@keyframes phonepeScan {
+  0% { top: 0%; }
+  50% { top: 96%; }
+  100% { top: 0%; }
+}
+
+.phonepe-qr-loading {
+  color: var(--color-charcoal-900, #181512);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.phonepe-qr-instruction {
+  font-size: 12px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  margin-top: 12px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.phonepe-qr-instruction strong {
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 700;
+}
+
+.phonepe-timer-badge {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--color-ochre-400, #D99B26);
+  background: rgba(217, 155, 38, 0.12);
+  border: 1px solid rgba(217, 155, 38, 0.3);
+  padding: 5px 14px;
+  border-radius: 32px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phonepe-timer-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--color-ochre-400, #D99B26);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-ochre-400, #D99B26);
+  animation: phonepePulse 1.4s infinite ease-in-out;
+}
+
+@keyframes phonepePulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Divider */
+.phonepe-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 18px 0 16px;
+}
+
+.phonepe-divider::before,
+.phonepe-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px dashed rgba(226, 215, 195, 0.15);
+}
+
+.phonepe-divider span {
+  padding: 0 12px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Actions Section */
+.phonepe-actions-container {
+  width: 100%;
+}
+
+.phonepe-app-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  border-radius: var(--radius-sm, 10px);
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.phonepe-btn-green {
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(226, 139, 92, 0.4);
+  box-shadow: 0 6px 20px rgba(193, 85, 44, 0.35);
+}
+
+.phonepe-btn-green::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: 0.6s;
+}
+
+.phonepe-btn-green:hover::after {
+  left: 100%;
+}
+
+.phonepe-btn-green:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(193, 85, 44, 0.5);
+  border-color: var(--color-terracotta-300, #E28B5C);
+}
+
+.phonepe-btn-green:active {
+  transform: translateY(0);
+}
+
+.phonepe-btn-icon {
+  font-size: 14px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.phonepe-btn-text {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.phonepe-btn-arrow {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+  margin-left: 6px;
+}
+
+.phonepe-btn-green:hover .phonepe-btn-arrow {
+  transform: translateX(4px);
+}
+
+.phonepe-error-msg {
+  font-size: 12px;
+  color: var(--color-error, #B3341C);
+  margin-top: 10px;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(179, 52, 28, 0.12);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 8px);
+  border: 1px solid rgba(179, 52, 28, 0.25);
+}
+
+/* Footer Trust Bar */
+.phonepe-modal-footer {
+  padding: 12px 24px;
+  background: rgba(24, 21, 18, 0.6);
+  border-top: 1px solid rgba(226, 215, 195, 0.1);
+  font-size: 11px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  text-align: center;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.phonepe-shield-icon {
+  font-size: 13px;
+  color: var(--color-ochre-400, #D99B26);
+}
+
+/* Success View */
+.phonepe-success-view {
+  padding: 48px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.phonepe-success-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: rgba(45, 106, 79, 0.15);
+  border: 2px solid var(--color-success, #2D6A4F);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  box-shadow: 0 0 30px rgba(45, 106, 79, 0.35);
+}
+
+.phonepe-success-icon {
+  font-size: 38px;
+  animation: phonepePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes phonepePop {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.phonepe-success-title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: #52B788;
+  margin: 0 0 8px;
+}
+
+.phonepe-success-subtitle {
+  font-size: 13.5px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+
+.phonepe-success-badge {
+  background: rgba(45, 106, 79, 0.18);
+  border: 1.5px solid var(--color-success, #2D6A4F);
+  color: #52B788;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 8px 20px;
+  border-radius: 32px;
+}

@@ -1,0 +1,160 @@
+/* StatsPanel.module.css — Bihar AI Mission Luxury Civic Design System */
+
+.statsPanel {
+  background: rgba(35, 31, 27, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 215, 195, 0.22);
+  border-radius: var(--radius-lg, 20px);
+  padding: 28px;
+  color: var(--color-sand-50, #FBF8F3);
+  box-shadow: 0 20px 40px -12px rgba(24, 21, 18, 0.35);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(226, 215, 195, 0.12);
+}
+
+.hudBadge {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.688rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  background: rgba(193, 85, 44, 0.25);
+  color: var(--color-terracotta-300, #E28B5C);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.hudTitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-on-dark, #FBF8F3);
+}
+
+/* GRID OF STATS */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(226, 215, 195, 0.1);
+  border-radius: 14px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.22s var(--ease-smooth), border-color 0.22s var(--ease-smooth);
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(226, 139, 92, 0.35);
+}
+
+/* GOAL CARD DIFFERENTIATED FOR TARGET FIGURE */
+.goalCard {
+  background: rgba(193, 85, 44, 0.1);
+  border: 1.5px dashed rgba(226, 139, 92, 0.45);
+}
+
+.goalPill {
+  align-self: flex-start;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  background-color: var(--color-terracotta-500, #C1552C);
+  color: var(--color-sand-50, #FBF8F3);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.numberWrapper {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+}
+
+.animNum {
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  line-height: 1;
+}
+
+.suffix {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 700;
+  color: var(--color-ochre-400, #D99B26);
+  margin-left: 2px;
+}
+
+.label {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.813rem;
+  line-height: 1.35;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-weight: 500;
+}
+
+/* MILESTONE STRIP AT BOTTOM */
+.milestoneStrip {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(226, 215, 195, 0.1);
+}
+
+.milestoneTitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ochre-400, #D99B26);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.milestoneRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.813rem;
+  padding: 4px 0;
+}
+
+.mLabel {
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+.mValue {
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .statsPanel {
+    padding: 20px 16px;
+  }
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

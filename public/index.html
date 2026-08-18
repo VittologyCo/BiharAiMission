@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/bi_logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#181512" />
+
+    <!-- PRIMARY SEO META TAGS -->
+    <title>Bihar AI Mission — Official Civic AI & Digital Literacy Initiative</title>
+    <meta name="title" content="Bihar AI Mission — Official Civic AI & Digital Literacy Initiative" />
+    <meta
+      name="description"
+      content="Bihar AI Mission (बिहार AI मिशन) is a civic AI initiative empowering Bihar with AI literacy, Level 1 Masterclass certifications, prompt engineering libraries, and governance AI tools under IndiaAI guidelines."
+    />
+    <meta name="keywords" content="Bihar AI Mission, AI Literacy Bihar, Digital India AI, Bihar AI Certificate, Masterclass Level 1, Governance AI, AI Tools for Bihar, Citizen AI Initiative, Bihar Govt Officers AI Training, Bihar AI Certification Verification" />
+    <meta name="author" content="Bihar AI Mission" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- OPEN GRAPH / FACEBOOK / WHATSAPP / LINKEDIN -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://biharaimission.org" />
+    <meta property="og:title" content="Bihar AI Mission — Official Civic AI & Digital Literacy Initiative" />
+    <meta property="og:description" content="Empowering Bihar with AI literacy, Level 1 masterclasses, verifiable digital credentials, and civic AI tools." />
+    <meta property="og:image" content="%PUBLIC_URL%/bi_logo.png" />
+    <meta property="og:site_name" content="Bihar AI Mission (बिहार AI मिशन)" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- TWITTER CARDS -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://biharaimission.org" />
+    <meta name="twitter:title" content="Bihar AI Mission — Official Civic AI Initiative" />
+    <meta name="twitter:description" content="AI Literacy, Level 1 Masterclass Certifications & Governance AI Tools for Bihar." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/bi_logo.png" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bihar AI" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/bi_logo.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- REGISTER PWA SERVICE WORKER -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('🎉 [PWA] ServiceWorker Registered successfully:', reg.scope);
+          }).catch(function(err) {
+            console.warn('⚠️ [PWA] ServiceWorker Registration Error:', err);
+          });
+        });
+      }
+    </script>
+
+    <!-- PRECONNECT GOOGLE FONTS & FONTSHARE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- STATIC SCHEMA.ORG JSON-LD FOR FAST CRAWLING -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "EducationalOrganization",
+        "name": "Bihar AI Mission",
+        "alternateName": "बिहार AI मिशन",
+        "url": "https://biharaimission.org",
+        "logo": "https://biharaimission.org/bi_logo.png",
+        "description": "Bihar AI Mission is a civic AI and digital literacy initiative providing Level 1 Masterclass certifications, prompt engineering libraries, and governance AI guidelines."
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="google_translate_element" style="display:none;"></div>
+    <div id="root"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,hi',
+          autoDisplay: false,
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+      }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  </body>
+</html>

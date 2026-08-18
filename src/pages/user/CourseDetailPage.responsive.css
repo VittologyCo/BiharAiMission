@@ -1,0 +1,108 @@
+/* ============================================================================
+   CourseDetailPage — Responsive Override Styles
+   Targets elements in CourseDetailPage via wrapper class .courseDetailPage
+   ============================================================================ */
+
+/* ===================== TABLET (≤1024px) ===================== */
+@media (max-width: 1024px) {
+  .courseDetailPage > div {
+    padding: 0 16px !important;
+  }
+}
+
+/* ===================== MOBILE (≤768px) ===================== */
+@media (max-width: 768px) {
+  .courseDetailPage {
+    padding-bottom: 32px !important;
+  }
+
+  /* Breadcrumb header */
+  .courseBreadcrumb {
+    padding: 12px 14px !important;
+  }
+  .courseBreadcrumb > div {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+  }
+  .courseBreadcrumb button {
+    padding: 4px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* Main container padding */
+  .courseMainContainer {
+    margin: 16px auto !important;
+    padding: 0 12px !important;
+  }
+
+  /* Hero Section */
+  .courseHero {
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+    margin-bottom: 24px !important;
+  }
+  .courseHero h1 {
+    font-size: 22px !important;
+    line-height: 1.3 !important;
+  }
+  .courseHero p {
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+  }
+
+  /* Stats Bar */
+  .courseStatsGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Curriculum Modules */
+  .courseModuleGrid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .courseModuleCard {
+    padding: 20px 16px !important;
+    border-radius: 14px !important;
+  }
+  .courseModuleCard h3 {
+    font-size: 16px !important;
+  }
+
+  /* Sidebar / Action Card */
+  .courseSidebar {
+    padding: 22px 18px !important;
+    border-radius: 16px !important;
+  }
+  .courseSidebar button {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* FAQ Section */
+  .courseFaqCard {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ===================== SMALL MOBILE (≤480px) ===================== */
+@media (max-width: 480px) {
+  .courseHero {
+    padding: 20px 14px !important;
+    border-radius: 14px !important;
+  }
+  .courseHero h1 {
+    font-size: 20px !important;
+  }
+  .courseStatsGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .courseModuleCard {
+    padding: 16px 14px !important;
+  }
+}

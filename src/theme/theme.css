@@ -1,0 +1,114 @@
+/* ============================================================================
+   BIHAR AI MISSION - LUXURY CIVIC DESIGN SYSTEM (design.md)
+   Zero-Blue / Zero-Purple Luxury Earthy Civic Palette (UI/UX Pro Max)
+   ============================================================================ */
+
+:root {
+  /* --------------------------------------------------------------------------
+     1. COLOR SYSTEM (Zero Blue / Zero Purple / Zero Navy)
+     Madhubani Terracotta, Espresso Charcoal, Golden Ochre & Alabaster Silk
+     -------------------------------------------------------------------------- */
+  --color-ink: #181512;             /* Primary deep espresso charcoal text & headings */
+  --color-charcoal-900: #181512;    /* Deep espresso charcoal background */
+  --color-charcoal-800: #231F1B;    /* Warm dark surface */
+  --color-indigo-900: #181512;      /* Replaced with Deep Espresso Charcoal */
+  --color-indigo-600: #231F1B;      /* Replaced with Warm Dark Surface */
+
+  --color-terracotta-600: #A3411B;   /* Darkened burnished terracotta hover */
+  --color-terracotta-500: #C1552C;   /* Primary Madhubani terracotta accent / CTAs */
+  --color-terracotta-300: #E28B5C;   /* Warm terracotta glow & card hover borders */
+
+  --color-mustard-400: #D99B26;     /* Golden Ochre secondary accent */
+  --color-ochre-400: #D99B26;       /* Golden Ochre secondary accent */
+
+  --color-sand-50: #FBF8F3;          /* Warm Alabaster Silk / Cream Linen page bg */
+  --color-sand-100: #F3ECE0;         /* Warm Sand Linen card / section bg */
+  --color-line: #E2D7C3;            /* Warm Stone Linen borders & dividers */
+  --color-ink-muted: #5E554D;        /* Warm Sepia secondary body text (WCAG AAA 7.5:1) */
+
+  --color-text-on-dark: #FBF8F3;      /* Cream text on dark surfaces */
+  --color-text-muted-on-dark: #C8BFB3; /* Warm parchment gray on dark surfaces */
+
+  --color-success: #2D6A4F;         /* Forest Jade Emerald */
+  --color-error: #B3341C;           /* Crimson Rust */
+
+  /* Gradients (Subtle espresso to charcoal with warm terracotta ambient light) */
+  --gradient-hero: linear-gradient(135deg, #181512 0%, #231F1B 100%);
+
+  /* --------------------------------------------------------------------------
+     2. TYPOGRAPHY (UI/UX Pro Max Editorial Luxury Pairing)
+     -------------------------------------------------------------------------- */
+  --font-display: 'Fraunces', 'Libre Bodoni', ui-serif, Georgia, serif;
+  --font-body: 'General Sans', 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Fraunces', 'Libre Bodoni', ui-serif, Georgia, serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Type Scale Tokens (16px base) */
+  --font-size-hero-h1: clamp(3.5rem, 6vw, 4.75rem);
+  --line-height-hero-h1: 1.05;
+  --font-weight-hero-h1: 600;
+  --letter-spacing-hero-h1: -0.025em;
+
+  --font-size-section-h2: clamp(2.25rem, 4vw, 2.85rem);
+  --line-height-section-h2: 1.15;
+  --font-weight-section-h2: 600;
+  --letter-spacing-section-h2: -0.02em;
+
+  --font-size-card-h3: 1.25rem;
+  --line-height-card-h3: 1.3;
+  --font-weight-card-h3: 600;
+
+  --font-size-body: 1rem;
+  --line-height-body: 1.62;
+  --font-weight-body: 400;
+
+  --font-size-small: 0.875rem;
+  --line-height-small: 1.4;
+  --font-weight-small: 500;
+
+  /* --------------------------------------------------------------------------
+     3. SPACING, GRID & SHAPE
+     -------------------------------------------------------------------------- */
+  --space-unit: 8px;
+  --space-section: clamp(3.5rem, 8vw, 8.75rem);
+  --space-section-desktop: 8.75rem;
+  --space-section-mobile: 3.5rem;
+
+  --max-width-content: 1200px;
+  --max-width-canvas: 1440px;
+
+  --radius-sm: 10px; /* Buttons, inputs */
+  --radius-lg: 20px; /* Cards, modals */
+
+  --shadow-soft: 0 10px 30px -10px rgba(24, 21, 18, 0.08);
+  --shadow-hover: 0 20px 40px -12px rgba(193, 85, 44, 0.14);
+
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --------------------------------------------------------------------------
+     4. LEGACY ALIASES (Routed 100% to Luxury Palette)
+     -------------------------------------------------------------------------- */
+  --bg-dark: var(--color-charcoal-900);
+  --bg-secondary: var(--color-charcoal-800);
+  --bg-card: var(--color-sand-50);
+  --bg-card-hover: var(--color-sand-100);
+  --btn-primary: var(--color-terracotta-500);
+  --btn-primary-hover: var(--color-terracotta-600);
+  --accent-primary: var(--color-terracotta-500);
+  --accent-secondary: var(--color-terracotta-300);
+  --accent-blue: var(--color-terracotta-500);
+  --accent-cyan: var(--color-mustard-400);
+  --accent-purple: var(--color-terracotta-500);
+  --ai-glow: var(--color-terracotta-500);
+  --azure: var(--color-charcoal-900);
+  --azure-dk: var(--color-charcoal-900);
+  --azure-lt: var(--color-sand-50);
+  --text-main: var(--color-ink);
+  --text-sub: var(--color-ink-muted);
+  --text-muted: var(--color-ink-muted);
+  --border: var(--color-line);
+  --border-subtle: var(--color-line);
+  --border-low-contrast: var(--color-line);
+  --warning: var(--color-mustard-400);
+  --danger: var(--color-error);
+}

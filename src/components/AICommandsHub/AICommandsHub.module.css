@@ -1,0 +1,386 @@
+.commandsSection {
+  padding: 64px 0 80px;
+  background: transparent;
+  border-top: 1px solid rgba(226, 215, 195, 0.12);
+  border-bottom: 1px solid rgba(226, 215, 195, 0.12);
+  scroll-margin-top: 80px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-body, 'Inter', -apple-system, sans-serif);
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+}
+
+/* SECTION MAIN HEADER */
+.sectionHeader {
+  margin-bottom: 44px;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-ochre-400, #D99B26);
+  background: rgba(217, 155, 38, 0.12);
+  border: 1px solid rgba(217, 155, 38, 0.25);
+  padding: 4px 14px;
+  border-radius: 9999px;
+  margin-bottom: 12px;
+}
+
+.badgeLine {
+  width: 14px;
+  height: 2.5px;
+  background: var(--color-ochre-400, #D99B26);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(217, 155, 38, 0.5);
+}
+
+.mainTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(24px, 3.8vw, 36px);
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.titleHighlight {
+  background: linear-gradient(135deg, #FBE6A2 0%, #D4AF37 50%, #C1552C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.mainSubtitle {
+  font-size: clamp(14px, 1.8vw, 15.5px);
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  line-height: 1.68;
+  max-width: 760px;
+  margin-bottom: 0;
+}
+
+/* 5 CATEGORY CLUSTERS */
+.categoryCluster {
+  margin-bottom: 52px;
+}
+
+.clusterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(226, 215, 195, 0.12);
+}
+
+.clusterTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clusterNumber {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, #8C2E14 100%);
+  color: #FFFFFF;
+  font-size: 12.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(193, 85, 44, 0.4);
+}
+
+.clusterTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.clusterControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navArrowBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(226, 215, 195, 0.2);
+  color: #FBF8F3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.navArrowBtn:hover {
+  background: var(--color-terracotta-500, #C1552C);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.12);
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.4);
+}
+
+.navArrowBtn:active {
+  transform: scale(0.95);
+}
+
+/* HORIZONTAL SMOOTH SCROLL CAROUSEL TRACK (Scrollbar Completely Hidden) */
+.carouselTrack {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 14px 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.carouselTrack:active {
+  cursor: grabbing;
+}
+
+.carouselTrack::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* INDIVIDUAL COMMAND CARD - PERFECT BOUNDS & ZERO OVERFLOW */
+.commandCard {
+  flex: 0 0 380px;
+  width: 380px;
+  max-width: 380px;
+  scroll-snap-align: start;
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.commandCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
+  border-color: #D4AF37;
+}
+
+/* CARD TOP HEADER: AUTO-WRAP PREVENTING BADGE SPILL */
+.cardTopHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.commandSlashName {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--color-charcoal-900, #181512);
+  color: #FBE6A2;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 7px;
+  letter-spacing: 0.02em;
+  max-width: 100%;
+}
+
+.engineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 215, 195, 0.8);
+  color: var(--color-charcoal-900, #181512);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  max-width: 100%;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* TITLES & DESCRIPTIONS UNIFORM SIZING */
+.skillTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--color-charcoal-900, #181512);
+  margin: 0 0 6px 0;
+  line-height: 1.32;
+  min-height: 42px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.skillDescription {
+  font-size: 12px;
+  color: var(--color-ink-muted, #5E554D);
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+  min-height: 54px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* PROMPT CODE BOX & CUSTOM SCROLLBAR */
+.promptBoxWrapper {
+  background: #181512;
+  border: 1px solid rgba(226, 215, 195, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.promptBoxHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.promptBoxLabel {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #D99B26;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.promptText {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 11px;
+  color: #F3ECE0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+  margin: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 155, 38, 0.4) transparent;
+  user-select: text;
+  box-sizing: border-box;
+}
+
+.promptText::-webkit-scrollbar {
+  width: 4px;
+}
+
+.promptText::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.promptText::-webkit-scrollbar-thumb {
+  background: rgba(217, 155, 38, 0.4);
+  border-radius: 4px;
+}
+
+.promptText::-webkit-scrollbar-thumb:hover {
+  background: var(--color-terracotta-500, #C1552C);
+}
+
+/* CARD ACTION FOOTER */
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(226, 215, 195, 0.5);
+  box-sizing: border-box;
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, #A3411B 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.copyBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.35);
+}
+
+.copyBtn.copied {
+  background: #059669;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .commandsSection {
+    padding: 48px 0 60px;
+  }
+  
+  .commandCard {
+    flex: 0 0 300px;
+    width: 300px;
+    max-width: 300px;
+    padding: 16px;
+  }
+
+  .clusterTitle {
+    font-size: 16px;
+  }
+}

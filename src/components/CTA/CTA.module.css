@@ -1,0 +1,174 @@
+/* CTA.module.css — Bihar AI Mission Luxury Civic Design System */
+
+.ctaSection {
+  padding: 20px 24px 80px 24px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+}
+
+/* CARD WITH #FBF8F3 BACKGROUND */
+.ctaCard {
+  background-color: #FBF8F3;
+  border: 1.5px solid rgba(226, 215, 195, 0.9);
+  border-radius: var(--radius-lg, 28px);
+  padding: 56px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.45);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 320ms ease,
+              border-color 320ms ease;
+}
+
+.ctaCard:hover {
+  transform: translateY(-4px);
+  border-color: rgba(193, 85, 44, 0.4);
+  box-shadow: 0 28px 60px -15px rgba(0, 0, 0, 0.55), 0 0 40px -8px rgba(193, 85, 44, 0.18);
+}
+
+/* TOP CIVIC TAG */
+.badgeWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  background: rgba(193, 85, 44, 0.12);
+  border: 1px solid rgba(193, 85, 44, 0.25);
+  color: var(--color-terracotta-500, #C1552C);
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.sparkle {
+  color: var(--color-ochre-400, #D99B26);
+}
+
+/* HEADLINE & SUBTITLE */
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--color-charcoal-900, #181512);
+  margin: 0 0 16px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-ink-muted, #5E554D);
+  max-width: 680px;
+  margin: 0 auto 36px auto;
+}
+
+/* BUTTONS GROUP: EXACT MATCH TO HERO PILL SEQUENCE (Terracotta, Dark Charcoal, Terracotta) */
+.buttonGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* BUTTON 1: SOLID TERRACOTTA PILL */
+.primaryBtn {
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-size: 0.938rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  cursor: pointer;
+  transition: all 220ms var(--ease-smooth);
+  box-shadow: 0 4px 16px rgba(193, 85, 44, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, var(--color-terracotta-400, #E28B5C) 0%, var(--color-terracotta-500, #C1552C) 100%);
+  box-shadow: 0 8px 24px rgba(193, 85, 44, 0.45);
+}
+
+/* BUTTON 2: DARK CHARCOAL PILL */
+.secondaryBtn {
+  background: #181512;
+  color: #FFFFFF;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-size: 0.938rem;
+  font-weight: 700;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  cursor: pointer;
+  transition: all 220ms var(--ease-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.secondaryBtn:hover {
+  background: #28231E;
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #FFFFFF;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* BUTTON 3: SOLID TERRACOTTA PILL */
+.partnerBtn {
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%);
+  color: #FFFFFF;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-size: 0.938rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  cursor: pointer;
+  transition: all 220ms var(--ease-smooth);
+  box-shadow: 0 4px 16px rgba(193, 85, 44, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partnerBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, var(--color-terracotta-400, #E28B5C) 0%, var(--color-terracotta-500, #C1552C) 100%);
+  box-shadow: 0 8px 24px rgba(193, 85, 44, 0.45);
+}
+
+@media (max-width: 768px) {
+  .ctaCard {
+    padding: 40px 20px;
+    border-radius: 20px;
+  }
+  .buttonGroup {
+    flex-direction: column;
+    width: 100%;
+  }
+  .primaryBtn, .secondaryBtn, .partnerBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

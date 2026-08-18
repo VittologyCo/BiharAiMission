@@ -1,0 +1,154 @@
+/* ============================================================================
+   ExamDetailPage — Responsive Override Styles
+   Targets inline-styled elements via descendant selectors from .examPage
+   ============================================================================ */
+
+/* ===================== TABLET (≤1024px) ===================== */
+@media (max-width: 1024px) {
+  .examPage > div {
+    padding: 0 16px !important;
+  }
+}
+
+/* ===================== MOBILE (≤768px) ===================== */
+@media (max-width: 768px) {
+  .examPage {
+    padding-bottom: 32px !important;
+  }
+  .examPage > div {
+    padding: 0 12px !important;
+  }
+
+  /* Exam header bar */
+  .examHeader {
+    padding: 14px 14px !important;
+    border-radius: 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+  .examHeader h2 {
+    font-size: 16px !important;
+  }
+
+  /* Question card */
+  .questionCard {
+    padding: 20px 16px !important;
+    border-radius: 14px !important;
+  }
+  .questionCard h3 {
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Option buttons */
+  .optionBtn {
+    padding: 12px 14px !important;
+    font-size: 13.5px !important;
+    border-radius: 10px !important;
+    min-height: 44px !important;
+  }
+
+  /* Question palette sidebar — bottom sheet on mobile */
+  .examPalette {
+    border-radius: 14px !important;
+    padding: 16px 14px !important;
+  }
+  .examPalette h4 {
+    font-size: 13px !important;
+  }
+
+  /* Navigation buttons row */
+  .examNavButtons {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .examNavButtons button {
+    flex: 1 1 auto !important;
+    min-width: 80px !important;
+    padding: 10px 14px !important;
+    font-size: 12.5px !important;
+    min-height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Timer badge */
+  .examTimerBadge {
+    font-size: 13px !important;
+    padding: 6px 12px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Results page */
+  .examResults {
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+  }
+  .examResults h1 {
+    font-size: 22px !important;
+  }
+
+  /* Score stats grid */
+  .scoreGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .scoreGrid > div {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Results question list */
+  .resultQuestionCard {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Exam intro / details page */
+  .examIntro {
+    padding: 28px 18px !important;
+    border-radius: 16px !important;
+  }
+  .examIntro h1 {
+    font-size: 22px !important;
+  }
+  .examIntro p {
+    font-size: 14px !important;
+  }
+
+  /* CTA start button */
+  .examStartBtn {
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 15px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ===================== SMALL MOBILE (≤480px) ===================== */
+@media (max-width: 480px) {
+  .examHeader {
+    padding: 12px 12px !important;
+  }
+  .examHeader h2 {
+    font-size: 14px !important;
+  }
+  .questionCard {
+    padding: 16px 14px !important;
+  }
+  .questionCard h3 {
+    font-size: 14.5px !important;
+  }
+  .optionBtn {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+  .scoreGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .examResults h1 {
+    font-size: 20px !important;
+  }
+  .examIntro h1 {
+    font-size: 20px !important;
+  }
+}

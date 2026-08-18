@@ -1,0 +1,281 @@
+/* Pillars.module.css — Bihar AI Mission Luxury Civic Design System */
+
+.pillarsSection {
+  padding: 40px 24px 60px 24px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  perspective: 1100px;
+}
+
+.container {
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+}
+
+/* BOX CONTAINER WITH #F3EADA BACKGROUND */
+.pillarsBox {
+  background-color: #FBF8F3;
+  border-radius: var(--radius-lg, 28px);
+  padding: 56px 44px;
+  border: 1.5px solid rgba(226, 215, 195, 0.9);
+  box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+/* SECTION HEADER */
+.header {
+  margin-bottom: 40px;
+  max-width: 680px;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-terracotta-500, #C1552C);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.badgeLine {
+  width: 16px;
+  height: 2px;
+  background-color: var(--color-terracotta-500, #C1552C);
+  border-radius: 2px;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-charcoal-900, #181512);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 1.05rem;
+  line-height: 1.62;
+  color: var(--color-ink-muted, #5E554D);
+}
+
+/* ASYMMETRIC BENTO GRID LAYOUT */
+.bentoGrid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+/* 3D TILT PARALLAX CARD — PRESERVED EXACTLY */
+.bentoCard {
+  --glare-x: 50%;
+  --glare-y: 50%;
+  background: linear-gradient(150deg, rgba(42, 36, 31, 0.92) 0%, rgba(24, 21, 18, 0.96) 100%);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(226, 215, 195, 0.14);
+  border-radius: var(--radius-lg, 24px);
+  padding: 32px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+  transform-style: preserve-3d;
+  transition: transform 0.12s ease-out, box-shadow 0.35s ease, border-color 0.35s ease;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.55);
+}
+
+.bentoCard:hover {
+  border-color: rgba(226, 139, 92, 0.55);
+  box-shadow: 0 28px 60px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(193, 85, 44, 0.25);
+}
+
+/* SPECULAR GLARE OVERLAY THAT TRACKS CURSOR */
+.glareOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.22),
+    rgba(193, 85, 44, 0.15) 30%,
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.bentoCard:hover .glareOverlay {
+  opacity: 1;
+}
+
+/* LAYERED DEPTH INNER CONTAINER */
+.cardInner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform: translateZ(0);
+  position: relative;
+  z-index: 2;
+}
+
+/* HERO CARD 1: Spans 7 columns for bento hierarchy */
+.heroCard {
+  grid-column: span 7;
+  border: 1.5px solid rgba(226, 139, 92, 0.4);
+}
+
+/* CARDS 2, 3, 4 */
+.toolsCard {
+  grid-column: span 5;
+}
+
+.blogCard {
+  grid-column: span 6;
+}
+
+.startupCard {
+  grid-column: span 6;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  transform: translateZ(35px);
+}
+
+.iconWrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  transition: transform 240ms ease-out;
+  transform: translateZ(40px);
+}
+
+.bentoCard:hover .iconWrapper {
+  transform: translateZ(50px) scale(1.08) rotate(3deg);
+}
+
+.terracottaAccent {
+  background-color: rgba(193, 85, 44, 0.2);
+  color: var(--color-terracotta-300, #E28B5C);
+  border: 1px solid rgba(193, 85, 44, 0.35);
+}
+
+.indigoAccent {
+  background-color: rgba(217, 155, 38, 0.2);
+  color: var(--color-ochre-400, #D99B26);
+  border: 1px solid rgba(217, 155, 38, 0.35);
+}
+
+.mustardAccent {
+  background-color: rgba(217, 155, 38, 0.2);
+  color: var(--color-ochre-400, #D99B26);
+  border: 1px solid rgba(217, 155, 38, 0.35);
+}
+
+.tagPill {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.719rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-sand-50, #FBF8F3);
+  border: 1px solid rgba(226, 215, 195, 0.2);
+  transform: translateZ(45px);
+}
+
+.cardContent {
+  margin-bottom: 24px;
+}
+
+.cardTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--color-sand-50, #FBF8F3);
+  margin-bottom: 10px;
+  transform: translateZ(55px);
+  line-height: 1.25;
+}
+
+.cardDesc {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.938rem;
+  line-height: 1.6;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  transform: translateZ(30px);
+}
+
+.cardAction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  border-top: 1px solid rgba(226, 215, 195, 0.12);
+  padding-top: 16px;
+  transition: color 220ms ease-out;
+  transform: translateZ(40px);
+}
+
+.bentoCard:hover .cardAction {
+  color: var(--color-terracotta-300, #E28B5C);
+}
+
+.arrow {
+  transition: transform 220ms ease-out;
+}
+
+.bentoCard:hover .arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 992px) {
+  .pillarsBox {
+    padding: 40px 24px;
+  }
+  .heroCard,
+  .toolsCard,
+  .blogCard,
+  .startupCard {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 640px) {
+  .pillarsBox {
+    padding: 32px 18px;
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bentoCard,
+  .glareOverlay {
+    transition: none !important;
+    transform: none !important;
+  }
+}

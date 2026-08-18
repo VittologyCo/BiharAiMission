@@ -1,0 +1,111 @@
+/* Banner.module.css — Bihar AI Mission Luxury Civic Design System */
+
+.bannerStrip {
+  width: 100%;
+  background: var(--color-charcoal-900, #181512);
+  border-bottom: 1px solid rgba(226, 215, 195, 0.16);
+  padding: 6px 20px;
+  font-size: 0.75rem;
+  position: relative;
+  z-index: 100;
+}
+
+.container {
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.disclaimerBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.civicBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2.5px 8px;
+  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-ochre-400, #D99B26) 100%);
+  color: #FFFFFF;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.68rem;
+  font-weight: 800;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(193, 85, 44, 0.35);
+}
+
+.disclaimerText {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.813rem;
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.indiaAiBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaText {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.781rem;
+  color: var(--color-ochre-400, #D99B26);
+  font-weight: 600;
+}
+
+.dot {
+  color: rgba(226, 215, 195, 0.4);
+  font-weight: 700;
+}
+
+.govLink {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  background: rgba(193, 85, 44, 0.25);
+  border: 1px solid rgba(226, 139, 92, 0.45);
+  padding: 2px 9px;
+  border-radius: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 180ms ease-out;
+}
+
+.govLink:hover {
+  background: var(--color-terracotta-500, #C1552C);
+  color: #FFFFFF;
+  border-color: var(--color-terracotta-500, #C1552C);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(193, 85, 44, 0.35);
+}
+
+@media (max-width: 768px) {
+  .bannerStrip {
+    padding: 5px 12px;
+  }
+  .container {
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+  .disclaimerText {
+    font-size: 0.75rem;
+  }
+  .metaText, .dot {
+    display: none;
+  }
+}

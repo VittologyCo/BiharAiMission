@@ -1,0 +1,302 @@
+/* Footer.module.css — Bihar AI Mission Luxury Civic Design System */
+
+.footerSection {
+  background: linear-gradient(180deg, transparent 0%, rgba(20, 17, 15, 0.95) 40%, rgba(14, 12, 10, 0.99) 100%);
+  border-top: 1px solid rgba(226, 215, 195, 0.14);
+  padding: 72px 24px 36px 24px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+}
+
+/* TOP GRID: 4 COLUMNS */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 56px;
+}
+
+/* BRAND COLUMN */
+.brandCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.logoBox {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(226, 215, 195, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px rgba(193, 85, 44, 0.15);
+  flex-shrink: 0;
+}
+
+.logoImg {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.brandTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  letter-spacing: -0.01em;
+  margin: 0 0 2px 0;
+}
+
+.brandTagline {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.781rem;
+  color: var(--color-terracotta-300, #E28B5C);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brandDesc {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  max-width: 360px;
+  margin: 0 0 20px 0;
+}
+
+/* DISCLAIMER CARD */
+.disclaimerCard {
+  background: rgba(35, 31, 27, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  border-left: 3.5px solid var(--color-terracotta-500, #C1552C);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.781rem;
+  line-height: 1.55;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  max-width: 380px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.disclaimerTag {
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.719rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* NAVIGATION COLUMNS */
+.navCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.colHeading {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.813rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ochre-400, #D99B26);
+  margin: 0 0 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--color-terracotta-500, #C1552C);
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.navLink {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.875rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 200ms ease;
+  width: fit-content;
+}
+
+.linkArrow {
+  opacity: 0;
+  transform: translateX(-4px);
+  color: var(--color-terracotta-400, #E28B5C);
+  transition: all 200ms ease;
+  font-size: 0.8rem;
+}
+
+.navLink:hover {
+  color: var(--color-sand-50, #FBF8F3);
+  transform: translateX(4px);
+}
+
+.navLink:hover .linkArrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* TELEMETRY STRIP */
+.telemetryStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(35, 31, 27, 0.45);
+  border: 1px solid rgba(226, 215, 195, 0.1);
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.telemetryLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.telemetryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  background: rgba(193, 85, 44, 0.15);
+  border: 1px solid rgba(226, 139, 92, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.pulseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-terracotta-400, #E28B5C);
+  box-shadow: 0 0 8px var(--color-terracotta-400, #E28B5C);
+}
+
+.telemetryText {
+  font-size: 0.813rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+.telemetryLink {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.781rem;
+  font-weight: 700;
+  color: var(--color-terracotta-300, #E28B5C);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.telemetryLink:hover {
+  color: var(--color-sand-50, #FBF8F3);
+  text-decoration: underline;
+}
+
+/* BOTTOM ROW: COPYRIGHT & METAS */
+.bottomRow {
+  border-top: 1px solid rgba(226, 215, 195, 0.1);
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.813rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+.copyright {
+  margin: 0;
+}
+
+.bottomChips {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(226, 215, 195, 0.1);
+  font-size: 0.75rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+/* RESPONSIVE BREAKPOINTS */
+@media (max-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+  .brandCol {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .footerSection {
+    padding: 48px 16px 28px 16px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .brandCol {
+    grid-column: span 1;
+  }
+  .telemetryStrip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .bottomRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

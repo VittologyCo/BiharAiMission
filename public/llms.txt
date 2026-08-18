@@ -1,0 +1,25 @@
+# Bihar AI Mission (बिहार AI मिशन)
+
+> Official Citizen-Led Civic AI Initiative & Digital Literacy Platform for Bihar, India.
+
+## Overview
+Bihar AI Mission is a civic AI initiative aligned with IndiaAI guidelines. It provides AI awareness, Level 1 Certification Masterclasses, verifiable digital credentials, curated governance AI tools, and prompt engineering libraries for government officers, students, executives, and citizens across Bihar.
+
+## Key Offerings & Certifications
+- **AI Fundamentals Masterclass Level 1**: Official certification covering core AI principles, machine learning models, and public sector AI deployment. Minimum passing cutoff is 75% (23/30 correct answers).
+- **Basics of Prompts & AI Tools Certification**: Practical training on structured prompt design, context setting, and workflow automation.
+- **Ethics & Responsible AI Governance Exam**: Evaluation of data privacy, bias prevention, transparency, and administrative AI compliance.
+- **Advanced Prompt Engineering Masterclass**: Zero-shot, few-shot, and chain-of-thought prompting workflows.
+
+## Key Features
+- **Online Credential Verification**: Real-time verification of Level 1 Digital Certificates using unique Credential IDs (e.g., BAIM-CERT-xxxxxx) on the Learning Hub.
+- **Public Sector & Governance AI Tools**: 20+ curated AI tools for administrative document processing, translation, code generation, and analytics.
+- **Prompt Library**: 50+ pre-built, copy-paste prompts designed for public servants, educators, and startups.
+
+## Important Links
+- Home: https://biharaimission.org/
+- Learning Hub: https://biharaimission.org/learning
+- AI Tools: https://biharaimission.org/tools
+- Blog & Insights: https://biharaimission.org/blog
+- Startups: https://biharaimission.org/startups
+- About Us: https://biharaimission.org/about

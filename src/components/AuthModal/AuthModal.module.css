@@ -1,0 +1,523 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: #EFEAE5;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  border-radius: 32px;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px 28px;
+  box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.18);
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 640px) {
+  .modal {
+    max-width: 430px;
+    padding: 20px 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    max-width: 100%;
+    border-radius: 16px;
+    padding: 18px;
+  }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.96) translateY(6px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Minimal Circular Close Button */
+.closeBtn,
+.closeBtn:focus,
+.closeBtn:active {
+  position: absolute !important;
+  top: 20px !important;
+  right: 20px !important;
+  background: #EFEAE5 !important;
+  background-color: #EFEAE5 !important;
+  border: 1px solid rgba(17, 24, 39, 0.06) !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  border-radius: 50% !important;
+  font-size: 12px !important;
+  color: #9CA3AF !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.closeBtn:hover {
+  background: rgba(17, 24, 39, 0.06) !important;
+  background-color: rgba(17, 24, 39, 0.06) !important;
+  color: #111827 !important;
+  transform: scale(1.05) !important;
+  box-shadow: none !important;
+}
+
+/* Header Hierarchy */
+.header {
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #000000;
+  background: var(--color-sand-50, #FBF8F3);
+  border: 1px solid var(--color-sand-100, #F3ECE0);
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--font-heading, sans-serif);
+  font-size: 21px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 3px 0;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #9CA3AF;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Slide & Fade Screen Transition Wrapper */
+.screenWrapper {
+  animation: slideFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Alert Messages */
+.errorAlert {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.successAlert {
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  color: #166534;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Form Layout - Ultra-Tight & Minimal Spacing */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rowTwoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 500px) {
+  .rowTwoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+}
+
+/* Forgot Password Link Container - Tight Right Under Password Field */
+.forgotContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1px;
+  margin-bottom: 0px;
+}
+
+/* Forgot Password Text Link */
+.forgotLink,
+.forgotLink:focus,
+.forgotLink:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #000000 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  transition: color 0.15s ease !important;
+  text-decoration: none !important;
+}
+
+.forgotLink:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--color-charcoal-900, #181512) !important;
+  text-decoration: underline !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Input Container with Prepend Icon & Transparent Eye Toggle */
+.inputContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 11px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  height: 37px;
+  padding: 0 12px 0 34px;
+  font-size: 13px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: #EFEAE5;
+  color: #111827;
+  outline: none;
+  cursor: text !important;
+  caret-color: #000000 !important;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.inputWithEye {
+  padding-right: 36px;
+}
+
+.select {
+  width: 100%;
+  height: 37px;
+  padding: 0 12px 0 34px;
+  font-size: 13px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  background: #EFEAE5;
+  color: #111827;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2064748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.input:focus, .select:focus {
+  background: var(--color-sand-50, #FBF8F3);
+  border-color: var(--color-terracotta-500, #C1552C);
+  box-shadow: 0 0 0 3px rgba(193, 85, 44, 0.2);
+}
+
+/* Eye Toggle Button */
+.eyeToggleBtn,
+.eyeToggleBtn:focus,
+.eyeToggleBtn:active {
+  position: absolute !important;
+  right: 8px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  color: #6B7280 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 4px !important;
+  transition: color 0.15s ease !important;
+  z-index: 5 !important;
+}
+
+.eyeToggleBtn:hover {
+  color: #000000 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Classic & Elegant Compact Submit Button - Minimal Gaps */
+.submitBtn,
+.submitBtn:focus,
+.submitBtn:active {
+  margin-top: 2px !important;
+  margin-bottom: 0px !important;
+  height: 36px !important;
+  background: #000000 !important;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 0 16px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 5px rgba(24, 21, 18, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+.submitBtn:hover {
+  background: #1a1a1a !important;
+  background-color: #1a1a1a !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 10px rgba(24, 21, 18, 0.22) !important;
+}
+
+.submitBtn:disabled {
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Bottom Action Simple Text Link - Minimal Gap Under Submit Button */
+.switchPrompt {
+  text-align: center;
+  font-size: 12.5px;
+  color: #9CA3AF;
+  margin-top: 1px !important;
+  margin-bottom: 0px !important;
+}
+
+.textLink,
+.textLink:focus,
+.textLink:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 12.5px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  transition: color 0.15s ease !important;
+  text-decoration: none !important;
+}
+
+.textLink:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--color-charcoal-900, #181512) !important;
+  text-decoration: underline !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Security Trust Footer - Compact Single Line Layout */
+.trustBadge {
+  margin-top: 10px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid #EFEAE5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 440px) {
+  .trustBadge {
+    flex-wrap: wrap;
+    white-space: normal;
+    gap: 4px 8px;
+  }
+}
+
+.trustDot {
+  color: rgba(17, 24, 39, 0.08);
+}
+
+/* 1-Click Google Sign-In Button */
+.googleBtn {
+  width: 100%;
+  height: 42px;
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(17, 24, 39, 0.08) !important;
+  border-radius: 8px !important;
+  color: #111827 !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 12px !important;
+}
+
+.googleBtn:hover {
+  background: #EFEAE5 !important;
+  border-color: var(--color-text-muted-on-dark, #C8BFB3) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+.googleBtn:active {
+  transform: translateY(0) !important;
+}
+
+/* Divider with Centered Text */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 12px 0 14px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.divider span {
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.googleContainer {
+  margin: 20px 0 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.googleBtnPrimary {
+  width: 100%;
+  height: 48px;
+  background: #FFFFFF !important;
+  border: 2px solid rgba(17, 24, 39, 0.08) !important;
+  border-radius: 12px !important;
+  color: #111827 !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+}
+
+.googleBtnPrimary:hover {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border-color: var(--color-charcoal-900, #181512) !important;
+  box-shadow: 0 6px 20px rgba(193, 85, 44, 0.16) !important;
+  transform: translateY(-2px) !important;
+}
+
+.googleBtnPrimary:active {
+  transform: translateY(0) !important;
+}

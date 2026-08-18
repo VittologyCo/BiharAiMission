@@ -1,0 +1,26 @@
+/**
+ * Experience-scoped global styles.
+ * These only apply within the Experience route — they do not
+ * affect the main website.
+ */
+
+.experience-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a1628;
+  color: #FFFFFF;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide the main site's body background when Experience is active */
+.experience-root * {
+  box-sizing: border-box;
+}

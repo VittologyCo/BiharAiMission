@@ -1,0 +1,81 @@
+.hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  pointer-events: auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(24, 21, 18, 0.15);
+  border: 1px solid rgba(24, 21, 18, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.backLink:hover {
+  background: rgba(24, 21, 18, 0.25);
+  border-color: #000000;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 20px rgba(24, 21, 18, 0.3);
+}
+
+.sceneInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sceneCount {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(24, 21, 18, 0.1);
+  border: 1px solid rgba(24, 21, 18, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 640px) {
+  .topBar {
+    padding: 14px 16px;
+  }
+
+  .backLink {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .backLink span {
+    display: none;
+  }
+
+  .sceneCount {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}

@@ -1,0 +1,324 @@
+/* ============================================================================
+   UseCases.module.css — Bihar AI Mission Luxury Civic Design System
+   Real-World AI Impact Across Bihar — Cursor-Tracking Radial Spotlight Card Styling
+   ============================================================================ */
+
+.useCasesSection {
+  padding: var(--space-section, 5rem) 24px;
+  background: transparent;
+  color: var(--color-sand-50, #FBF8F3);
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: var(--max-width-content, 1200px);
+  margin: 0 auto;
+}
+
+/* SECTION HEADER */
+.sectionHeader {
+  margin-bottom: 40px;
+  max-width: 700px;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-terracotta-500, #C1552C);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.badgeLine {
+  width: 16px;
+  height: 2px;
+  background-color: var(--color-terracotta-500, #C1552C);
+  border-radius: 2px;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-sand-50, #FBF8F3);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 1rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  line-height: 1.6;
+}
+
+/* ALL 6 CARDS IN A CLEAN 3-COLUMN RESPONSIVE GRID */
+.casesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* INDIVIDUAL CASE STUDY CARD WITH CURSOR-TRACKING RADIAL SPOTLIGHT & NEON BORDER */
+.caseCard {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  position: relative;
+  overflow: hidden;
+  background: rgba(35, 31, 27, 0.85);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  border-radius: var(--radius-lg, 22px);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+}
+
+.caseCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.65), 0 0 25px rgba(193, 85, 44, 0.2);
+}
+
+/* Radial glow that tracks the cursor behind the glass */
+.caseCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    320px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(193, 85, 44, 0.3),
+    rgba(217, 155, 38, 0.15) 40%,
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.caseCard:hover::before {
+  opacity: 1;
+}
+
+/* Glowing border that lights up around the cursor */
+.caseCard::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: radial-gradient(
+    280px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    var(--color-terracotta-400, #E28B5C),
+    var(--color-ochre-400, #D99B26) 45%,
+    transparent 65%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.caseCard:hover::after {
+  opacity: 1;
+}
+
+/* CARD INNER CONTENTS (Z-INDEX 2) */
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.iconBadge {
+  font-size: 1.4rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(226, 215, 195, 0.16);
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.caseCard:hover .iconBadge {
+  transform: scale(1.08);
+}
+
+.tagLabel {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.688rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: rgba(193, 85, 44, 0.18);
+  color: var(--color-terracotta-300, #E28B5C);
+  border: 1px solid rgba(193, 85, 44, 0.35);
+  white-space: nowrap;
+}
+
+/* CARD TITLE */
+.cardTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-sand-50, #FBF8F3);
+  line-height: 1.35;
+  margin: 0;
+  letter-spacing: -0.01em;
+  position: relative;
+  z-index: 2;
+}
+
+/* STAT HIGHLIGHT BOX */
+.statBox {
+  background: rgba(24, 21, 18, 0.6);
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.statNumber {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--color-terracotta-400, #E28B5C);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.statLabel {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+/* DETAILS ACCORDION BLOCK */
+.detailsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(24, 21, 18, 0.5);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(226, 215, 195, 0.12);
+  position: relative;
+  z-index: 2;
+}
+
+.detailRow {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.813rem;
+  line-height: 1.5;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+}
+
+.detailRow strong {
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 700;
+}
+
+/* FOOTER (PARTNERS & PROOF LINK) */
+.cardFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(226, 215, 195, 0.12);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.partnerText {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.781rem;
+  color: var(--color-text-muted-on-dark, #C8BFB3);
+  line-height: 1.45;
+}
+
+.partnerText strong {
+  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 700;
+}
+
+.proofLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 0.781rem;
+  font-weight: 700;
+  color: var(--color-terracotta-300, #E28B5C);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(193, 85, 44, 0.15);
+  border: 1px solid rgba(193, 85, 44, 0.3);
+  width: fit-content;
+  transition: all 180ms ease;
+  position: relative;
+  z-index: 2;
+}
+
+.proofLink:hover {
+  background: var(--color-terracotta-500, #C1552C);
+  color: #FFFFFF;
+  border-color: var(--color-terracotta-500, #C1552C);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(193, 85, 44, 0.35);
+}
+
+/* RESPONSIVE BREAKPOINTS */
+@media (max-width: 1024px) {
+  .casesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .casesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caseCard,
+  .caseCard::before,
+  .caseCard::after {
+    transition: none !important;
+  }
+}
