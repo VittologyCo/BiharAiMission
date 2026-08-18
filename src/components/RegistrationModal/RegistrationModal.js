@@ -95,14 +95,19 @@ export default function RegistrationModal({ isOpen, onClose }) {
     portfolio: ''
   });
 
-  // Prevent body scroll when modal is open
+  // Prevent body & root scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Close on ESC key
@@ -125,12 +130,12 @@ export default function RegistrationModal({ isOpen, onClose }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleInterest = (val) => {
-    setForm((prev) => {
-      const arr = prev.interests || [];
-      if (arr.includes(val)) return { ...prev, interests: arr.filter(v => v !== val) };
-      return { ...prev, interests: [...arr, val] };
-    });
+  // Single Interest Selection (User can only select 1)
+  const selectInterest = (val) => {
+    setForm((prev) => ({
+      ...prev,
+      interests: prev.interests && prev.interests[0] === val ? [] : [val]
+    }));
   };
 
   /* ─── Step Validation ─── */
@@ -244,8 +249,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
   }
 
   return (
-    <div className={styles.overlay} onClick={handleBackdropClick}>
-      <div className={styles.modal} ref={modalRef}>
+    <div className={styles.overlay} onClick={handleBackdropClick} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
+      <div className={styles.modal} ref={modalRef} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
         {/* CLOSE BUTTON */}
         <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
 
@@ -286,7 +291,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
         {/* ═══ STEP 1: BASIC INFO ═══ */}
         {step === 1 && (
-          <div className={styles.formBody}>
+          <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.fieldGroup}>
               <label className={styles.label}>{isHi ? 'पूरा नाम' : 'Full Name'} <span className={styles.req}>*</span></label>
               <input
@@ -361,7 +366,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
         {/* ═══ STEP 2: PROFESSIONAL ═══ */}
         {step === 2 && (
-          <div className={styles.formBody}>
+          <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.row2}>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>{isHi ? 'पदनाम' : 'Designation / Title'}</label>
@@ -478,20 +483,25 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
         {/* ═══ STEP 3: INTERESTS & GOAL ═══ */}
         {step === 3 && (
-          <div className={styles.formBody}>
+          <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>{isHi ? 'आपकी रुचियाँ (एक या अधिक चुनें)' : 'Your Interests (select one or more)'}</label>
+              <label className={styles.label}>
+                {isHi ? 'आपकी मुख्य रुचि (केवल 1 चुनें)' : 'Your Primary Interest (Select 1)'}
+              </label>
               <div className={styles.chipGrid}>
-                {INTEREST_AREAS.map((ia) => (
-                  <button
-                    key={ia.value}
-                    type="button"
-                    className={`${styles.interestChip} ${form.interests.includes(ia.value) ? styles.chipSelected : ''}`}
-                    onClick={() => toggleInterest(ia.value)}
-                  >
-                    {form.interests.includes(ia.value) ? '✓ ' : ''}{ia.label}
-                  </button>
-                ))}
+                {INTEREST_AREAS.map((ia) => {
+                  const isSelected = form.interests && form.interests[0] === ia.value;
+                  return (
+                    <button
+                      key={ia.value}
+                      type="button"
+                      className={`${styles.interestChip} ${isSelected ? styles.chipSelected : ''}`}
+                      onClick={() => selectInterest(ia.value)}
+                    >
+                      {isSelected ? '✓ ' : ''}{ia.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
