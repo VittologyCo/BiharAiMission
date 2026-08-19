@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import UseAnimations from 'react-useanimations';
 import lock from 'react-useanimations/lib/lock';
@@ -9,282 +9,6 @@ import styles from './LockedCurtain.module.css';
 export default function LockedCurtain({ type = 'learning' }) {
   const { lang } = useLanguage();
   const isHi = lang === 'hi';
-
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 768;
-    }
-    return false;
-  });
-
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-
-  // Target and current open percentage (0 = fully closed, 100 = fully opened)
-  const [openPct, setOpenPct] = useState(15);
-  const openPctRef = useRef(15);
-  const targetOpenPctRef = useRef(15);
-
-  const isDraggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartPctRef = useRef(15);
-
-  // Mouse / pointer wind perturbation variables
-  const mouseRef = useRef({ x: -1000, y: -1000, vx: 0, vy: 0, lastX: 0, lastY: 0, time: 0 });
-  const airRipplesRef = useRef([]);
-
-  // Check mobile on resize
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', checkMobile, { passive: true });
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Auto-settle slightly open on desktop
-  useEffect(() => {
-    if (isMobile) return;
-    const timer = setTimeout(() => {
-      targetOpenPctRef.current = 24;
-      setOpenPct(24);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [isMobile]);
-
-  const toggleCurtain = useCallback(() => {
-    if (isMobile) return;
-    const current = openPctRef.current || 0;
-    const next = current > 45 ? 0 : 82;
-    targetOpenPctRef.current = next;
-    setOpenPct(next);
-  }, [isMobile]);
-
-  // CANVAS CLOTH & WIND SIMULATION ENGINE (Desktop Only)
-  useEffect(() => {
-    if (isMobile) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationFrameId;
-    let time = 0;
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    const handleResize = () => {
-      if (!canvas || !containerRef.current || window.innerWidth < 768) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize, { passive: true });
-
-    const render = () => {
-      time += 0.024;
-      const width = canvas.width / dpr;
-      const height = canvas.height / dpr;
-
-      if (!width || !height) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
-
-      // Smoothly interpolate openPct towards targetOpenPct
-      openPctRef.current += (targetOpenPctRef.current - openPctRef.current) * 0.08;
-
-      ctx.clearRect(0, 0, width, height);
-
-      // Current separation width based on openPct
-      const openWidth = (width / 2) * (openPctRef.current / 100);
-
-      // Update and decay mouse air ripples
-      airRipplesRef.current = airRipplesRef.current
-        .map((r) => ({ ...r, age: r.age + 1, strength: r.strength * 0.94 }))
-        .filter((r) => r.strength > 0.02);
-
-      // DRAW LEFT CURTAIN (Air-flowing silk pleats)
-      drawCurtainPanel(ctx, {
-        side: 'left',
-        startX: -openWidth,
-        width: width / 2,
-        height,
-        time,
-        mouse: mouseRef.current,
-        ripples: airRipplesRef.current
-      });
-
-      // DRAW RIGHT CURTAIN (Air-flowing silk pleats)
-      drawCurtainPanel(ctx, {
-        side: 'right',
-        startX: width / 2 + openWidth,
-        width: width / 2,
-        height,
-        time,
-        mouse: mouseRef.current,
-        ripples: airRipplesRef.current
-      });
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    animationFrameId = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [isMobile]);
-
-  // PROCEDURAL AIR-FLOWING SILK CLOTH RENDER FUNCTION
-  function drawCurtainPanel(ctx, { side, startX, width, height, time, mouse, ripples }) {
-    if (!width || width <= 0 || !height || height <= 0) return;
-    const foldsCount = 22;
-    const step = width / foldsCount;
-    const isLeft = side === 'left';
-
-    ctx.save();
-    ctx.beginPath();
-
-    for (let i = 0; i <= foldsCount; i++) {
-      const u = i / foldsCount;
-      const baseX = startX + i * step;
-
-      // Natural continuous harmonic breeze displacement
-      const breeze1 = Math.sin(time * 1.6 + u * 4.2) * 14;
-      const breeze2 = Math.cos(time * 2.1 + u * 6.5) * 8;
-      const verticalWeight = Math.sin((u * Math.PI) * 0.5);
-
-      // Mouse air-wake disturbance
-      let mouseDisturbance = 0;
-      ripples.forEach((r) => {
-        const dx = baseX - r.x;
-        const dist = Math.abs(dx);
-        if (dist < 180) {
-          const factor = Math.cos((dist / 180) * (Math.PI / 2));
-          mouseDisturbance += Math.sin(time * 6 + r.age * 0.3) * r.strength * factor * (isLeft ? -20 : 20);
-        }
-      });
-
-      // Proximity air push from cursor position
-      if (mouse.x > 0 && !isNaN(mouse.x)) {
-        const distToMouseX = Math.abs(baseX - mouse.x);
-        const distToMouseY = Math.abs((height * 0.5) - mouse.y);
-        if (distToMouseX < 140 && distToMouseY < height) {
-          const pushFactor = (1 - distToMouseX / 140) * (1 - distToMouseY / height);
-          mouseDisturbance += (mouse.vx || (isLeft ? -4 : 4)) * pushFactor * 6;
-        }
-      }
-
-      const totalDisplacementX = (breeze1 + breeze2 + mouseDisturbance) * (0.3 + 0.7 * verticalWeight);
-      const curX = baseX + totalDisplacementX;
-
-      if (i < foldsCount) {
-        const nextBaseX = startX + (i + 1) * step;
-        const nextDisplacementX = (Math.sin(time * 1.6 + (u + 0.05) * 4.2) * 14 + mouseDisturbance) * (0.3 + 0.7 * verticalWeight);
-        const nextX = nextBaseX + nextDisplacementX;
-
-        // Dynamic 3D Velvet Shading
-        const foldDepth = Math.sin(i * 1.35 + time * 1.2);
-        const lightIntensity = 0.5 + 0.5 * foldDepth;
-
-        const grad = ctx.createLinearGradient(curX, 0, nextX, 0);
-        if (i % 2 === 0) {
-          grad.addColorStop(0, `rgba(180, 56, 20, ${0.9 + 0.1 * lightIntensity})`);
-          grad.addColorStop(0.5, `rgba(215, 82, 38, ${0.95 + 0.05 * lightIntensity})`);
-          grad.addColorStop(1, `rgba(120, 32, 10, ${0.95})`);
-        } else {
-          grad.addColorStop(0, `rgba(90, 22, 6, 0.98)`);
-          grad.addColorStop(0.5, `rgba(55, 12, 3, 0.98)`);
-          grad.addColorStop(1, `rgba(135, 38, 12, 0.92)`);
-        }
-
-        ctx.fillStyle = grad;
-
-        const bottomWave = Math.sin(time * 2.5 + i * 0.8) * 8;
-        ctx.beginPath();
-        ctx.moveTo(curX, 0);
-        ctx.lineTo(nextX, 0);
-        ctx.lineTo(nextX, height + bottomWave);
-        ctx.lineTo(curX, height + bottomWave);
-        ctx.closePath();
-        ctx.fill();
-
-        if ((isLeft && i === foldsCount - 1) || (!isLeft && i === 0)) {
-          ctx.strokeStyle = 'rgba(235, 190, 70, 0.85)';
-          ctx.lineWidth = 3.5;
-          ctx.beginPath();
-          ctx.moveTo(isLeft ? nextX : curX, 0);
-          ctx.lineTo(isLeft ? nextX : curX, height + bottomWave);
-          ctx.stroke();
-        }
-      }
-    }
-
-    ctx.restore();
-  }
-
-  // DESKTOP-ONLY MOUSE EVENT HANDLERS
-  const handleMouseMove = (e) => {
-    if (isMobile) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const vx = x - (mouseRef.current.lastX || x);
-    const vy = y - (mouseRef.current.lastY || y);
-    const speed = Math.sqrt(vx * vx + vy * vy);
-
-    mouseRef.current = { x, y, vx, vy, lastX: x, lastY: y, time: Date.now() };
-
-    if (speed > 3) {
-      airRipplesRef.current.push({
-        x,
-        y,
-        strength: Math.min(1.5, speed * 0.06),
-        age: 0
-      });
-      if (airRipplesRef.current.length > 25) {
-        airRipplesRef.current.shift();
-      }
-    }
-
-    if (isDraggingRef.current && rect.width > 0) {
-      const centerX = rect.width / 2;
-      const deltaX = Math.abs(x - centerX);
-      const newPct = Math.min(88, Math.max(0, (deltaX / centerX) * 85));
-      targetOpenPctRef.current = newPct;
-      setOpenPct(Math.round(newPct));
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    if (isMobile) return;
-    isDraggingRef.current = true;
-    dragStartXRef.current = e.clientX;
-    dragStartPctRef.current = openPctRef.current || 15;
-  };
-
-  const handleMouseUp = () => {
-    if (isMobile || !isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    if (targetOpenPctRef.current > 42) {
-      targetOpenPctRef.current = 82;
-      setOpenPct(82);
-    } else if (targetOpenPctRef.current < 12) {
-      targetOpenPctRef.current = 0;
-      setOpenPct(0);
-    } else {
-      targetOpenPctRef.current = 24;
-      setOpenPct(24);
-    }
-  };
 
   const getContent = () => {
     switch (type) {
@@ -354,7 +78,7 @@ export default function LockedCurtain({ type = 'learning' }) {
           features: [
             {
               icon: '📰',
-              title: isHi ? 'नागरिक AI फील्ड रिपोर्ट्स' : 'Civic AI Field Dispatches',
+              title: isHi ? 'नागरिक AI FIELD REPORTS' : 'Civic AI Field Dispatches',
               desc: isHi ? 'बिहार के 38 जिलों से प्रत्यक्ष रिपोर्ट और आंकड़े।' : 'Real-world data, case analyses, and ground stories.'
             },
             {
@@ -409,55 +133,17 @@ export default function LockedCurtain({ type = 'learning' }) {
     desc: typeContent.desc,
     progressLabel: isHi ? 'प्रारंभिक विकास पूर्णता (Core Build)' : 'Core Architecture Build Status',
     progressPct: typeContent.progressPct,
-    launchDate: isHi ? 'अपेक्षित रिलीज: शीघ्र 2026' : 'Target Release: Coming Soon 2026',
-    hintDrag: isHi ? '💨 माउस घुमाकर रेशमी पर्दे में हवा का बहाव देखें · ड्रैग करके खोलें ↔️' : '💨 Move cursor across silk for air-flow breeze · Drag to part curtains ↔️',
-    btnToggle: openPct > 45
-      ? (isHi ? '🔒 पर्दा बंद करें' : '🔒 Draw Curtains Closed') 
-      : (isHi ? '✨ पर्दा पूरा खोलें' : '✨ Open Curtains Fully'),
     features: typeContent.features
   };
 
   return (
-    <div
-      className={styles.stageViewport}
-      ref={containerRef}
-      onMouseMove={!isMobile ? handleMouseMove : undefined}
-      onMouseDown={!isMobile ? handleMouseDown : undefined}
-      onMouseUp={!isMobile ? handleMouseUp : undefined}
-    >
+    <div className={styles.stageViewport}>
       <SEO
         title={typeContent.seoTitle}
         description={content.desc}
       />
 
-      {/* DESKTOP-ONLY FLOATING CONTROLS BAR */}
-      {!isMobile && (
-        <div className={styles.curtainHintBar}>
-          <span className={styles.hintText}>
-            <span>🍃</span>
-            <span>{content.hintDrag}</span>
-          </span>
-          <button
-            type="button"
-            className={styles.curtainToggleBtn}
-            onClick={toggleCurtain}
-            aria-label="Toggle Curtain View"
-          >
-            {content.btnToggle}
-          </button>
-        </div>
-      )}
-
-      {/* DESKTOP-ONLY SILK CURTAIN CANVAS */}
-      {!isMobile && (
-        <canvas
-          ref={canvasRef}
-          className={styles.curtainCanvas}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* STAGE CONTENT (ALWAYS CLEANLY VISIBLE ON MOBILE) */}
+      {/* STAGE CONTENT */}
       <div className={styles.stageContent}>
         <div className={styles.stageSpotlight} aria-hidden="true" />
 
@@ -466,12 +152,11 @@ export default function LockedCurtain({ type = 'learning' }) {
           <div className={styles.lockOrbPulse} />
           <div
             className={styles.lockOrbCore}
-            onClick={!isMobile ? toggleCurtain : undefined}
-            title={!isMobile ? 'Click to Draw Curtains' : 'Restricted Access'}
+            title="Restricted Access"
           >
             <UseAnimations
               animation={lock}
-              size={isMobile ? 44 : 54}
+              size={48}
               strokeColor="#FBE6A2"
               autoplay={true}
               loop={true}
@@ -536,3 +221,4 @@ export default function LockedCurtain({ type = 'learning' }) {
     </div>
   );
 }
+

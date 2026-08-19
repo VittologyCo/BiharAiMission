@@ -18,7 +18,7 @@ const commandClusters = [
         skillHi: 'त्रि-स्तरीय सरल अवधारणा अनुवाद (बच्चा → छात्र → विशेषज्ञ)',
         descEn: 'Forces AI to output a 3-tier progressive explanation with zero technical jargon, 2 real-world physical analogies, and a summary comparison table.',
         descHi: 'AI को 3 अलग-अलग स्तरों (बच्चा, छात्र, विशेषज्ञ) पर 2 जीवंत उपमाओं और तुलना तालिका के साथ समझाने हेतु विवश करता है।',
-        examplePrompt: `[COMMAND: /ELI5_MULTI_TIER]
+        examplePrompt: `/ELI5_MULTI_TIER
 ACT AS: Senior Educational Communicator & Systems Analyst.
 TASK: Explain the following topic: [Insert Topic, e.g., AI Compute Clusters / Tokenization / Blockchain].
 
@@ -36,7 +36,7 @@ STRICT PROTOCOL (NO GENERIC FLUFF):
         skillHi: 'मात्रात्मक SWOT व रणनीतिक समाधान मैट्रिक्स',
         descEn: 'Replaces generic lists with a prioritized 4-quadrant strategic scorecard including impact scores (1-10) and specific mitigations.',
         descHi: 'साधारण सूचियों के स्थान पर प्रभाव स्कोर (1-10) और ठोस समाधानों सहित 4-चतुर्भुज रणनीतिक स्कोरकार्ड बनाता है।',
-        examplePrompt: `[COMMAND: /SWOT_QUANTITATIVE]
+        examplePrompt: `/SWOT_QUANTITATIVE
 ACT AS: Management Consultant & Chief Strategy Officer.
 TASK: Conduct an in-depth SWOT and Risk Matrix for [Insert Project/Policy, e.g., Deploying AI Telemedicine Kiosks across Rural Bihar].
 
@@ -53,7 +53,7 @@ STRICT OUTPUT REQUIREMENTS:
         skillHi: 'मूल सिद्धांतों पर आधारित समस्या समाधान',
         descEn: 'Strips away all conventional industry assumptions and reconstructs an unconstrained innovative solution from physical axioms.',
         descHi: 'सभी पारंपरिक पूर्वग्रहों को हटाकर भौतिक व आर्थिक सत्यों के आधार पर मौलिक 3-चरणीय समाधान तैयार करता है।',
-        examplePrompt: `[COMMAND: /FIRST_PRINCIPLES]
+        examplePrompt: `/FIRST_PRINCIPLES
 ACT AS: Systems Engineer & First-Principles Problem Solver.
 PROBLEM TO DECONSTRUCT: [Insert Bottleneck, e.g., High Cost of Server Hosting for Civic AI Apps].
 
@@ -71,7 +71,7 @@ EXECUTION STEPS:
         skillHi: 'अंतर-राज्यीय नीति एवं पारिस्थितिकी तंत्र तुलना',
         descEn: 'Produces a rigorous side-by-side benchmarking matrix with quantitative KPIs, fiscal incentives, and policy trade-offs.',
         descHi: 'विभिन्न राज्यों की नीतियों और वित्तीय प्रोत्साहनों की तुलनात्मक तालिका और प्रमुख प्रदर्शन संकेतकों (KPIs) का विश्लेषण करता है।',
-        examplePrompt: `[COMMAND: /ECOSYSTEM_BENCHMARK]
+        examplePrompt: `/ECOSYSTEM_BENCHMARK
 ACT AS: Public Policy Benchmarking Specialist.
 SUBJECT: Compare the [AI & Technology Policies of Bihar, Telangana, and Karnataka].
 
@@ -96,7 +96,7 @@ STRICT OUTPUT FORMAT:
         skillHi: '5-मनोवैज्ञानिक कोणों पर आधारित वायरल हुक इंजन',
         descEn: 'Generates 5 distinct high-retention opening hooks categorized by psychological angle (Curiosity, Counter-Intuitive, Story, Fear of Missing Out, Authority).',
         descHi: '5 अलग-अलग मनोवैज्ञानिक कोणों (जिज्ञासा, विरोधाभास, कहानी, तात्कालिकता, अधिकार) पर आधारित शक्तिशाली प्रारंभिक हुक्स बनाता है।',
-        examplePrompt: `[COMMAND: /VIRAL_HOOK_ENGINE]
+        examplePrompt: `/VIRAL_HOOK_ENGINE
 ACT AS: Viral Content Strategist & Growth Copywriter.
 TOPIC/ANNOUNCEMENT: [Insert Topic, e.g., Bihar AI Mission Launching Free Generative AI Coding Labs in 38 Districts].
 
@@ -116,7 +116,7 @@ Include estimated 3-second retention rating (1-10) and target audience for each.
         skillHi: '60-सेकंड वीडियो स्क्रिप्ट मय निर्देशक B-Roll निर्देश',
         descEn: 'Formats a production-ready 60-second video script with exact second-by-second pacing, on-screen text overlays, and audio cues.',
         descHi: 'समयबद्ध (सेकंड-दर-सेकंड) वीडियो स्क्रिप्ट, स्क्रीन टेक्स्ट और कैमरा एंगल निर्देशों के साथ रील/शॉर्ट तैयार करता है।',
-        examplePrompt: `[COMMAND: /VIDEO_SCRIPT_60]
+        examplePrompt: `/VIDEO_SCRIPT_60
 ACT AS: Commercial Video Director & Narrative Scriptwriter.
 TOPIC: [Insert Topic, e.g., How AI-Powered Flood Warning Sensors Protect Farmers in North Bihar].
 
@@ -137,7 +137,7 @@ Include recommended background music tempo (BPM) and sound effects (SFX) tags.`
         skillHi: '5-स्लाइड उच्च-प्रतिधारण शैक्षणिक कैरोसेल',
         descEn: 'Structures slide-by-slide copy with visual design briefs, character limits, and swipe-trigger micro-hooks on every slide.',
         descHi: 'प्रत्येक स्लाइड पर दृश्य डिजाइन निर्देश, संक्षिप्त मुख्य बिंदु और स्वाइप-ट्रिगर के साथ 5-स्लाइड कैरोसेल कॉपी लिखता है।',
-        examplePrompt: `[COMMAND: /CAROUSEL_ARCHITECT]
+        examplePrompt: `/CAROUSEL_ARCHITECT
 ACT AS: LinkedIn & Instagram Educational Content Architect.
 TOPIC: [Insert Topic, e.g., 5 Free AI Tools Every Government Officer Should Use Daily].
 
@@ -165,7 +165,7 @@ Slide 5 must include a dedicated Save & Share prompt with actionable bookmarking
         skillHi: 'सिनेमैटिक 8K डाक्यूमेंट्री फोटोग्राफी इंजन',
         descEn: 'Constructs hyper-detailed camera parameters (sensor, focal length, f-stop, shutter, ISO, volumetric lighting) for stunning authentic photos.',
         descHi: 'अति-यथार्थवादी आधिकारिक तस्वीरों के लिए कैमरा लेंस (85mm), f-स्टॉप, प्रकाश और वायुमंडलीय विवरणों सहित मास्टर प्रॉम्प्ट तैयार करता है।',
-        examplePrompt: `[COMMAND: /CINEMATIC_PHOTO_GENERATOR]
+        examplePrompt: `/CINEMATIC_PHOTO_GENERATOR
 ACT AS: National Geographic Master Cinematographer & Lighting Director.
 SUBJECT TO DEPICT: [Insert Subject, e.g., Rural Indian girl smiling while programming an AI robot in a solar-powered village classroom in Bihar].
 
@@ -183,7 +183,7 @@ OUTPUT A COPY-READY PROMPT WITH THE FOLLOWING RIGOROUS SPECIFICATIONS:
         skillHi: 'पारंपरिक मधुबनी व साइबरनेटिक्स फ्यूजन कला',
         descEn: 'Merges authentic Mithila/Madhubani folk art geometry with futuristic technological motifs (microchips, neural nodes, fiber optics).',
         descHi: 'मिथिला/मधुबनी लोककला के पारंपरिक ज्यामितीय डिजाइनों को भविष्यवादी तकनीकी परिपथों के साथ संयोजित करता है।',
-        examplePrompt: `[COMMAND: /HERITAGE_FUSION_ART]
+        examplePrompt: `/HERITAGE_FUSION_ART
 ACT AS: Traditional Mithila Master Artist & Futuristic Visionary.
 SCENE: [Insert Scene, e.g., The Sacred Peepal Tree of Knowledge with glowing fiber-optic branches connecting citizens to AI services].
 
@@ -198,7 +198,7 @@ An authentic Madhubani / Mithila folk art painting featuring intricate double-li
         skillHi: '3D आइसोमेट्रिक स्मार्ट आर्किटेक्चर ब्लूप्रिंट',
         descEn: 'Produces sleek 3D isometric blueprints with glowing glassmorphism layers, floating data streams, and studio lighting.',
         descHi: 'स्मार्ट सिटी, प्रशासनिक डेटा प्रवाह और नागरिक सेवाओं को दर्शाने वाला पारदर्शी 3D आइसोमेट्रिक ब्लूप्रिंट प्रॉम्प्ट बनाता है।',
-        examplePrompt: `[COMMAND: /ISOMETRIC_3D_BLUEPRINT]
+        examplePrompt: `/ISOMETRIC_3D_BLUEPRINT
 ACT AS: 3D Architectural Illustrator & Systems Interface Designer.
 SYSTEM: [Insert System, e.g., AI Disaster Response & Flood Monitoring Command Center].
 
@@ -221,7 +221,7 @@ Clean 3D isometric cutaway view of a futuristic municipal AI operations center, 
         skillHi: 'सख्त 1-पृष्ठीय कैबिनेट निर्णय ज्ञापन एवं मैट्रिक्स',
         descEn: 'Strips away 100% of generic AI fluff and outputs a structured cabinet decision brief with fiscal impact tables and statutory checkpoints.',
         descHi: 'सभी अनावश्यक वाक्यों को हटाकर 1-पेज का संक्षिप्त निर्णय ज्ञापन, वित्तीय प्रभाव तालिका और विधिक अनुमतियों की सूची तैयार करता है।',
-        examplePrompt: `[COMMAND: /EXECUTIVE_DECISION_MEMO]
+        examplePrompt: `/EXECUTIVE_DECISION_MEMO
 ACT AS: Principal Governance Strategist & Chief of Staff to the Chief Secretary.
 DOCUMENT/TOPIC TO ANALYZE: [Insert Report / Proposal Text].
 
@@ -241,7 +241,7 @@ Output exactly in the following 5 numbered sections:
         skillHi: 'आधिकारिक राजपत्र अधिसूचना एवं कार्यालय ज्ञापन प्रारूपण',
         descEn: 'Generates legally binding, secretariat-compliant government orders with standard reference numbering, clauses, and distribution lists.',
         descHi: 'सचिवालय मानकों के अनुसार आधिकारिक कार्यालय ज्ञापन (OM), परिपत्र और अधिसूचनाओं का कानूनी रूप से त्रुटिहीन प्रारूप बनाता है।',
-        examplePrompt: `[COMMAND: /GOV_CIRCULAR_DRAFTER]
+        examplePrompt: `/GOV_CIRCULAR_DRAFTER
 ACT AS: Legal Drafter & Joint Secretary (Administration).
 DEPARTMENT: [Insert Department, e.g., Department of General Administration, Government of Bihar].
 PURPOSE: [Insert Purpose, e.g., Mandatory Cyber Security & AI Literacy Certification for Group A, B, and C Personnel].
@@ -262,7 +262,7 @@ DRAFT ACCORDING TO OFFICIAL SECRETARIAT STANDARDS:
         skillHi: 'वैधानिक अनुपालन एवं कानूनी विसंगति ऑडिट मैट्रिक्स',
         descEn: 'Scans draft policies against DPDP Act 2023, IT Act, and Financial Rules to flag non-compliant clauses in a 3-column table.',
         descHi: 'प्रस्तावित मसौदा नीति की DPDP एक्ट 2023 और आईटी नियमों से तुलना कर विसंगतियों को 3-कॉलम तालिका में दर्शाता है।',
-        examplePrompt: `[COMMAND: /STATUTE_AUDIT]
+        examplePrompt: `/STATUTE_AUDIT
 ACT AS: Senior Constitutional & Administrative Law Specialist.
 DRAFT POLICY TEXT TO AUDIT: [Insert Draft Policy Clauses].
 BENCHMARK STATUTES: Digital Personal Data Protection (DPDP) Act 2023 & General Financial Rules (GFR).
@@ -280,7 +280,7 @@ OUTPUT FORMAT:
         skillHi: 'समीक्षा बैठक कार्यवृत्त एवं जवाबदेही कार्य मैट्रिक्स',
         descEn: 'Converts unstructured meeting recordings or chaotic notes into an accountability matrix with assigned nodal officers and deadlines.',
         descHi: 'बैठक के अव्यवस्थित नोट्स को उत्तरदायी नोडल अधिकारियों और समय-सीमा सहित स्पष्ट कार्ययोजना तालिका में बदलता है।',
-        examplePrompt: `[COMMAND: /MOM_ACTION_TRACKER]
+        examplePrompt: `/MOM_ACTION_TRACKER
 ACT AS: Executive Assistant & Cabinet Secretariat Rapporteur.
 RAW MEETING TRANSCRIPT/NOTES: [Paste Raw Meeting Notes].
 
@@ -307,7 +307,7 @@ OUTPUT FORMAT:
         skillHi: 'नीतिगत कमियों व विफलता जोखिमों का समालोचनात्मक परीक्षण',
         descEn: 'Plays the role of an adversarial auditor to uncover 5 critical blind spots, litigation vulnerabilities, and public backlash vectors before rollout.',
         descHi: 'एक कठोर विरोधी समीक्षक की भूमिका निभाकर नीति की 5 छिपी कमजोरियों, कानूनी चुनौतियों और विफलता जोखिमों को उजागर करता है।',
-        examplePrompt: `[COMMAND: /DEVILS_ADVOCATE_AUDIT]
+        examplePrompt: `/DEVILS_ADVOCATE_AUDIT
 ACT AS: Ruthless Investigative Auditor, Public Interest Litigator, and Skeptical Journalist.
 PLAN/POLICY PROPOSAL: [Insert Plan, e.g., Mandatory Biometric & Facial Recognition in Rural Schools].
 
@@ -325,7 +325,7 @@ STRESS-TEST IN 4 BRUTAL SECTIONS:
         skillHi: '100-दिवसीय चरणबद्ध कार्ययोजना एवं माइलस्टोन ब्लूप्रिंट',
         descEn: 'Builds a 4-phase day-by-day roadmap with weekly milestones, risk contingencies, and review checkpoints.',
         descHi: 'नई परियोजना को समय पर पूरा करने हेतु 100-दिवसीय 4-चरणीय कार्ययोजना, साप्ताहिक माइलस्टोन्स और समीक्षा बिंदु बनाता है।',
-        examplePrompt: `[COMMAND: /100_DAY_EXECUTION_ROADMAP]
+        examplePrompt: `/100_DAY_EXECUTION_ROADMAP
 ACT AS: Senior Program Management Director (PMO).
 INITIATIVE: [Insert Initiative, e.g., Establishing AI Innovation Labs across all 38 District Headquarters in Bihar].
 
@@ -344,7 +344,7 @@ For each Phase, provide: [Top 3 Weekly Deliverables], [Nodal Department Responsi
         skillHi: 'बहु-आयामी आर्थिक व नीतिगत गहन तर्क प्रक्रिया',
         descEn: 'Forces deep step-by-step reasoning across capital efficiency, job multipliers, and long-term societal return on investment (ROI).',
         descHi: 'पूंजी दक्षता, रोजगार सृजन और सामाजिक रिटर्न (ROI) का चरणबद्ध गणितीय व तार्किक विश्लेषण प्रस्तुत करता है।',
-        examplePrompt: `[COMMAND: /DEEP_REASONING_CHAIN]
+        examplePrompt: `/DEEP_REASONING_CHAIN
 ACT AS: Chief Economic Advisor & Decision Scientist.
 DILEMMA TO RESOLVE: [Insert Dilemma, e.g., Allocating ₹50 Crores to AI Startup Seed Grants vs. Building a Centralized High-Performance GPU Supercomputing Cluster in Patna].
 
@@ -403,17 +403,51 @@ export default function AICommandsHub() {
     el.scrollLeft = scrollLeftRef.current - walk;
   };
 
-  const handleCopy = (cmd) => {
-    navigator.clipboard.writeText(cmd.examplePrompt);
-    setCopiedId(cmd.id);
-    toast?.success(
-      isHi
-        ? `कमांड '${cmd.command}' कॉपी हो गया! अब इसे ChatGPT / Gemini / Claude में पेस्ट करें। ✨`
-        : `Command '${cmd.command}' copied! Paste directly into ChatGPT, Gemini, or Claude. ✨`
-    );
-    setTimeout(() => {
-      setCopiedId(null);
-    }, 2500);
+  const copyToClipboard = async (text) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.warn('Navigator clipboard failed, fallback to execCommand:', err);
+      }
+    }
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (fallbackErr) {
+      console.error('Fallback copy failed:', fallbackErr);
+      return false;
+    }
+  };
+
+  const handleCopy = async (cmd, e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const success = await copyToClipboard(cmd.examplePrompt);
+    if (success) {
+      setCopiedId(cmd.id);
+      const cmdHeader = cmd.examplePrompt.split('\n')[0] || cmd.command;
+      toast?.success(
+        isHi
+          ? `कमांड '${cmdHeader}' पूरा प्रॉम्प्ट टेम्पलेट कॉपी हो गया! अब इसे ChatGPT / Gemini / Claude में पेस्ट करें। ✨`
+          : `Full command prompt '${cmdHeader}' copied! Paste directly into ChatGPT, Gemini, or Claude. ✨`
+      );
+      setTimeout(() => {
+        setCopiedId(null);
+      }, 2500);
+    }
   };
 
   return (
@@ -510,10 +544,14 @@ export default function AICommandsHub() {
                       </p>
 
                       {/* READY PROMPT CODE BOX */}
-                      <div className={styles.promptBoxWrapper}>
+                      <div
+                        className={`${styles.promptBoxWrapper} ${isCopied ? styles.promptBoxCopied : ''}`}
+                        onClick={(e) => handleCopy(cmd, e)}
+                        title={isHi ? 'पूरा प्रॉम्प्ट कॉपी करने के लिए क्लिक करें' : 'Click to copy complete command prompt'}
+                      >
                         <div className={styles.promptBoxHeader}>
                           <span className={styles.promptBoxLabel}>
-                            {isHi ? '📋 कॉपी-पेस्ट रेडी कमांड (Direct Copy-Paste):' : '📋 Direct Copy-Paste Power Command:'}
+                            {isHi ? '📋 कॉपी-पेस्ट रेडी कमांड (Full Command):' : '📋 Direct Copy-Paste Power Command:'}
                           </span>
                         </div>
                         <pre className={styles.promptText}>{cmd.examplePrompt}</pre>
@@ -525,17 +563,17 @@ export default function AICommandsHub() {
                       <button
                         type="button"
                         className={`${styles.copyBtn} ${isCopied ? styles.copied : ''}`}
-                        onClick={() => handleCopy(cmd)}
+                        onClick={(e) => handleCopy(cmd, e)}
                       >
                         <span>{isCopied ? '✓' : '📋'}</span>
                         <span>
                           {isCopied
                             ? isHi
-                              ? 'कमांड कॉपी हो गया!'
-                              : 'Command Copied!'
+                              ? 'पूरा प्रॉम्प्ट कॉपी हो गया!'
+                              : 'Full Prompt Copied!'
                             : isHi
-                            ? 'कमांड कॉपी करें'
-                            : 'Copy Command'}
+                            ? 'पूरा प्रॉम्प्ट कॉपी करें'
+                            : 'Copy Full Command'}
                         </span>
                       </button>
                     </div>
