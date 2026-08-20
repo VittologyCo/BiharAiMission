@@ -30,7 +30,7 @@ exports.handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: 'RESEND_API_KEY or REACT_APP_RESEND_API_KEY not configured in Netlify env' }) };
     }
 
-    const senderEmail = from || 'Bihar AI Mission <onboarding@resend.dev>';
+    const senderEmail = from || process.env.RESEND_FROM_EMAIL || process.env.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@resend.dev>';
     const requestBody = JSON.stringify({
       from: senderEmail,
       to: Array.isArray(to) ? to : [to],

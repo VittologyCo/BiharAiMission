@@ -1,18 +1,31 @@
 // Resend Email Utility for Sending Emails via Serverless Function / Direct API
 
+const getDefaultSender = () => {
+  return process.env.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@resend.dev>';
+};
+
 const sendEmailPayload = async (payload) => {
-  const apiKey = process.env.REACT_APP_RESEND_API_KEY || '';
+  const apiKey = process.env.REACT_APP_RESEND_API_KEY || process.env.RESEND_API_KEY || '';
+
+  const finalPayload = {
+    ...payload,
+    from: payload.from || getDefaultSender(),
+  };
 
   // 1. Primary Strategy: Call Netlify Serverless Function (Server-to-Server, No CORS)
   try {
     const netlifyRes = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(finalPayload),
     });
     if (netlifyRes.ok) {
       const data = await netlifyRes.json().catch(() => ({}));
+      console.log('✅ Email delivered via Netlify serverless function:', data);
       return { success: true, data };
+    } else {
+      const errData = await netlifyRes.json().catch(() => ({}));
+      console.warn('Netlify function email warning:', netlifyRes.status, errData);
     }
   } catch (e) {
     // Netlify function not available (e.g. running standalone local dev without netlify dev)
@@ -27,13 +40,21 @@ const sendEmailPayload = async (payload) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
+      const data = await directRes.json().catch(() => ({}));
       if (directRes.ok) {
-        const data = await directRes.json().catch(() => ({}));
+        console.log('✅ Email delivered directly via Resend API:', data);
         return { success: true, data };
+      } else {
+        console.warn('Resend direct API response:', directRes.status, data);
+        if (data && data.message && data.message.includes('domain is not verified')) {
+          console.warn('⚠️ Resend Domain Verification required: please verify domain at https://resend.com/domains');
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Direct Resend fetch failed (possibly CORS in browser):', e);
+    }
 
     // 3. Fallback Proxy A
     try {
@@ -43,10 +64,11 @@ const sendEmailPayload = async (payload) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
       if (p1.ok) {
         const data = await p1.json().catch(() => ({}));
+        console.log('✅ Email delivered via proxy A:', data);
         return { success: true, data };
       }
     } catch (e) {}
@@ -59,21 +81,22 @@ const sendEmailPayload = async (payload) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload),
       });
       if (p2.ok) {
         const data = await p2.json().catch(() => ({}));
+        console.log('✅ Email delivered via proxy B:', data);
         return { success: true, data };
       }
     } catch (e) {}
   }
 
-  return { success: false, reason: 'Unable to deliver email' };
+  return { success: false, reason: 'Unable to deliver email. Check domain verification on Resend.' };
 };
 
 export const sendContactEmailViaResend = async ({ name, email, description }) => {
   const payload = {
-    from: 'Bihar AI Mission <onboarding@resend.dev>',
+    from: getDefaultSender(),
     to: ['contact@biharaimission.org'],
     reply_to: email,
     subject: `📩 New Website Contact Inquiry from ${name}`,
@@ -111,7 +134,7 @@ export const sendContactEmailViaResend = async ({ name, email, description }) =>
 
 export const sendWelcomeEmailViaResend = async ({ fullName, email }) => {
   const payload = {
-    from: 'Bihar AI Mission <onboarding@resend.dev>',
+    from: getDefaultSender(),
     to: [email],
     subject: 'Thank you for joining Bihar AI Mission 🚀',
     html: `
@@ -149,7 +172,7 @@ export const sendRegistrationThankYouEmail = async ({
   intent = '',
 }) => {
   const payload = {
-    from: 'Bihar AI Mission <onboarding@resend.dev>',
+    from: getDefaultSender(),
     to: [email],
     subject: `🎉 Registration Confirmed — Welcome to Bihar AI Mission, ${fullName}!`,
     html: `

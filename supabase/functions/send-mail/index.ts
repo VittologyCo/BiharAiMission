@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    const isReset = payload.type === 'reset' || payload.type === 'reset_password' || payload.isReset;
     if (isReset) {
       const email = payload.email || (payload.formData && payload.formData.email);
       let resetUrl = payload.resetUrl;
