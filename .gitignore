@@ -11,8 +11,12 @@
 /dist
 /scratch
 
-# agents & skills
+# agents, skills & prompts
 .agents/
+antigravity_*.md
+design*.md
+PROJECT_*.md
+starter.bat
 
 # misc
 .DS_Store
