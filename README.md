@@ -1,152 +1,54 @@
-# Bihar AI Mission — Civic AI Platform
+# Getting Started with Create React App
 
-A production-ready React application powered by Supabase & Cloudflare Workers to democratise AI education across Bihar.
-
----
-
-## Project Directory Structure
-
-```
-Bihar_Ai_Mission/
-├── database/                   # Database SQL migrations and documentation
-│   ├── migrations/
-│   │   ├── 001_complete_schema.sql
-│   │   ├── 002_cms_tables.sql
-│   │   ├── 003_registered_users.sql
-│   │   ├── 004_user_details.sql
-│   │   ├── 005_user_enrollments.sql
-│   │   ├── 006_masterclasses.sql
-│   │   ├── 007_officer_programs.sql
-│   │   ├── 008_exam_submissions.sql
-│   │   ├── 009_get_involved.sql
-│   │   └── 010_delete_user_rpc.sql
-│   └── README.md
-├── public/                     # Static assets and Web Manifest
-│   ├── bi_logo.png
-│   ├── certi_sign.png
-│   ├── certificate.png
-│   ├── favicon.ico
-│   ├── favicon.png
-│   ├── index.html
-│   ├── llms.txt
-│   ├── manifest.json
-│   ├── robots.txt
-│   ├── sitemap.xml
-│   └── sw.js
-├── src/                        # Main application source code
-│   ├── components/             # Reusable UI components & modals
-│   │   ├── About/
-│   │   ├── AIWorkTool/
-│   │   ├── AuthModal/
-│   │   ├── Banner/
-│   │   ├── CertificateModal/
-│   │   ├── ContactUsModal/
-│   │   ├── CTA/
-│   │   ├── Footer/
-│   │   ├── GetInvolvedModal/
-│   │   ├── Hero/
-│   │   ├── LearningHub/
-│   │   ├── Navbar/
-│   │   ├── PhonePePaymentModal/
-│   │   ├── Pillars/
-│   │   ├── Policy/
-│   │   ├── PromptLibrary/
-│   │   ├── PWAInstallBanner/
-│   │   ├── SEO/
-│   │   ├── Startup/
-│   │   ├── StatsPanel/
-│   │   ├── Training/
-│   │   ├── UseCases/
-│   │   ├── UserAvatar/
-│   │   ├── CursorSpotlight.jsx
-│   │   ├── ProtectedRoute.jsx
-│   │   ├── ScrollToTop.js
-│   │   └── SmoothScroll.js
-│   ├── context/                # Context providers (ToastContext)
-│   ├── data/                   # Dynamic JSON & static data collections
-│   │   ├── promptLibrary.js
-│   │   └── toolData.js
-│   ├── experience/             # 3D interactive Canvas & WebGL experience
-│   │   ├── canvas/
-│   │   ├── hooks/
-│   │   ├── overlay/
-│   │   ├── scenes/
-│   │   ├── store/
-│   │   ├── styles/
-│   │   ├── types/
-│   │   ├── ExperienceLayout.tsx
-│   │   └── ExperiencePage.tsx
-│   ├── hooks/                  # Custom React hooks (useAuth, useLanguage)
-│   ├── pages/                  # Page routes separated by role
-│   │   ├── admin/              # Admin dashboard & login pages
-│   │   │   ├── Admin.module.css
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   └── AdminLogin.jsx
-│   │   └── user/               # User-facing public & account pages
-│   │       ├── AboutPage.js
-│   │       ├── BlogPage.jsx
-│   │       ├── BlogPage.module.css
-│   │       ├── CourseDetailPage.jsx
-│   │       ├── CourseDetailPage.responsive.css
-│   │       ├── ExamDetailPage.jsx
-│   │       ├── ExamDetailPage.responsive.css
-│   │       ├── HomePage.js
-│   │       ├── LearningPage.js
-│   │       ├── PolicyPage.js
-│   │       ├── ResetPasswordPage.jsx
-│   │       ├── ResetPasswordPage.module.css
-│   │       ├── StartupsPage.js
-│   │       ├── ToolsPage.js
-│   │       ├── UserProfilePage.jsx
-│   │       └── UserProfilePage.responsive.css
-│   ├── theme/                  # Theme variables and color palettes
-│   ├── utils/                  # Supabase clients & storage helper utilities
-│   │   ├── blogsStorage.js
-│   │   ├── coursesStorage.js
-│   │   ├── examStorage.js
-│   │   ├── phonepePayment.js
-│   │   ├── profileValidation.js
-│   │   ├── resendEmail.js
-│   │   ├── scrollToSection.js
-│   │   ├── seoData.js
-│   │   └── supabase.js
-│   ├── App.js
-│   ├── index.css
-│   ├── index.js
-│   ├── react-app-env.d.ts
-│   └── reportWebVitals.js
-├── supabase/                   # Supabase edge functions
-│   └── functions/
-│       └── send-mail/
-│           └── index.ts
-├── .env                        # Environment configuration
-├── .gitignore                  # Git ignore rules
-├── design.md                   # Visual design & styling guide
-├── package.json                # Dependencies and npm scripts
-├── package-lock.json
-├── PROJECT_RULES.md            # Technical & visual coding guidelines
-├── PROJECT_STRUCTURE.md        # Full project directory tree reference
-├── README.md                   # Project overview & documentation
-├── starter.bat                 # One-click Windows starter script
-├── tsconfig.json               # TypeScript configuration
-└── wrangler.jsonc              # Cloudflare Workers deployment config
-```
-
----
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
 
 In the project directory, you can run:
 
 ### `npm start`
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-### `starter.bat`
-Launches the development server and automatically opens browser windows for both the main website and the admin panel.
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
+
+### `npm test`
+
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
-Builds the app for production to the `build` folder.
 
-### `npm run deploy`
-Builds the app and deploys it to Cloudflare Workers via Wrangler (`wrangler deploy`).
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
+
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+### `npm run eject`
+
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+
+## Deployment & Hosting
+
+This project is deployed to production for **[biharaimission.org](https://biharaimission.org)**.
+
+### Build command
+```bash
+npm run build
+```
+
+### Publish directory
+```
+build/
+```
