@@ -9,7 +9,6 @@ import Footer from './components/Footer/Footer';
 import HomePage from './pages/user/HomePage';
 import LearningPage from './pages/user/LearningPage';
 import ToolsPage from './pages/user/ToolsPage';
-import ClassworkPage from './pages/user/ClassworkPage';
 import PolicyPage from './pages/user/PolicyPage';
 import BlogPage from './pages/user/BlogPage';
 import StartupsPage from './pages/user/StartupsPage';
@@ -64,8 +63,6 @@ const AppLayout = ({
         <Route path="/" element={<HomePage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
         <Route path="/learning" element={<LearningPage onOpenAuth={onOpenAuth} />} />
         <Route path="/tools" element={<ToolsPage />} />
-        <Route path="/tools/classwork" element={<ClassworkPage />} />
-        <Route path="/classwork" element={<ClassworkPage />} />
         <Route path="/policy" element={<PolicyPage />} />
         <Route path="/blog" element={<BlogPage onGetInvolved={() => onOpenAuth('signup')} />} />
         <Route path="/blog/:blogId" element={<BlogPage onGetInvolved={() => onOpenAuth('signup')} />} />
