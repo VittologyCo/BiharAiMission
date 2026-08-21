@@ -16,13 +16,24 @@ export default function AIClasswork() {
   const handleToggleSubpage = () => {
     const nextState = !isSubpageOpen;
     setIsSubpageOpen(nextState);
-    if (nextState) {
-      setTimeout(() => {
-        if (subpageRef.current) {
-          subpageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
+    
+    // Ensure smooth scrolling library recalculates full document height
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      if (window.__lenis) {
+        window.__lenis.resize();
+      }
+      if (nextState && subpageRef.current) {
+        subpageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+      if (window.__lenis) {
+        window.__lenis.resize();
+      }
+    }, 350);
   };
 
   // Download Document (.doc format with all 18 assignments & Trainer's Note)

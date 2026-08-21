@@ -22,6 +22,8 @@ export default function SmoothScroll() {
       infinite: false,
     });
 
+    window.__lenis = lenis;
+
     function raf(time) {
       lenis.raf(time);
       requestAnimationFrame(raf);
@@ -32,9 +34,20 @@ export default function SmoothScroll() {
     // Immediate scroll to top on route change
     lenis.scrollTo(0, { immediate: true });
 
+    // Automatically recalculate scroll height whenever dynamic DOM elements expand/collapse
+    const resizeObserver = new ResizeObserver(() => {
+      lenis.resize();
+    });
+
+    if (document.body) {
+      resizeObserver.observe(document.body);
+    }
+
     return () => {
       cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
       lenis.destroy();
+      delete window.__lenis;
     };
   }, [location.pathname]);
 
