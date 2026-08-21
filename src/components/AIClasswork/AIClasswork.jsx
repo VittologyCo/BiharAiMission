@@ -3,13 +3,13 @@ import { useToast } from '../../context/ToastContext';
 import {
   classworkAssignments,
   trainerNoteData,
-  generateClassworkDoc,
-  generateClassworkText
+  generateClassworkDoc
 } from '../../data/classworkData';
 import styles from './AIClasswork.module.css';
 
 export default function AIClasswork() {
-  const [isSubpageOpen, setIsSubpageOpen] = useState(true);
+  // By default, the assignment subpage is hidden
+  const [isSubpageOpen, setIsSubpageOpen] = useState(false);
   const subpageRef = useRef(null);
   const toast = useToast();
 
@@ -25,7 +25,7 @@ export default function AIClasswork() {
     }
   };
 
-  // Download Word Document (.doc) containing all assignments
+  // Download Document (.doc format with all 18 assignments & Trainer's Note)
   const handleDownloadDoc = () => {
     try {
       const docContent = generateClassworkDoc();
@@ -48,88 +48,6 @@ export default function AIClasswork() {
         toast.error('Download failed. Please try again.');
       }
     }
-  };
-
-  // Download Plain Text (.txt)
-  const handleDownloadText = () => {
-    try {
-      const textContent = generateClassworkText();
-      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'AI_Practical_Classwork_Assignments.txt';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      if (toast) {
-        toast.success('Assignment text file (.txt) downloaded successfully! 📝');
-      }
-    } catch (err) {
-      if (toast) {
-        toast.error('Download failed. Please try again.');
-      }
-    }
-  };
-
-  // Print or Save as PDF
-  const handlePrintPDF = () => {
-    const printWindow = window.open('', '_blank', 'width=900,height=800');
-    if (!printWindow) {
-      if (toast) {
-        toast.warning('Please allow popup windows to print or save PDF.');
-      }
-      return;
-    }
-
-    const printHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>AI Practical Classwork - Bihar AI Mission</title>
-        <style>
-          @page { size: A4; margin: 15mm; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; color: #181512; line-height: 1.5; margin: 0; padding: 12px; }
-          h1 { color: #C1552C; font-size: 20px; border-bottom: 2px solid #C1552C; padding-bottom: 6px; margin-bottom: 14px; }
-          .item { border: 1px solid #E2D7C3; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; page-break-inside: avoid; background: #FAF8F5; }
-          .item-title { font-size: 14px; font-weight: bold; color: #C1552C; margin-bottom: 4px; }
-          .label { font-weight: bold; color: #181512; }
-          ul { margin: 4px 0 6px 18px; padding: 0; font-size: 12px; }
-          p { margin: 3px 0; font-size: 12px; }
-          .note { background: #FFF8EE; border-left: 4px solid #C1552C; padding: 10px; margin-top: 18px; font-size: 11.5px; }
-        </style>
-      </head>
-      <body>
-        <h1>AI Practical Classwork</h1>
-        ${classworkAssignments.map(item => `
-          <div class="item">
-            <div class="item-title">${item.num}. ${item.toolName} — ${item.title}</div>
-            <p><span class="label">Classwork:</span> ${item.classwork}</p>
-            <p><span class="label">Instructions:</span> ${item.instructions}</p>
-            <p><span class="label">Final submission:</span></p>
-            <ul>
-              ${item.finalSubmission.map(sub => `<li>${sub}</li>`).join('')}
-            </ul>
-          </div>
-        `).join('')}
-
-        <div class="note">
-          <p><strong>3. ${trainerNoteData.title}</strong></p>
-          <p>${trainerNoteData.content}</p>
-          <p><em>Source basis: ${trainerNoteData.source}</em></p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(printHtml);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 400);
   };
 
   return (
@@ -174,10 +92,10 @@ export default function AIClasswork() {
         </div>
       </div>
 
-      {/* SUBPAGE VIEW */}
+      {/* SUBPAGE VIEW (HIDDEN BY DEFAULT, TOGGLED BY ASSIGNMENT BUTTON) */}
       {isSubpageOpen && (
         <div className={styles.subpageWrapper} ref={subpageRef}>
-          {/* SUBPAGE TOP TOOLBAR */}
+          {/* SUBPAGE TOP TOOLBAR (ONLY DOWNLOAD DOCS AND CLOSE BUTTON) */}
           <div className={styles.subpageHeader}>
             <h3 className={styles.subpageTitle}>
               AI Practical Classwork Assignments
@@ -191,34 +109,14 @@ export default function AIClasswork() {
                 title="Download Word Document"
               >
                 <span>📄</span>
-                <span>Download .doc</span>
-              </button>
-
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={handlePrintPDF}
-                title="Print or Save PDF"
-              >
-                <span>🖨️</span>
-                <span>Print / PDF</span>
-              </button>
-
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={handleDownloadText}
-                title="Download Plain Text"
-              >
-                <span>📝</span>
-                <span>Text (.txt)</span>
+                <span>Download Docs</span>
               </button>
 
               <button
                 type="button"
                 className={styles.closeBtn}
                 onClick={() => setIsSubpageOpen(false)}
-                title="Collapse classwork view"
+                title="Close classwork view"
               >
                 ✕ Close
               </button>
