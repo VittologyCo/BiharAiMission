@@ -1,17 +1,80 @@
+# ================================================================
+# BIHAR AI MISSION — .htaccess
+# Hostinger / Apache / LiteSpeed compatible
+# Fixes: Agent-friendly 404s, Markdown content negotiation,
+#        SPA routing whitelist, security headers
+# ================================================================
+
+# ─── Security & Performance Headers ────────────────────────────
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # ── Markdown Content Negotiation (Fix 3) ──────────────────────
+  # Serve llms.txt and llms.md as text/markdown with Vary: Accept
+  <FilesMatch "llms\.(txt|md)$">
+    Header always set Content-Type "text/markdown; charset=utf-8"
+    Header always set Vary "Accept, Accept-Encoding"
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Redirect legacy bihar_ai_mission.html to root
+  # ── 1. Legacy redirect ─────────────────────────────────────────
   RewriteRule ^bihar_ai_mission\.html$ / [R=301,L]
 
-  # 2. React Router SPA handling (route all virtual paths to index.html)
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_FILENAME} !-l
-  RewriteRule . /index.html [L]
+  # ── 2. Serve real files and directories directly ────────────────
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # ── 3. Known React Router routes → index.html (HTTP 200) ───────
+  # Root
+  RewriteRule ^$ /index.html [L]
+  # Primary pages
+  RewriteRule ^learning/?$ /index.html [L]
+  RewriteRule ^tools/?$ /index.html [L]
+  RewriteRule ^blog/?$ /index.html [L]
+  RewriteRule ^startups/?$ /index.html [L]
+  RewriteRule ^about/?$ /index.html [L]
+  RewriteRule ^profile/?$ /index.html [L]
+  RewriteRule ^policy/?$ /index.html [L]
+  RewriteRule ^reset-password/?$ /index.html [L]
+  # Dynamic segments
+  RewriteRule ^blog/[^/]+/?$ /index.html [L]
+  RewriteRule ^course/[^/]+/?$ /index.html [L]
+  RewriteRule ^exam/[^/]+/?$ /index.html [L]
+  RewriteRule ^program/[^/]+/?$ /index.html [L]
+  RewriteRule ^experience/?$ /index.html [L]
+  RewriteRule ^experience/[^/]+/?$ /index.html [L]
+  # Admin (still SPA, auth-gated inside the app)
+  RewriteRule ^admin/?$ /index.html [L]
+  RewriteRule ^admin/[^/]+/?$ /index.html [L]
+  RewriteRule ^admin/[^/]+/[^/]+/?$ /index.html [L]
+
+  # ── 4. Everything else → Apache returns 404 naturally ──────────
+  # No catch-all rewrite. Apache will fail to find the file/dir
+  # and will fall through to ErrorDocument 404, which serves
+  # /404.html with a genuine HTTP 404 status.
 </IfModule>
 
-# Set index.html as the primary landing document
+# ─── Custom Error Documents (Fix 1: Agent-friendly 404s) ───────
+ErrorDocument 404 /404.html
+ErrorDocument 410 /404.html
+ErrorDocument 500 /404.html
+
+# ─── Default index ──────────────────────────────────────────────
 DirectoryIndex index.html
+
+# ─── Disable directory listing ─────────────────────────────────
+Options -Indexes
+
+# ─── MIME types ────────────────────────────────────────────────
+<IfModule mod_mime.c>
+  AddType text/markdown .md
+  AddType text/markdown .txt
+  AddType application/manifest+json .webmanifest
+</IfModule>

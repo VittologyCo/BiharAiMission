@@ -105,7 +105,21 @@
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "EducationalOrganization",
+          "@type": ["Organization", "EducationalOrganization"],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "contact@biharaimission.org",
+            "contactType": "customer support",
+            "availableLanguage": ["English", "Hindi"],
+            "areaServed": "IN"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Patna",
+            "addressRegion": "Bihar",
+            "addressCountry": "IN",
+            "postalCode": "800001"
+          },
           "@id": "https://biharaimission.org/#organization",
           "name": "Bihar AI Mission",
           "alternateName": ["बिहार AI मिशन", "Bihar AI", "BAI Mission", "Bihar Artificial Intelligence Mission"],
@@ -292,7 +306,80 @@
     </script>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run Bihar AI Mission — Official AI Training & Certification Platform for Bihar.</noscript>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- STATIC PRE-RENDER CONTENT — Visible to non-JS crawlers  -->
+    <!-- Placed before #root so bots see it before JS executes    -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <noscript>
+      <style>
+        .bam-static{font-family:sans-serif;max-width:900px;margin:0 auto;padding:2rem;color:#1a1a1a;line-height:1.7}
+        .bam-static h1{font-size:2rem;margin-bottom:1rem;color:#1a0a00}
+        .bam-static h2{font-size:1.25rem;margin:1.5rem 0 .5rem;color:#3a2000}
+        .bam-static p{margin-bottom:1rem}
+        .bam-static ul{margin:.5rem 0 1rem 1.5rem}
+        .bam-static a{color:#c07800;text-decoration:underline}
+        .bam-static .cert-badge{background:#fff8e1;border:1px solid #f5c842;border-radius:8px;padding:1rem;margin:1rem 0}
+      </style>
+      <main class="bam-static" role="main">
+        <h1>Bihar AI Mission — Official AI Training &amp; Certification Platform | बिहार AI मिशन</h1>
+        <p>
+          <strong>Bihar AI Mission (बिहार AI मिशन)</strong> is Bihar's official AI literacy and digital certification platform.
+          Empowering Bihar government officers, students, educators, and citizens with structured AI training,
+          verifiable Level 1 digital certificates, governance AI tools, and prompt engineering libraries — all aligned
+          with IndiaAI Mission and Digital India guidelines.
+        </p>
+
+        <div class="cert-badge">
+          <strong>🎓 Get Certified:</strong> Complete the 30-minute AI Fundamentals Masterclass Exam,
+          score ≥75% (23/30), and receive a QR-verifiable BAIM-CERT digital credential.
+          <a href="https://biharaimission.org/exam/ai-fundamentals">Start the exam →</a>
+        </div>
+
+        <h2>Why Bihar AI Mission?</h2>
+        <ul>
+          <li><strong>AI Fundamentals Masterclass Level 1</strong> — foundational AI, ML, and civic AI certification for Bihar officers and citizens</li>
+          <li><strong>Basics of Prompts &amp; AI Tools</strong> — structured prompt design and LLM workflow automation</li>
+          <li><strong>Ethics &amp; Responsible AI Governance</strong> — DPDP compliance, bias prevention, data privacy</li>
+          <li><strong>Advanced Prompt Engineering</strong> — zero-shot, few-shot, chain-of-thought, ReAct patterns</li>
+          <li><strong>AI Orientation for Bihar Officers</strong> — 1-day hands-on workshop for government staff</li>
+          <li><strong>Executive AI Leadership Certification</strong> — 3-day program for IAS, BAS &amp; Heads of Departments</li>
+          <li><strong>District AI Analytics &amp; Grievance Lab</strong> — data-driven governance training for District Officers</li>
+        </ul>
+
+        <h2>Key Features</h2>
+        <ul>
+          <li>50+ prompt templates for public servants, educators, and startups</li>
+          <li>20+ curated governance AI tools (translation, analytics, document processing, code generation)</li>
+          <li>18 practical AI classwork assignments using ChatGPT, Copilot, and Gemini</li>
+          <li>QR-verifiable BAIM-CERT digital credentials — verify at <a href="https://biharaimission.org/learning">biharaimission.org/learning</a></li>
+          <li>Bilingual platform — full English and Hindi (हिंदी) support</li>
+          <li>Real-time certificate verification by Credential ID (format: BAIM-CERT-xxxxxx)</li>
+        </ul>
+
+        <h2>Who Can Join?</h2>
+        <p>
+          Bihar AI Mission is open to all — Bihar government officers, IAS &amp; BAS executives, district collectors,
+          block development officers, students, teachers, researchers, startup founders, and general citizens.
+          Registration is free at <a href="https://biharaimission.org">biharaimission.org</a>.
+        </p>
+
+        <h2>Quick Links</h2>
+        <ul>
+          <li><a href="https://biharaimission.org/">Home</a></li>
+          <li><a href="https://biharaimission.org/learning">Learning Hub &amp; Certificate Verification</a></li>
+          <li><a href="https://biharaimission.org/tools">AI Tools</a></li>
+          <li><a href="https://biharaimission.org/blog">Blog &amp; AI Insights</a></li>
+          <li><a href="https://biharaimission.org/exam/ai-fundamentals">AI Fundamentals Exam</a></li>
+          <li><a href="https://biharaimission.org/exam/basics-of-prompts">Prompt Engineering Exam</a></li>
+          <li><a href="https://biharaimission.org/about">About Bihar AI Mission</a></li>
+        </ul>
+
+        <p>
+          <em>This content is shown only when JavaScript is disabled.
+          Enable JavaScript for the full interactive Bihar AI Mission experience.</em>
+        </p>
+      </main>
+    </noscript>
     <div id="google_translate_element" style="display:none;"></div>
     <div id="root"></div>
     <script type="text/javascript">
