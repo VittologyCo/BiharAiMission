@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Redirect legacy bihar_ai_mission.html to root
+  RewriteRule ^bihar_ai_mission\.html$ / [R=301,L]
+
+  # 2. React Router SPA handling (route all virtual paths to index.html)
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Set index.html as the primary landing document
+DirectoryIndex index.html
