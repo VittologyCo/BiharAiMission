@@ -1,108 +1,162 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Home Page -->
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- HOME PAGE — Priority 1.0                   -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
     <loc>https://biharaimission.org/</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://biharaimission.org/" />
+    <xhtml:link rel="alternate" hreflang="hi-IN" href="https://biharaimission.org/" />
+    <image:image>
+      <image:loc>https://biharaimission.org/bi_logo.png</image:loc>
+      <image:title>Bihar AI Mission — Official AI Training &amp; Certification Platform</image:title>
+      <image:caption>Bihar AI Mission (बिहार AI मिशन) is Bihar's official AI literacy and digital certification platform.</image:caption>
+    </image:image>
   </url>
-  
-  <!-- Learning Hub -->
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LEARNING HUB — Priority 0.97               -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
     <loc>https://biharaimission.org/learning</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.95</priority>
+    <priority>0.97</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://biharaimission.org/learning" />
   </url>
-  
-  <!-- AI Tools -->
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- AI TOOLS — Priority 0.93                   -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
     <loc>https://biharaimission.org/tools</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.93</priority>
+  </url>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- BLOG — Priority 0.90                        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <url>
+    <loc>https://biharaimission.org/blog</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
 
-  <!-- Blog Page -->
-  <url>
-    <loc>https://biharaimission.org/blog</loc>
-    <lastmod>2026-08-03</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.88</priority>
-  </url>
-
-  <!-- Startups Page -->
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- STARTUPS — Priority 0.87                    -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
     <loc>https://biharaimission.org/startups</loc>
-    <lastmod>2026-08-03</lastmod>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.87</priority>
+  </url>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ABOUT — Priority 0.85                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <url>
+    <loc>https://biharaimission.org/about</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- About Page -->
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- EXAM PAGES — HIGH PRIORITY                  -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
-    <loc>https://biharaimission.org/about</loc>
-    <lastmod>2026-08-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
+    <loc>https://biharaimission.org/exam/ai-fundamentals</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.97</priority>
   </url>
 
-  <!-- Course Detail Pages -->
   <url>
-    <loc>https://biharaimission.org/course/ai-fundamentals</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/exam/basics-of-prompts</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.93</priority>
+  </url>
+
+  <url>
+    <loc>https://biharaimission.org/exam/ethics-in-ai</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.92</priority>
   </url>
 
   <url>
-    <loc>https://biharaimission.org/course/basics-of-prompts</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/exam/prompt-generation</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
+    <priority>0.91</priority>
   </url>
 
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COURSE DETAIL PAGES                         -->
+  <!-- ═══════════════════════════════════════════ -->
   <url>
-    <loc>https://biharaimission.org/course/ethics-in-ai</loc>
-    <lastmod>2026-08-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <url>
-    <loc>https://biharaimission.org/course/prompt-generation</loc>
-    <lastmod>2026-08-03</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-
-  <!-- Exam Detail Pages -->
-  <url>
-    <loc>https://biharaimission.org/exam/ai-fundamentals</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/course/ai-fundamentals</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <url>
-    <loc>https://biharaimission.org/exam/basics-of-prompts</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/course/basics-of-prompts</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
+    <priority>0.92</priority>
   </url>
 
   <url>
-    <loc>https://biharaimission.org/exam/ethics-in-ai</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/course/ethics-in-ai</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
+    <priority>0.91</priority>
   </url>
 
   <url>
-    <loc>https://biharaimission.org/exam/prompt-generation</loc>
-    <lastmod>2026-08-03</lastmod>
+    <loc>https://biharaimission.org/course/prompt-generation</loc>
+    <lastmod>2026-08-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
+    <priority>0.91</priority>
   </url>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- OFFICER PROGRAMS                            -->
+  <!-- ═══════════════════════════════════════════ -->
+  <url>
+    <loc>https://biharaimission.org/program/default-officer-1</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://biharaimission.org/program/default-officer-2</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.87</priority>
+  </url>
+
+  <url>
+    <loc>https://biharaimission.org/program/default-officer-3</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.86</priority>
+  </url>
+
 </urlset>

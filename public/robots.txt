@@ -1,17 +1,54 @@
 # ================================================================
 # BIHAR AI MISSION — ROBOTS.TXT
-# Optimized for Google, Bing, Perplexity, ChatGPT, Claude & Generative AI
+# Optimized for Google, Bing, Yandex, Perplexity, ChatGPT, Claude,
+# Gemini, Grok & all Generative AI / LLM crawlers
+# Official Platform: https://biharaimission.org
 # ================================================================
 
+# ─── Standard Search Engines ────────────────────────────────────
 User-agent: *
+Allow: /
+Allow: /learning
+Allow: /tools
+Allow: /blog
+Allow: /startups
+Allow: /about
+Allow: /profile
+Allow: /course/
+Allow: /exam/
+Allow: /program/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/dashboard
+Crawl-delay: 5
+
+# ─── Google ─────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Crawl-delay: 2
+
+User-agent: Googlebot-Image
 Allow: /
 Disallow: /admin
 
-# Allow AI Search & LLM Crawlers
+User-agent: Google-Extended
+Allow: /
+
+# ─── Bing ───────────────────────────────────────────────────────
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Crawl-delay: 3
+
+# ─── AI Search & LLM Crawlers (GEO / AEO) ──────────────────────
 User-agent: GPTBot
 Allow: /
 
 User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: ClaudeBot
@@ -20,10 +57,10 @@ Allow: /
 User-agent: Claude-Web
 Allow: /
 
-User-agent: PerplexityBot
+User-agent: anthropic-ai
 Allow: /
 
-User-agent: Google-Extended
+User-agent: PerplexityBot
 Allow: /
 
 User-agent: Bytespider
@@ -32,5 +69,21 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-# Sitemap Location
+User-agent: YouBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: AI2Bot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# ─── Sitemaps ───────────────────────────────────────────────────
 Sitemap: https://biharaimission.org/sitemap.xml
+Sitemap: https://biharaimission.org/sitemap-index.xml

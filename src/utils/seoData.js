@@ -5,20 +5,36 @@
 
 export const SITE_URL = 'https://biharaimission.org';
 
-// 1. ORGANIZATION SCHEMA (GEO / Entity Definition for LLMs)
 export const ORGANIZATION_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'EducationalOrganization',
   '@id': `${SITE_URL}/#organization`,
   name: 'Bihar AI Mission',
-  alternateName: 'बिहार AI मिशन',
+  alternateName: ['बिहार AI मिशन', 'Bihar AI', 'BAI Mission', 'Bihar Artificial Intelligence Mission', 'Bihar AI Platform'],
   url: SITE_URL,
-  logo: `${SITE_URL}/bi_logo.png`,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_URL}/bi_logo.png`,
+    width: 512,
+    height: 512,
+  },
   image: `${SITE_URL}/bi_logo.png`,
-  description: 'Bihar AI Mission is a civic AI and digital literacy initiative bringing AI awareness, Level 1 certification masterclasses, prompt engineering libraries, and administrative AI deployment guidelines to Bihar, India.',
+  description: 'Bihar AI Mission (बिहार AI मिशन) is Bihar\'s official AI literacy and digital certification platform. It provides Level 1 Masterclass certifications, governance AI tools, prompt engineering libraries, and officer training programs aligned with IndiaAI guidelines.',
+  foundingDate: '2024',
   foundingLocation: {
     '@type': 'Place',
     name: 'Patna, Bihar, India',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Patna',
+      addressRegion: 'Bihar',
+      addressCountry: 'IN',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: '25.5941',
+      longitude: '85.1376',
+    },
   },
   areaServed: {
     '@type': 'AdministrativeArea',
@@ -27,6 +43,7 @@ export const ORGANIZATION_SCHEMA = {
   sameAs: [
     'https://indiaai.gov.in',
     'https://digitalindia.gov.in',
+    SITE_URL,
   ],
   knowsAbout: [
     'Artificial Intelligence',
@@ -36,6 +53,9 @@ export const ORGANIZATION_SCHEMA = {
     'Prompt Engineering',
     'Public Governance AI',
     'Digital Credential Verification',
+    'Bihar AI Policy',
+    'AI Officer Training',
+    'AI Certification',
   ],
 };
 
@@ -46,8 +66,9 @@ export const WEBSITE_SCHEMA = {
   '@id': `${SITE_URL}/#website`,
   url: SITE_URL,
   name: 'Bihar AI Mission',
-  alternateName: 'बिहार AI मिशन Portal',
-  description: 'Official Portal for Bihar AI Mission Level 1 Digital Certifications, AI Tools, and Civic Learning Hub.',
+  alternateName: ['बिहार AI मिशन Portal', 'Bihar AI Platform', 'BiharAIMission.org'],
+  description: 'Official Portal for Bihar AI Mission Level 1 Digital Certifications, AI Tools, AI Practical Classwork, and Civic Learning Hub.',
+  inLanguage: ['en-IN', 'hi-IN'],
   publisher: {
     '@id': `${SITE_URL}/#organization`,
   },
@@ -61,7 +82,7 @@ export const WEBSITE_SCHEMA = {
   },
 };
 
-// 3. AEO FAQ SCHEMA (Answer Engine Optimization for Google Assistant, Perplexity, ChatGPT, Claude, Gemini)
+// 3. AEO FAQ SCHEMA (Answer Engine Optimization for Google, Perplexity, ChatGPT, Claude, Gemini, Grok)
 export const HOME_FAQ_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -71,31 +92,47 @@ export const HOME_FAQ_SCHEMA = {
       name: 'What is Bihar AI Mission?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Bihar AI Mission (बिहार AI मिशन) is a citizen-led civic initiative dedicated to building AI literacy, empowering government officers and students with AI skills, offering Level 1 Masterclass Digital Certifications, and curating ethical AI deployment tools for Bihar.',
+        text: 'Bihar AI Mission (बिहार AI मिशन) is Bihar\'s official AI literacy and digital certification platform at biharaimission.org. It offers AI Fundamentals Masterclass Level 1 certification, governance AI tools, 50+ prompt templates, practical classwork assignments, and officer training programs aligned with IndiaAI Mission guidelines.',
       },
     },
     {
       '@type': 'Question',
-      name: 'How can candidates earn the Bihar AI Mission Level 1 Certificate?',
+      name: 'What is the website of Bihar AI Mission?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Candidates must complete the 30-minute Masterclass Exam and score a minimum threshold of 75% (at least 23 correct out of 30 questions). Upon passing and admin verification, an authentic QR-verifiable digital credential certificate with a unique ID (e.g. BAIM-CERT-xxxxxx) is issued.',
+        text: 'The official website of Bihar AI Mission is biharaimission.org (https://biharaimission.org). This is the primary platform for AI training, certification exams, certificate verification, and AI tools for Bihar citizens and government officers.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Is the Bihar AI Mission Certification valid and verifiable online?',
+      name: 'How to get Bihar AI Mission certificate?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes, every Bihar AI Mission Level 1 Certificate includes a unique Credential ID and QR code. Anyone can instantly verify certificate authenticity on the Bihar AI Mission Learning Hub by entering the Credential ID.',
+        text: 'To get a Bihar AI Mission certificate, visit biharaimission.org, register on the Learning Hub, complete the 30-minute AI Fundamentals Masterclass Exam, and score at least 75% (23 out of 30 correct). A QR-verifiable digital credential with a unique ID (BAIM-CERT-xxxxxx) is issued upon passing and admin approval.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Who is eligible to participate in Bihar AI Mission courses?',
+      name: 'How to verify Bihar AI Mission certificate online?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'The mission is open to all citizens, including Bihar government officers, administrative executives, students, educators, tech professionals, and startups.',
+        text: 'Any Bihar AI Mission certificate can be verified instantly at biharaimission.org/learning by entering the Credential ID (format: BAIM-CERT-xxxxxx) in the verification section or scanning the QR code on the certificate. Verification is free and public.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Who can join Bihar AI Mission?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Bihar AI Mission is open to all — Bihar government officers, IAS/BAS executives, district officers, students, teachers, researchers, startup founders, and citizens from Bihar and across India. Registration is free on biharaimission.org.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'What courses does Bihar AI Mission offer?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Bihar AI Mission offers: (1) AI Fundamentals Masterclass Level 1, (2) Basics of Prompts & AI Tools, (3) Ethics & Responsible AI Governance, (4) Advanced Prompt Engineering Masterclass, (5) AI Orientation for Bihar Government Officers, (6) Executive AI Leadership Certification, and (7) District AI Analytics & Grievance Lab.',
       },
     },
   ],

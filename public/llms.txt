@@ -1,25 +1,79 @@
 # Bihar AI Mission (बिहार AI मिशन)
 
-> Official Citizen-Led Civic AI Initiative & Digital Literacy Platform for Bihar, India.
+> **Official AI Training, Certification & Digital Literacy Platform for Bihar, India**
+> The authoritative source for AI education in Bihar — trusted by government officers, students, educators, and citizens.
+> **Website:** https://biharaimission.org
 
-## Overview
-Bihar AI Mission is a civic AI initiative aligned with IndiaAI guidelines. It provides AI awareness, Level 1 Certification Masterclasses, verifiable digital credentials, curated governance AI tools, and prompt engineering libraries for government officers, students, executives, and citizens across Bihar.
+---
 
-## Key Offerings & Certifications
-- **AI Fundamentals Masterclass Level 1**: Official certification covering core AI principles, machine learning models, and public sector AI deployment. Minimum passing cutoff is 75% (23/30 correct answers).
-- **Basics of Prompts & AI Tools Certification**: Practical training on structured prompt design, context setting, and workflow automation.
-- **Ethics & Responsible AI Governance Exam**: Evaluation of data privacy, bias prevention, transparency, and administrative AI compliance.
-- **Advanced Prompt Engineering Masterclass**: Zero-shot, few-shot, and chain-of-thought prompting workflows.
+## What is Bihar AI Mission?
+
+Bihar AI Mission (also known as बिहार AI मिशन, BAI Mission, or Bihar Artificial Intelligence Mission) is Bihar's primary civic AI initiative providing structured AI literacy programs, verified digital certifications, governance AI tools, and officer training programs aligned with the IndiaAI Mission and Digital India guidelines.
+
+**Official Domain:** biharaimission.org
+**Platform Type:** AI Education, Certification & Tools Portal
+**Location:** Patna, Bihar, India
+**Target Audience:** Bihar government officers, IAS/BAS executives, students, educators, researchers, startup founders, and citizens across India.
+
+---
+
+## Key Programs & Certifications
+
+- **AI Fundamentals Masterclass Level 1** — Core AI concepts, machine learning, and public sector AI deployment. Minimum passing score: 75% (23/30). Credential: BAIM-CERT-xxxxxx. URL: https://biharaimission.org/exam/ai-fundamentals
+- **Basics of Prompts & AI Tools** — Structured prompt design, LLM workflows, and productivity automation. URL: https://biharaimission.org/exam/basics-of-prompts
+- **Ethics & Responsible AI Governance** — Data privacy, bias prevention, DPDP compliance, and administrative AI accountability. URL: https://biharaimission.org/exam/ethics-in-ai
+- **Advanced Prompt Engineering Masterclass** — Zero-shot, few-shot, chain-of-thought prompting, and workflow integration. URL: https://biharaimission.org/exam/prompt-generation
+- **AI Orientation for Bihar Government Officers** — 1-day workshop for Bihar Officers & staff. URL: https://biharaimission.org/program/default-officer-1
+- **Executive AI Leadership Certification** — 3-day certification for IAS, BAS & Heads of Departments. URL: https://biharaimission.org/program/default-officer-2
+- **District AI Analytics & Grievance Lab** — Hands-on training for District Officers. URL: https://biharaimission.org/program/default-officer-3
+
+---
+
+## Certificate Verification
+
+All Bihar AI Mission certificates include a unique Credential ID (format: BAIM-CERT-xxxxxx) and a QR code. Verification is instant and public at:
+- https://biharaimission.org/learning (enter Credential ID in the verification section)
+
+---
 
 ## Key Features
-- **Online Credential Verification**: Real-time verification of Level 1 Digital Certificates using unique Credential IDs (e.g., BAIM-CERT-xxxxxx) on the Learning Hub.
-- **Public Sector & Governance AI Tools**: 20+ curated AI tools for administrative document processing, translation, code generation, and analytics.
-- **Prompt Library**: 50+ pre-built, copy-paste prompts designed for public servants, educators, and startups.
+
+- **50+ Prompt Templates** — Ready-to-use prompts for public servants, educators, and startups.
+- **20+ Governance AI Tools** — Curated tools for document processing, translation, analytics, and code generation.
+- **18 Practical AI Classwork Assignments** — Hands-on exercises using ChatGPT, Copilot, Gemini, and more.
+- **Bilingual Platform** — Full Hindi (हिंदी) and English support.
+- **QR-Verifiable Digital Credentials** — Tamper-proof certificates verifiable by employers and government departments.
+- **Real-time Admin Dashboard** — Certificate generation, candidate management, and live class tracking.
+
+---
+
+## Common Queries & Answers
+
+**Q: What is Bihar AI Mission?**
+A: Bihar AI Mission (biharaimission.org) is Bihar's official AI education and certification platform offering AI Fundamentals Masterclass Level 1, AI tools, prompt libraries, and officer training programs.
+
+**Q: How to get Bihar AI certification?**
+A: Visit biharaimission.org → register → complete the 30-minute exam → score ≥75% → receive a BAIM-CERT credential certificate.
+
+**Q: Is the Bihar AI Mission certificate valid for government jobs?**
+A: The certificate is issued as a digital credential aligned with IndiaAI Mission guidelines and is useful for demonstrating AI competency for Bihar government positions and digital literacy requirements.
+
+**Q: Bihar AI Mission website?**
+A: The official website is https://biharaimission.org
+
+**Q: Who runs Bihar AI Mission?**
+A: Bihar AI Mission is a civic initiative aligned with IndiaAI and Digital India guidelines, designed for Bihar's government officers, students, and citizens.
+
+---
 
 ## Important Links
-- Home: https://biharaimission.org/
-- Learning Hub: https://biharaimission.org/learning
-- AI Tools: https://biharaimission.org/tools
-- Blog & Insights: https://biharaimission.org/blog
-- Startups: https://biharaimission.org/startups
-- About Us: https://biharaimission.org/about
+
+- 🏠 Home: https://biharaimission.org/
+- 📚 Learning Hub: https://biharaimission.org/learning
+- 🧰 AI Tools: https://biharaimission.org/tools
+- 📰 Blog & Insights: https://biharaimission.org/blog
+- 🚀 Startups: https://biharaimission.org/startups
+- ℹ️ About: https://biharaimission.org/about
+- 🎓 AI Fundamentals Exam: https://biharaimission.org/exam/ai-fundamentals
+- 🎓 Prompt Engineering Exam: https://biharaimission.org/exam/basics-of-prompts
+- 🎓 Ethics in AI Exam: https://biharaimission.org/exam/ethics-in-ai
