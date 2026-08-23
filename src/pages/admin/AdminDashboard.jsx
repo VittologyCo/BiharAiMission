@@ -1331,28 +1331,61 @@ const AdminDashboard = () => {
           return (
             <div
               style={{
-                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                background: 'linear-gradient(135deg, #181512 0%, #26211C 100%)',
                 color: '#FFFFFF',
-                borderRadius: '32px',
+                borderRadius: '16px',
                 padding: '18px 24px',
                 marginBottom: '24px',
-                boxShadow: '0 10px 30px rgba(24, 21, 18, 0.2)',
+                boxShadow: '0 12px 36px -4px rgba(0, 0, 0, 0.4), 0 0 24px rgba(217, 119, 6, 0.15)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: '16px',
-                border: '2px solid #000000'
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                position: 'relative'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
-                <div style={{ fontSize: '28px' }}>🔔</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '12px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px',
+                    flexShrink: 0,
+                    boxShadow: '0 0 16px rgba(245, 158, 11, 0.2)'
+                  }}
+                >
+                  🔔
+                </div>
                 <div>
-                  <h4 style={{ margin: '0 0 4px', fontSize: '15.5px', fontWeight: '900', color: '#111827' }}>
-                    Candidate Certification Alert — Action Required!
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(17, 24, 39, 0.06)', lineHeight: '1.4' }}>
-                    <strong>{pendingAlerts.length} candidate(s)</strong> have recently passed the certification exam for <strong>{courseTitle}</strong>. Please generate their credentials to unlock certificates on their dashboard.
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
+                      Candidate Certification Alert
+                    </h4>
+                    <span
+                      style={{
+                        background: '#FEF3C7',
+                        color: '#92400E',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.6px'
+                      }}
+                    >
+                      Action Required
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '13.5px', color: '#D1D5DB', lineHeight: '1.5' }}>
+                    <strong style={{ color: '#FDE68A' }}>{pendingAlerts.length} candidate(s)</strong> have recently passed the certification exam for <strong style={{ color: '#FFFFFF' }}>{courseTitle}</strong>. Please generate their credentials to unlock certificates on their dashboard.
                   </p>
                 </div>
               </div>
@@ -1364,35 +1397,50 @@ const AdminDashboard = () => {
                     setCertSelectedMasterclass(String(firstPending.masterclassId || firstPending.examId || 'ALL'));
                   }}
                   style={{
-                    background: '#000000',
+                    background: 'linear-gradient(135deg, #C1552C 0%, #E06738 100%)',
                     color: '#FFFFFF',
-                    border: 'none',
-                    padding: '10px 18px',
-                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    padding: '11px 20px',
+                    borderRadius: '10px',
                     fontWeight: '800',
-                    fontSize: '13px',
+                    fontSize: '13.5px',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(193, 85, 44, 0.3)'
+                    boxShadow: '0 4px 16px rgba(193, 85, 44, 0.4)',
+                    transition: 'all 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
-                  🎓 View Results & Generate Certificates →
+                  <span>🎓</span>
+                  <span>View Results & Generate Certificates →</span>
                 </button>
                 <button
                   onClick={() => setAlertDismissed(true)}
                   title="Close Alert Notification"
+                  aria-label="Close Alert Notification"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    color: '#FFFFFF',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    fontWeight: '900',
-                    fontSize: '14px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    color: '#9CA3AF',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '15px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#9CA3AF';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                   }}
                 >
                   ✕
