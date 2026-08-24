@@ -197,16 +197,16 @@ export default function StartupsHub({ onOpenRegistration, onOpenContact }) {
 
         {/* HERO SECTION */}
         <section className={styles.heroSection}>
-          <div className={styles.badge}>
-            <span className={styles.badgePulse} />
-            {isHi ? 'बिहार AI स्टार्टअप एवं नवाचार हब' : 'BIHAR AI STARTUP & INNOVATION HUB'}
+          <div className={styles.eyebrow}>
+            <span className={styles.sparkle}>✦</span>
+            <span>{isHi ? 'बिहार AI स्टार्टअप एवं नवाचार हब' : 'BIHAR AI STARTUP & INNOVATION HUB'}</span>
           </div>
 
           <h1 className={styles.heroTitle}>
             {isHi ? (
-              <>बिहार में <span className={styles.heroTitleGradient}>AI स्टार्टअप्स और डीप-टेक नवाचार</span> को नई गति</>
+              <>बिहार में <span className={styles.highlightText}>AI स्टार्टअप्स और डीप-टेक नवाचार</span> को नई गति</>
             ) : (
-              <>Catalyzing <span className={styles.heroTitleGradient}>AI Startups & Deep-Tech Ventures</span> Across Bihar</>
+              <>Catalyzing <span className={styles.highlightText}>AI Startups & Deep-Tech Ventures</span> Across Bihar</>
             )}
           </h1>
 
