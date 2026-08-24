@@ -113,8 +113,7 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
               <span className="nav-lock-badge" title="Under Construction">🔒</span>
             </Link>
             <Link to="/about" className={isActive('/about') ? 'act' : ''} onClick={handleNavClick}>
-              <span>{t.navAbout || 'About'}</span>
-              <span className="nav-lock-badge" title="Under Construction">🔒</span>
+              {t.navAbout || 'About'}
             </Link>
 
             <div className="mobile-nav-actions">

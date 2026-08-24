@@ -45,7 +45,7 @@ export default function ContactUsModal({ isOpen, onClose }) {
       created_at: new Date().toISOString(),
     };
 
-    // 1. Submit to Supabase user_details table
+    // 1. Upsert to Supabase user_details table (handles duplicate emails gracefully)
     try {
       if (supabase) {
         const payload = {
@@ -53,19 +53,27 @@ export default function ContactUsModal({ isOpen, onClose }) {
           email: email.trim().toLowerCase(),
           mobile: 'N/A',
           role_type: 'Contact Inquiry',
-          district: null,
+          district: 'Bihar', // Required default — prevents NOT NULL constraint errors
           intent: 'Website Contact Inquiry',
           contribution: description.trim(),
           interests: [description.trim()],
-          created_at: new Date().toISOString(),
         };
-        const { error: insertErr } = await supabase.from('user_details').insert([payload]);
-        if (insertErr) {
-          console.warn('user_details contact insert warning:', insertErr);
+        const { error: upsertErr } = await supabase
+          .from('user_details')
+          .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
+        if (upsertErr && upsertErr.code !== '23505') {
+          // Only surface non-duplicate errors to user
+          console.error('user_details contact upsert error:', upsertErr);
+          toast.error(isHi
+            ? 'संदेश डेटाबेस में सहेजने में विफल। कृपया पुनः प्रयास करें।'
+            : 'Failed to save message to database. Please try again.');
+          setIsSubmitting(false);
+          return;
         }
       }
     } catch (err) {
-      console.warn('Supabase contact insert warning:', err);
+      console.error('Supabase contact upsert exception:', err);
+      // Non-fatal: proceed with email sending even if DB write fails
     }
 
     // 2. Save to local storage cache

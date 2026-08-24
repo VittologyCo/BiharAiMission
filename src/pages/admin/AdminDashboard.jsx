@@ -388,6 +388,14 @@ const AdminDashboard = () => {
         }
       }
     } catch (e) {}
+
+    // Sync blogs from Supabase into local state and localStorage cache
+    try {
+      const remoteBlogs = await fetchBlogsFromSupabase();
+      if (Array.isArray(remoteBlogs)) {
+        setBlogs(remoteBlogs);
+      }
+    } catch (e) {}
   };
 
   const handleSeedProgramsToSupabase = async () => {

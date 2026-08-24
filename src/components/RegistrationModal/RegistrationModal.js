@@ -184,9 +184,11 @@ export default function RegistrationModal({ isOpen, onClose }) {
         portfolio: form.portfolio.trim() || null
       };
 
-      const { error } = await supabase.from('user_details').insert([payload]);
+      const { error } = await supabase
+        .from('user_details')
+        .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
       if (error) {
-        console.error('Supabase insert error:', error);
+        console.error('Supabase upsert error:', error);
         if (error.code === '23505') {
           toast?.warning(isHi ? 'यह ईमेल या मोबाइल पहले से पंजीकृत है।' : 'This email or mobile is already registered.');
         } else {

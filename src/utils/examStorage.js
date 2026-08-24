@@ -657,6 +657,85 @@ export const verifyCertificate = (credentialId) => {
   };
 };
 
+/**
+ * Async version that checks Supabase first, then falls back to localStorage.
+ * Use this for the public certificate verification page to support incognito / cross-device verification.
+ */
+export const verifyCertificateFromSupabase = async (credentialId) => {
+  if (!credentialId || !credentialId.trim()) {
+    return { status: 'EMPTY' };
+  }
+
+  const cleanId = credentialId.trim().toUpperCase();
+
+  // 1. Try Supabase first (source of truth)
+  try {
+    if (supabase) {
+      const [mcRes, offRes] = await Promise.all([
+        supabase
+          .from('masterclass_exam_submissions')
+          .select('*')
+          .or(`credential_id.eq.${cleanId},id.eq.${cleanId}`)
+          .maybeSingle(),
+        supabase
+          .from('officer_program_exam_submissions')
+          .select('*')
+          .or(`credential_id.eq.${cleanId},id.eq.${cleanId}`)
+          .maybeSingle()
+      ]);
+
+      const row = (mcRes.data && !mcRes.error) ? mcRes.data : ((offRes.data && !offRes.error) ? offRes.data : null);
+
+      if (row) {
+        const resolvedTitle = getCleanCourseTitle(
+          row.masterclass_title || row.program_title || row.exam_id,
+          row.exam_id,
+          row.masterclass_id || row.program_id
+        );
+        const submission = {
+          id: row.id || row.credential_id,
+          credentialId: row.credential_id || row.id,
+          candidateName: row.candidate_name,
+          candidateEmail: row.candidate_email,
+          candidateDesignation: row.candidate_designation || 'Government Officer',
+          examTitle: resolvedTitle,
+          masterclassTitle: resolvedTitle,
+          score: Number(row.score || 0),
+          total: Number(row.total || 30),
+          percentage: Number(row.percentage || 0),
+          status: row.status || (row.is_approved ? 'APPROVED' : 'PASSED'),
+          isPassed: row.is_passed !== false,
+          isApproved: Boolean(row.is_approved === true || row.status === 'APPROVED'),
+          isViolated: !!row.is_violated,
+          submittedAt: row.submitted_at,
+        };
+
+        if (!submission.isApproved) {
+          return {
+            status: 'PENDING',
+            isValid: false,
+            message: 'Certificate is under Admin review and not yet published by Administrator.',
+            data: submission,
+          };
+        }
+
+        return {
+          status: 'REAL',
+          isValid: true,
+          message: 'Official Verified Bihar AI Mission Certificate',
+          data: submission,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase certificate verification error:', err);
+  }
+
+  // 2. Fall back to localStorage
+  const localResult = verifyCertificate(credentialId);
+  return localResult;
+};
+
 export const markCertificateAsDownloaded = (credentialId) => {
   const current = getExamSubmissions();
   const updated = current.map((s) => {

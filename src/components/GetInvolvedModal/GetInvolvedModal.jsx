@@ -149,15 +149,42 @@ const GetInvolvedModal = ({ isOpen, onClose }) => {
           console.warn('LocalStorage save error:', lsErr);
         }
 
-        const dbRecord = { ...record };
-        delete dbRecord.id;
+        // Upsert on email — handles both new registrations and returning users
+        const dbRecord = {
+          full_name: record.full_name,
+          email: record.email,
+          mobile: record.mobile,
+          gender: record.gender,
+          age: record.age,
+          role_type: record.role_type,
+          designation: record.designation,
+          department: record.department,
+          organization: record.organization,
+          experience: record.experience,
+          state: record.state || 'Bihar',
+          district: record.district || 'Bihar',
+          block_city: record.block_city,
+          interests: record.interests,
+          intent: record.intent,
+          contribution: record.contribution,
+          linkedin: record.linkedin,
+          portfolio: record.portfolio,
+        };
 
-        const { error: insertErr } = await supabase.from('user_details').insert([dbRecord]);
-        if (insertErr) {
-          console.error('user_details insert error:', insertErr);
-          setSubmitError(insertErr.message || 'Failed to submit application to database.');
-          setIsSubmitting(false);
-          return;
+        const { error: upsertErr } = await supabase
+          .from('user_details')
+          .upsert([dbRecord], { onConflict: 'email', ignoreDuplicates: false });
+
+        if (upsertErr) {
+          if (upsertErr.code === '23505') {
+            // Duplicate — treat as successful update, not an error
+            console.info('Existing record updated for:', record.email);
+          } else {
+            console.error('user_details upsert error:', upsertErr);
+            setSubmitError(upsertErr.message || 'Failed to submit application to database.');
+            setIsSubmitting(false);
+            return;
+          }
         }
         
         setIsSubmitted(true);

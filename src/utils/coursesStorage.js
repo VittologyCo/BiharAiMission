@@ -1720,7 +1720,7 @@ export const getUserCourseProgress = (userEmailOrId, courseId) => {
   return { completedModules: [], progressPercent: 0, isCompleted: false };
 };
 
-export const setUserModuleComplete = (userEmailOrId, courseId, moduleIndex, totalModules = 6) => {
+export const setUserModuleComplete = async (userEmailOrId, courseId, moduleIndex, totalModules = 6) => {
   if (!userEmailOrId || !courseId) return { completedModules: [], progressPercent: 0, isCompleted: false };
   const cleanUser = String(userEmailOrId).toLowerCase().trim();
   const cleanCourse = String(courseId).trim();
@@ -1741,7 +1741,62 @@ export const setUserModuleComplete = (userEmailOrId, courseId, moduleIndex, tota
     window.dispatchEvent(new Event('bihar_ai_progress_updated'));
   } catch (e) {}
 
+  // Write-through to Supabase for cross-device sync
+  try {
+    if (supabase) {
+      const progressId = `prog_${cleanUser}_${cleanCourse}`.replace(/[^a-z0-9_]/g, '_');
+      await supabase.from('user_course_progress').upsert([
+        {
+          id: progressId,
+          user_email: cleanUser,
+          course_id: cleanCourse,
+          completed_modules: completedModules,
+          progress_percent: progressPercent,
+          is_completed: isCompleted,
+          updated_at: data.updatedAt
+        }
+      ], { onConflict: 'id', ignoreDuplicates: false });
+    }
+  } catch (e) {
+    // Non-fatal: local progress is already saved
+    console.warn('Supabase progress sync warning:', e);
+  }
+
   return data;
+};
+
+export const getUserCourseProgressFromSupabase = async (userEmailOrId, courseId) => {
+  if (!userEmailOrId || !courseId) return null;
+  const cleanUser = String(userEmailOrId).toLowerCase().trim();
+  const cleanCourse = String(courseId).trim();
+  try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .eq('user_email', cleanUser)
+        .eq('course_id', cleanCourse)
+        .maybeSingle();
+      if (!error && data) {
+        const progress = {
+          completedModules: Array.isArray(data.completed_modules) ? data.completed_modules : [],
+          progressPercent: typeof data.progress_percent === 'number' ? data.progress_percent : 0,
+          isCompleted: Boolean(data.is_completed)
+        };
+        // Hydrate local cache with remote data
+        try {
+          localStorage.setItem(`bihar_ai_progress_${cleanUser}_${cleanCourse}`, JSON.stringify({
+            ...progress,
+            updatedAt: data.updated_at
+          }));
+        } catch (e) {}
+        return progress;
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase get progress error:', err);
+  }
+  return getUserCourseProgress(userEmailOrId, courseId);
 };
 
 export const getUserExamAttemptsCount = (userEmailOrId, courseId) => {
@@ -1899,6 +1954,27 @@ export const fetchAllOfficerProgramEnrollmentsFromSupabase = async () => {
 };
 
 export const fetchAllOfficerProgramProgressFromSupabase = async () => {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('user_course_progress')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return data.map(row => ({
+          id: row.id,
+          userEmail: row.user_email,
+          courseId: row.course_id,
+          completedModules: Array.isArray(row.completed_modules) ? row.completed_modules : [],
+          progressPercent: typeof row.progress_percent === 'number' ? row.progress_percent : 0,
+          isCompleted: Boolean(row.is_completed),
+          updatedAt: row.updated_at
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase fetch officer program progress error:', err);
+  }
   return [];
 };
 

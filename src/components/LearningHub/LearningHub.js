@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import { getCoursesFromStorage, getLiveClassesFromStorage, fetchCoursesFromSupabase, fetchLiveClassesFromSupabase, calculateTimeLeft, getTagColorClass, saveMasterclassEnrollmentToSupabase, fetchUserMasterclassEnrollmentsFromSupabase, getSessionEndedStatus, calculate24hExpirationTimeLeft } from '../../utils/coursesStorage';
-import { verifyCertificate, getCleanCandidateName, getCleanCourseTitle } from '../../utils/examStorage';
+import { verifyCertificate, verifyCertificateFromSupabase, getCleanCandidateName, getCleanCourseTitle } from '../../utils/examStorage';
 import { supabase } from '../../utils/supabase';
 import PhonePePaymentModal from '../PhonePePaymentModal/PhonePePaymentModal';
 import { savePaymentRecordToSupabase } from '../../utils/phonepePayment';
@@ -532,52 +532,8 @@ export default function LearningHub({ onOpenAuth }) {
     setIsScanning(true);
     setVerificationResult(null);
 
-    // 1. Check local storage first
-    let result = verifyCertificate(cleanId);
-
-    // 2. Query Supabase exam_submissions table
-    try {
-      if (supabase && (!result || result.status === 'FAKE')) {
-        let { data } = await supabase
-          .from('masterclass_exam_submissions')
-          .select('*')
-          .or(`credential_id.ilike.${cleanId},id.ilike.${cleanId}`)
-          .single();
-
-        if (!data) {
-          const res = await supabase
-            .from('officer_program_exam_submissions')
-            .select('*')
-            .or(`credential_id.ilike.${cleanId},id.ilike.${cleanId}`)
-            .maybeSingle();
-          data = res.data;
-        }
-
-        if (data) {
-          const isAppr = data.is_approved !== false;
-          result = {
-            status: isAppr ? 'REAL' : 'PENDING',
-            isValid: isAppr,
-            message: isAppr ? 'Official Verified Bihar AI Mission Certificate' : 'Certificate is pending Admin approval.',
-            data: {
-              credentialId: data.credential_id || data.id,
-              candidateName: data.candidate_name,
-              candidateEmail: data.candidate_email,
-              candidateDesignation: data.candidate_designation || 'Learner',
-              examTitle: data.masterclass_title || data.exam_title || 'AI Certification Exam',
-              score: data.score,
-              total: data.total || 30,
-              percentage: data.percentage || 100,
-              issueDate: data.submitted_at ? new Date(data.submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Official Record',
-              isApproved: isAppr,
-            }
-          };
-        }
-      }
-    } catch (e) {
-      console.warn('Supabase verify query error:', e);
-    }
-
+    // Use centralized Supabase-first verification (falls back to localStorage)
+    const result = await verifyCertificateFromSupabase(cleanId);
     setIsScanning(false);
     if (result && (result.isValid || result.status === 'REAL')) {
       toast.success(isHi ? 'प्रमाणपत्र सफलतापूर्वक सत्यापित हुआ! ✓' : 'Certificate Verified Successfully! ✓');

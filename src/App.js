@@ -67,7 +67,7 @@ const AppLayout = ({
         <Route path="/blog" element={<BlogPage onGetInvolved={() => onOpenAuth('signup')} />} />
         <Route path="/blog/:blogId" element={<BlogPage onGetInvolved={() => onOpenAuth('signup')} />} />
         <Route path="/startups" element={<StartupsPage />} />
-        <Route path="/about" element={<AboutPage />} />
+        <Route path="/about" element={<AboutPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/profile" element={<UserProfilePage onOpenAuth={onOpenAuth} />} />
         <Route path="/course/:id" element={<LearningPage />} />
