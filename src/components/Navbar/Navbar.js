@@ -109,8 +109,7 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
               <span className="nav-lock-badge" title="Under Construction">🔒</span>
             </Link>
             <Link to="/startups" className={isActive('/startups') ? 'act' : ''} onClick={handleNavClick}>
-              <span>{t.navStartups || 'Startups'}</span>
-              <span className="nav-lock-badge" title="Under Construction">🔒</span>
+              {t.navStartups || 'Startups'}
             </Link>
             <Link to="/about" className={isActive('/about') ? 'act' : ''} onClick={handleNavClick}>
               {t.navAbout || 'About'}
