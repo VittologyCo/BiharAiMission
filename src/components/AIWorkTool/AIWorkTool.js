@@ -4,10 +4,14 @@ import { useLanguage } from '../../hooks/useLanguage';
 // PNG logo links for tools with fallback handling
 const toolLogosMap = {
   chatgpt: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnEfixTQrlWAHByiT_aavdjG8YqiIYX5Jm8-6-8nJNmA&s=10',
+  duckai: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFTk57Cdso9HE-k300t2yIHaccKcusaMZrquMcbeOXcQ&s',
+  tinywow: 'https://tinywow.com/v3/img/favicon-tinywow.svg',
   gemini: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmttyTwI_BjoTXsENAYN2H2U6-mQFi-qxIQqxKtGuUTA&s=10',
   grok: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOTADnEdZO4sDZ3YUmXl9RgPhvZ2qnLXirYpaifUI3PA&s=10',
   claude: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSdYUhFCwcxZ7plZa4wM8HyRG0d-9PM4UkSZBXF7oq2Ig&s=10',
   perplexity: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToYZfGYvwucm3CfgFnR8IX5jGOT749-IhVOdcBSIj78A&s=10',
+  phind: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuAvBhd1Jdyq8hTasLYApUqEUPLNa8yxgPtFAdHFyJUg&s=10',
+  semanticscholar: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkBokLMoWM2KvY0J8jUv9nl1cMDgcHUgm4fqbKZGLuUA&s=10',
   bhashini: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvWC3ZceN1m6bsASN_qx-N6-2SnZ46ZIWJyxZxqt7JYA&s=10',
   deepseek: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsY5L15fe9Tgn-fbKPCea2dq7HXOrsJ9toaaYwS5702w&s=10',
   v0: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSdhfR045d5uZPEZGQXQfFyuJJXwDIgnKDMWC-7uQQUQ&s=10',
@@ -18,22 +22,36 @@ const toolLogosMap = {
   runway: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrYBLeNQqstOPAUmfODVcRod7ufpcQZCQOk86QruniRQ&s=10',
   notebooklm: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSx96LMtnSKKjA2eq2EyF1QG0tnuUNjaG9OvozyzIT_tw&s=10',
   chatpdf: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdIz4blrfz1ZZva-EtEI6jgBvl21upRdpQe2M4OLhh9w&s',
+  sejda: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSdiM727lFwaeOpKBKvfmgGqX10NQqYe8dwsnykVtUVcg&s',
   google_translate: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRW71o-goA1m0moLqCfax1l_RKecCw8c-o1CAK_W8jQFQ&s=10',
   gamma: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSE6rxPNpKdBaQShxo3Ex6_7pl0IBjv-kbkov7j7UZLg&s=10',
   copilot: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8k--GqaHMjgP6d90W_bE71tqLebdKPTF3-H9Ir4V1rA&s=10',
   leonardo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcREH5yQMIjN667sXfdlTQjvPo2YMy_XUN2Nqk_X_tyiJg&s=10',
   deepl: 'https://www.deepl.com/img/logo/deepl-logo-blue.svg',
+  reverso: 'https://www.reverso.net/resources/3.5.0/assets/svg/logo.svg',
+  nllb: 'https://huggingface.co/front/assets/huggingface_logo.svg',
+  slidesgpt: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVlcjZlAbHwH5KFDjxV9bdzB-oSM3HLhd4STKwH3K1KQ&s',
+  excalidraw: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeSv2e76cuvzowoQZKIQb6_9H1VnVHHpjCKaIg9ZMOgg&s=10',
+  edrawmax: 'https://images.edrawmax.com/images2024/nav/logo-edrawmax.svg',
+  renderforest: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHx1IDVlTQHWoaTJGuWelMfHn3fhjei7ebtM6zajInDQ&s=10',
+  kleap: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSco6PJYye2nvbK2RLADMr2qf4pASufTAniwF4RnbHOFw&s',
+  design_ai: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR--wvGfmZiZQxk0WfnigHSBuZYzJ-s-TEpPa5BnJ0n7Q&s=10',
   elicit: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDFHl4vR2gL1q4KY2ESSUPtRncD1BmAm__YmFGHl5Ptw&s=10',
   humata: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyfRcta8B2Jj2MBX8KnfqC-MbaR_tgr6OMQ6VrnD3MjQ&s=10',
   lightpdf: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRUqWvEteekPJkKZIE-L5aj3Pscbn2ln2QwhmDyuZ_jkg&s',
   lingva: 'https://lingva.ml/banner_dark.svg',
   beautiful_ai: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0c71PE40vNbPI73i_-W9NwxoavAYQeez0bv0ZkNc4pA&s=10',
   cursor: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfi1YZSuHcrxXuo3-AWLVWmp_hLwfhs9fU_gRsWrM5OQ&s=10',
-  firefly: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlWe7SD6VVzCFGaRUmungPH4diaT0asLB1iKhvAIMMPg&s=10',
+  firefly: 'https://firefly.adobe.com/spl-static/97db367fbd2adc5c.svg',
+  craiyon: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTlZ-XFyAs7cmwczom8EznONIrD1bmn_7Ld3SSoy51ErA&s=10',
+  template_ai: 'https://www.template.net/assets/icons/new-logo.svg',
   microsoft_designer: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2w06Uiux0ugSAZj2G4fgntN1M_0a-O9BZxIpzl-XDXg&s=10',
   bolt: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzdZquT0Xc7ZC9w9nYQs9fThhKDmmvCt12EXVI2DygFA&s=10',
   lovable: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTloy9QxP6QQmAdxS5zazYm9vMrQeC1a7khySGMubtF5w&s=10',
   google_aistudio: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSATV-HWJ-gytrEAW0sv43GRKZxIdMoQx1c23vXK71QcQ&s',
+  openaifm: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRbvwjAe-sdpeUWo82FvjYW_qmvYk0oCCFz0ce2dg_u8w&s=10',
+  remusic: 'https://cdn.remusic.ai/remusic/static/logo/remusic-logo-text.png',
+  poppop: 'https://poppop.ai/wp-content/uploads/2024/07/poppop-logo-2-300x66.png',
   suno: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtf510lHyF2phe6SRLfUEB636XtkY0t-uRlZyni5Kjtw&s=10',
   hailuo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCQFo_dEiMysh2Xql6MXfQrwNTNo7xfsVO4SO2aNlmdw&s=10'
 };
@@ -112,8 +130,8 @@ const everydayCategoriesEn = [
     tags: ['Writing', 'Letters', 'Summaries'],
     tools: [
       { name: 'ChatGPT (Free)', logo: toolLogosMap.chatgpt, use: 'Bilingual writing & SOPs', url: 'https://chatgpt.com/' },
-      { name: 'Google Gemini (Free)', logo: toolLogosMap.gemini, use: 'Official letters & reports', url: 'https://gemini.google.com/app' },
-      { name: 'Claude (Free)', logo: toolLogosMap.claude, use: 'Long legal & paper analysis', url: 'https://claude.ai/new' }
+      { name: 'Duck.ai', logo: toolLogosMap.duckai, use: 'Anonymous AI writing (Claude & GPT)', url: 'https://duck.ai' },
+      { name: 'TinyWow AI Writer', logo: toolLogosMap.tinywow, use: 'Free essay, outline & rewriting', url: 'https://tinywow.com/tools/write' }
     ]
   },
   {
@@ -124,8 +142,8 @@ const everydayCategoriesEn = [
     tags: ['Web Search', 'Fact-Check', 'Policy'],
     tools: [
       { name: 'Perplexity AI', logo: toolLogosMap.perplexity, use: 'Live web search with citations', url: 'https://www.perplexity.ai/' },
-      { name: 'NotebookLM', logo: toolLogosMap.notebooklm, use: 'Personal AI research notebook', url: 'https://notebooklm.google.com/' },
-      { name: 'Elicit', logo: toolLogosMap.elicit, use: 'Research paper analysis & insights', url: 'https://elicit.com/' }
+      { name: 'Phind AI', logo: toolLogosMap.phind, use: 'Technical & deep research search', url: 'https://phindai.org/' },
+      { name: 'Semantic Scholar', logo: toolLogosMap.semanticscholar, use: '200M+ papers with AI summaries', url: 'https://www.semanticscholar.org/' }
     ]
   },
   {
@@ -136,8 +154,8 @@ const everydayCategoriesEn = [
     tags: ['PDF Chat', 'Data Extraction', 'Research'],
     tools: [
       { name: 'ChatPDF', logo: toolLogosMap.chatpdf, use: 'Chat directly with any PDF file', url: 'https://www.chatpdf.com/' },
-      { name: 'Humata AI', logo: toolLogosMap.humata, use: 'Instant Q&A from long files', url: 'https://www.humata.ai/' },
-      { name: 'LightPDF AI', logo: toolLogosMap.lightpdf, use: 'AI PDF converter & summarize', url: 'https://lightpdf.com/' }
+      { name: 'TinyWow PDF AI', logo: toolLogosMap.tinywow, use: 'Free PDF summarize, OCR & edit', url: 'https://tinywow.com/tools/pdf' },
+      { name: 'Sejda Web PDF', logo: toolLogosMap.sejda, use: 'In-browser PDF editor & convert', url: 'https://www.sejda.com/' }
     ]
   },
   {
@@ -148,8 +166,8 @@ const everydayCategoriesEn = [
     tags: ['Vernacular', 'Indic NLP', 'Government'],
     tools: [
       { name: 'DeepL Translator', logo: toolLogosMap.deepl, use: 'Accurate contextual AI translation', url: 'https://www.deepl.com/translator' },
-      { name: 'Google Translate', logo: toolLogosMap.google_translate, use: 'Instant multilingual text & voice', url: 'https://translate.google.com/' },
-      { name: 'Lingva Translate', logo: toolLogosMap.lingva, use: 'Privacy-focused open translation', url: 'https://lingva.ml/' }
+      { name: 'Reverso Context', logo: toolLogosMap.reverso, use: 'AI context & sentence examples', url: 'https://www.reverso.net/text-translation' },
+      { name: 'NLLB-200 (Meta / UNESCO)', logo: toolLogosMap.nllb, use: 'Open 200+ language translation', url: 'https://huggingface.co/spaces/UNESCO/nllb' }
     ]
   },
   {
@@ -159,21 +177,21 @@ const everydayCategoriesEn = [
     desc: 'Generate complete presentation slides, deck outlines, and infographics automatically.',
     tags: ['PPT Decks', 'Slides', 'Infographics'],
     tools: [
-      { name: 'Gamma', logo: toolLogosMap.gamma, use: 'AI presentation decks & webpages', url: 'https://gamma.app/' },
-      { name: 'Canva AI', logo: toolLogosMap.canva, use: 'Posters & social designs', url: 'https://www.canva.com/' },
-      { name: 'Beautiful.ai', logo: toolLogosMap.beautiful_ai, use: 'Smart slide layout automation', url: 'https://www.beautiful.ai/' }
+      { name: 'SlidesGPT', logo: toolLogosMap.slidesgpt, use: '1-click AI PowerPoint slide decks', url: 'https://slidesgpt.com/' },
+      { name: 'Excalidraw AI', logo: toolLogosMap.excalidraw, use: 'Open-source AI text-to-diagrams', url: 'https://excalidraw.com/' },
+      { name: 'EdrawMax AI', logo: toolLogosMap.edrawmax, use: 'Instant AI PPT & diagram maker', url: 'https://www.edrawmax.com/app/ai-ppt/' }
     ]
   },
   {
     id: 'code',
     accentColor: '#374151',
-    title: 'Coding & Development',
-    desc: 'Write code, debug errors, build web apps, and convert logic into working UI.',
-    tags: ['Python', 'React', 'Debugging'],
+    title: 'AI Webpages & Website Builders',
+    desc: 'Generate complete responsive websites, landing pages, and interactive web UIs from prompts instantly.',
+    tags: ['Websites', 'Landing Pages', 'No-Code'],
     tools: [
-      { name: 'Lovable', logo: toolLogosMap.lovable, use: 'Generative web apps from prompts', url: 'https://lovable.dev/' },
-      { name: 'Bolt.new', logo: toolLogosMap.bolt, use: 'In-browser AI web app builder', url: 'https://bolt.new/' },
-      { name: 'Cursor AI', logo: toolLogosMap.cursor, use: 'AI-first code editor & building', url: 'https://www.cursor.com/' }
+      { name: 'Renderforest AI', logo: toolLogosMap.renderforest, use: '1-click AI website builder', url: 'https://www.renderforest.com/ai-website-builder' },
+      { name: 'Kleap AI', logo: toolLogosMap.kleap, use: 'Generative AI mobile & web pages', url: 'https://kleap.co/ai-website-generator' },
+      { name: 'Design.com', logo: toolLogosMap.design_ai, use: 'AI website & brand design suite', url: 'https://www.design.com/' }
     ]
   },
   {
@@ -183,9 +201,9 @@ const everydayCategoriesEn = [
     desc: 'Create posters, digital art, social graphics, and realistic AI images for free.',
     tags: ['Posters', 'Graphics', 'Design'],
     tools: [
-      { name: 'Microsoft Designer', logo: toolLogosMap.microsoft_designer, use: 'Generative graphics & templates', url: 'https://designer.microsoft.com/' },
-      { name: 'Leonardo AI', logo: toolLogosMap.leonardo, use: 'High quality art & realistic images', url: 'https://leonardo.ai/' },
-      { name: 'Adobe Firefly', logo: toolLogosMap.firefly, use: 'Generative AI fill & art studio', url: 'https://firefly.adobe.com/' }
+      { name: 'Adobe Firefly', logo: toolLogosMap.firefly, use: 'Generative AI fill & art studio', url: 'https://firefly.adobe.com/' },
+      { name: 'Craiyon AI', logo: toolLogosMap.craiyon, use: 'Free unlimited text-to-image AI', url: 'https://www.craiyon.com/' },
+      { name: 'Template AI', logo: toolLogosMap.template_ai, use: 'AI graphics, templates & design', url: 'https://www.template.net/ai-design-generator' }
     ]
   },
   {
@@ -195,9 +213,9 @@ const everydayCategoriesEn = [
     desc: 'Convert text to natural human speech, generate music, and synthesize voice audio.',
     tags: ['Voiceovers', 'Speech', 'Audio AI'],
     tools: [
-      { name: 'ElevenLabs', logo: toolLogosMap.elevenlabs, use: 'Realistic human voice synthesis', url: 'https://elevenlabs.io/' },
-      { name: 'Google AI Studio', logo: toolLogosMap.google_aistudio, use: 'Developer voice generation & API', url: 'https://aistudio.google.com/' },
-      { name: 'Suno AI', logo: toolLogosMap.suno, use: 'AI music & song generation from text', url: 'https://suno.com/' }
+      { name: 'OpenAI.fm', logo: toolLogosMap.openaifm, use: 'Interactive voice styles & speech', url: 'https://www.openai.fm/' },
+      { name: 'Remusic AI', logo: toolLogosMap.remusic, use: 'Free AI music & song generator', url: 'https://remusic.ai/ai-music-generator' },
+      { name: 'PopPop AI', logo: toolLogosMap.poppop, use: 'AI sound effects & audio clips', url: 'https://poppop.ai/ai-sound-effect-generator' }
     ]
   },
   {
@@ -223,8 +241,8 @@ const everydayCategoriesHi = [
     tags: ['ड्राफ्टिंग', 'सरकारी पत्र', 'सारांश'],
     tools: [
       { name: 'ChatGPT (Free)', logo: toolLogosMap.chatgpt, use: 'द्विभाषी लेखन एवं ड्राफ्टिंग', url: 'https://chatgpt.com/' },
-      { name: 'Google Gemini (Free)', logo: toolLogosMap.gemini, use: 'आधिकारिक पत्र एवं रिपोर्ट लेखन', url: 'https://gemini.google.com/app' },
-      { name: 'Claude (Free)', logo: toolLogosMap.claude, use: 'लंबे दस्तावेज़ों का गहन विश्लेषण', url: 'https://claude.ai/new' }
+      { name: 'Duck.ai', logo: toolLogosMap.duckai, use: 'गोपनीय AI लेखन (Claude एवं GPT)', url: 'https://duck.ai' },
+      { name: 'TinyWow AI Writer', logo: toolLogosMap.tinywow, use: 'निःशुल्क निबंध एवं पाठ सुधार', url: 'https://tinywow.com/tools/write' }
     ]
   },
   {
@@ -235,8 +253,8 @@ const everydayCategoriesHi = [
     tags: ['वेब खोज', 'तथ्य जांच', 'नियम'],
     tools: [
       { name: 'Perplexity AI', logo: toolLogosMap.perplexity, use: 'स्रोतों के साथ लाइव वेब सर्च', url: 'https://www.perplexity.ai/' },
-      { name: 'NotebookLM', logo: toolLogosMap.notebooklm, use: 'दस्तावेज़ों के लिए व्यक्तिगत AI नोटबुक', url: 'https://notebooklm.google.com/' },
-      { name: 'Elicit', logo: toolLogosMap.elicit, use: 'शोध पत्रों का स्वचालित विश्लेषण', url: 'https://elicit.com/' }
+      { name: 'Phind AI', logo: toolLogosMap.phind, use: 'तकनीकी एवं शोध आधारित सर्च', url: 'https://phindai.org/' },
+      { name: 'Semantic Scholar', logo: toolLogosMap.semanticscholar, use: 'AI सारांश सहित शोध पत्र खोज', url: 'https://www.semanticscholar.org/' }
     ]
   },
   {
@@ -247,8 +265,8 @@ const everydayCategoriesHi = [
     tags: ['पीडीएफ चैट', 'डेटा विश्लेषण', 'नोटबुक'],
     tools: [
       { name: 'ChatPDF', logo: toolLogosMap.chatpdf, use: 'किसी भी पीडीएफ दस्तावेज़ से चैट करें', url: 'https://www.chatpdf.com/' },
-      { name: 'Humata AI', logo: toolLogosMap.humata, use: 'फाइलों से तुरंत उत्तर प्राप्त करें', url: 'https://www.humata.ai/' },
-      { name: 'LightPDF AI', logo: toolLogosMap.lightpdf, use: 'पीडीएफ कन्वर्टर एवं सारांश', url: 'https://lightpdf.com/' }
+      { name: 'TinyWow PDF AI', logo: toolLogosMap.tinywow, use: 'निःशुल्क पीडीएफ सारांश एवं OCR', url: 'https://tinywow.com/tools/pdf' },
+      { name: 'Sejda Web PDF', logo: toolLogosMap.sejda, use: 'ब्राउज़र में PDF संपादन एवं कन्वर्ट', url: 'https://www.sejda.com/' }
     ]
   },
   {
@@ -259,8 +277,8 @@ const everydayCategoriesHi = [
     tags: ['भारतीय भाषा', 'अनुवाद', 'सरकारी'],
     tools: [
       { name: 'DeepL Translator', logo: toolLogosMap.deepl, use: 'सटीक एवं संदर्भ-आधारित भाषा अनुवाद', url: 'https://www.deepl.com/translator' },
-      { name: 'Google Translate', logo: toolLogosMap.google_translate, use: 'त्वरित बहुभाषी पाठ एवं आवाज़ अनुवाद', url: 'https://translate.google.com/' },
-      { name: 'Lingva Translate', logo: toolLogosMap.lingva, use: 'ओपन सोर्स भाषा अनुवाद', url: 'https://lingva.ml/' }
+      { name: 'Reverso Context', logo: toolLogosMap.reverso, use: 'संदर्भ-आधारित वाक्य अनुवाद', url: 'https://www.reverso.net/text-translation' },
+      { name: 'NLLB-200 (Meta / UNESCO)', logo: toolLogosMap.nllb, use: 'ओपन सोर्स 200+ भाषा अनुवाद', url: 'https://huggingface.co/spaces/UNESCO/nllb' }
     ]
   },
   {
@@ -270,21 +288,21 @@ const everydayCategoriesHi = [
     desc: 'स्वचालित पीपीटी स्लाइड, प्रेजेंटेशन और इन्फोग्राफिक्स तैयार करें।',
     tags: ['पीपीटी', 'स्लाइड्स', 'डेक'],
     tools: [
-      { name: 'Gamma', logo: toolLogosMap.gamma, use: 'AI प्रेजेंटेशन स्लाइड एवं वेबपेज', url: 'https://gamma.app/' },
-      { name: 'Canva AI', logo: toolLogosMap.canva, use: 'ग्राफिक पोस्टर एवं डिज़ाइन', url: 'https://www.canva.com/' },
-      { name: 'Beautiful.ai', logo: toolLogosMap.beautiful_ai, use: 'स्वचालित स्लाइड लेआउट डिजाइन', url: 'https://www.beautiful.ai/' }
+      { name: 'SlidesGPT', logo: toolLogosMap.slidesgpt, use: '1-क्लिक AI पीपीटी स्लाइड निर्माण', url: 'https://slidesgpt.com/' },
+      { name: 'Excalidraw AI', logo: toolLogosMap.excalidraw, use: 'ओपन सोर्स AI टेक्स्ट-टू-डायग्राम', url: 'https://excalidraw.com/' },
+      { name: 'EdrawMax AI', logo: toolLogosMap.edrawmax, use: 'स्वचालित AI प्रेजेंटेशन एवं लेआउट', url: 'https://www.edrawmax.com/app/ai-ppt/' }
     ]
   },
   {
     id: 'code',
     accentColor: '#374151',
-    title: 'कोडिंग एवं सॉफ्टवेयर विकास',
-    desc: 'आईटी विभागों के लिए कोड लेखन, त्रुटि निवारण एवं ऑटोमेशन।',
-    tags: ['पायथन', 'रिएक्ट', 'डीबगिंग'],
+    title: 'AI वेबपेज एवं वेबसाइट निर्माण',
+    desc: 'प्रॉम्प्ट के ज़रिये संपूर्ण रिस्पॉन्सिव वेबसाइट, लैंडिंग पेज और वेब यूआई तुरंत तैयार करें।',
+    tags: ['वेबसाइट', 'लैंडिंग पेज', 'नो-कोड'],
     tools: [
-      { name: 'Lovable', logo: toolLogosMap.lovable, use: 'प्रॉम्प्ट से पूर्ण वेब ऐप निर्माण', url: 'https://lovable.dev/' },
-      { name: 'Bolt.new', logo: toolLogosMap.bolt, use: 'ब्राउज़र में AI वेब एप्लिकेशन बिल्डर', url: 'https://bolt.new/' },
-      { name: 'Cursor AI', logo: toolLogosMap.cursor, use: 'एआई-फर्स्ट कोड एडिटर', url: 'https://www.cursor.com/' }
+      { name: 'Renderforest AI', logo: toolLogosMap.renderforest, use: '1-क्लिक AI वेबसाइट निर्माण', url: 'https://www.renderforest.com/ai-website-builder' },
+      { name: 'Kleap AI', logo: toolLogosMap.kleap, use: 'जनरेटिव AI वेब एवं मोबाइल पेज', url: 'https://kleap.co/ai-website-generator' },
+      { name: 'Design.com', logo: toolLogosMap.design_ai, use: 'AI वेब एवं ब्रांड डिज़ाइन सुइट', url: 'https://www.design.com/' }
     ]
   },
   {
@@ -294,9 +312,9 @@ const everydayCategoriesHi = [
     desc: 'पोस्टर, डिजिटल कला, सोशल मीडिया ग्राफिक्स और AI चित्र बनाएं।',
     tags: ['पोस्टर', 'ग्राफिक्स', 'चित्र'],
     tools: [
-      { name: 'Microsoft Designer', logo: toolLogosMap.microsoft_designer, use: 'जनरेटिव ग्राफिक्स एवं डिज़ाइन', url: 'https://designer.microsoft.com/' },
-      { name: 'Leonardo AI', logo: toolLogosMap.leonardo, use: 'उच्च गुणवत्ता कला और यथार्थवादी चित्र', url: 'https://leonardo.ai/' },
-      { name: 'Adobe Firefly', logo: toolLogosMap.firefly, use: 'जनरेटिव आर्ट एवं विजुअल इफेक्ट्स', url: 'https://firefly.adobe.com/' }
+      { name: 'Adobe Firefly', logo: toolLogosMap.firefly, use: 'जनरेटिव आर्ट एवं विजुअल इफेक्ट्स', url: 'https://firefly.adobe.com/' },
+      { name: 'Craiyon AI', logo: toolLogosMap.craiyon, use: 'निःशुल्क असीमित AI इमेज जनरेशन', url: 'https://www.craiyon.com/' },
+      { name: 'Template AI', logo: toolLogosMap.template_ai, use: 'AI ग्राफिक्स एवं टेम्प्लेट डिज़ाइन', url: 'https://www.template.net/ai-design-generator' }
     ]
   },
   {
@@ -306,9 +324,9 @@ const everydayCategoriesHi = [
     desc: 'टेक्स्ट को प्राकृतिक मानव आवाज़ में बदलें और संगीत निर्माण करें।',
     tags: ['वॉइसओवर', 'आवाज़', 'ऑडियो'],
     tools: [
-      { name: 'ElevenLabs', logo: toolLogosMap.elevenlabs, use: 'अत्यधिक यथार्थवादी आवाज़ जनरेशन', url: 'https://elevenlabs.io/' },
-      { name: 'Google AI Studio', logo: toolLogosMap.google_aistudio, use: 'डेवलपर वॉइस एवं मल्टीमॉडल एआई', url: 'https://aistudio.google.com/' },
-      { name: 'Suno AI', logo: toolLogosMap.suno, use: 'पाठ से AI संगीत एवं गीत निर्माण', url: 'https://suno.com/' }
+      { name: 'OpenAI.fm', logo: toolLogosMap.openaifm, use: 'इंटरैक्टिव वॉइस स्टाइल एवं स्पीच', url: 'https://www.openai.fm/' },
+      { name: 'Remusic AI', logo: toolLogosMap.remusic, use: 'निःशुल्क AI संगीत एवं गीत निर्माण', url: 'https://remusic.ai/ai-music-generator' },
+      { name: 'PopPop AI', logo: toolLogosMap.poppop, use: 'AI साउंड इफेक्ट्स एवं ऑडियो क्लिप्स', url: 'https://poppop.ai/ai-sound-effect-generator' }
     ]
   },
   {
