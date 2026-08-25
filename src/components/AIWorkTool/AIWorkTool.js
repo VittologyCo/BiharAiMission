@@ -52,6 +52,9 @@ const toolLogosMap = {
   openaifm: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRbvwjAe-sdpeUWo82FvjYW_qmvYk0oCCFz0ce2dg_u8w&s=10',
   remusic: 'https://cdn.remusic.ai/remusic/static/logo/remusic-logo-text.png',
   poppop: 'https://poppop.ai/wp-content/uploads/2024/07/poppop-logo-2-300x66.png',
+  magichour: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSybZrpKvKJah5Ex-UkN3MmxSkf5WF2gocsNYNVqML1gQ&s=10',
+  giz_ai: 'https://giz.ai/icons/icon-128x128.png',
+  omni_video: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSGeMtsS26EAWe7swnvlZYVlgzs0Mu4M7WdvDC90H3zg&s',
   suno: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtf510lHyF2phe6SRLfUEB636XtkY0t-uRlZyni5Kjtw&s=10',
   hailuo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCQFo_dEiMysh2Xql6MXfQrwNTNo7xfsVO4SO2aNlmdw&s=10'
 };
@@ -225,9 +228,9 @@ const everydayCategoriesEn = [
     desc: 'Generate short video clips, motion graphics, and animated visuals from text prompts.',
     tags: ['3D Clips', 'Animation', 'Motion'],
     tools: [
-      { name: 'Runway ML', logo: toolLogosMap.runway, use: 'AI video generation & motion', url: 'https://runwayml.com/' },
-      { name: 'Hailuo AI', logo: toolLogosMap.hailuo, use: 'High-definition AI video animation', url: 'https://hailuoai.video/' },
-      { name: 'Luma AI', logo: toolLogosMap.luma, use: 'High quality 3D video clips', url: 'https://lumalabs.ai/dream-machine' }
+      { name: 'Magic Hour AI', logo: toolLogosMap.magichour, use: 'Prompt-to-video & animation generator', url: 'https://magichour.ai/products/ai-video-generator' },
+      { name: 'GIZ AI', logo: toolLogosMap.giz_ai, use: 'Fast AI video creation & clips', url: 'https://www.giz.ai/ai-video-generator/' },
+      { name: 'Omni-Video-Factory', logo: toolLogosMap.omni_video, use: 'Open-source HF AI video generator', url: 'https://huggingface.co/spaces/Saravutw/Omni-videos-custom' }
     ]
   }
 ];
@@ -336,9 +339,9 @@ const everydayCategoriesHi = [
     desc: 'शॉर्ट वीडियो क्लिप्स, मोशन ग्राफिक्स एवं एनीमेशन बनाएं।',
     tags: ['वीडियो', 'एनीमेशन', 'मोशन'],
     tools: [
-      { name: 'Runway ML', logo: toolLogosMap.runway, use: 'AI वीडियो जनरेशन एवं एडिटिंग', url: 'https://runwayml.com/' },
-      { name: 'Hailuo AI', logo: toolLogosMap.hailuo, use: 'उच्च गुणवत्ता वाली AI वीडियो जनरेशन', url: 'https://hailuoai.video/' },
-      { name: 'Luma AI', logo: toolLogosMap.luma, use: 'उच्च गुणवत्ता 3D वीडियो क्लिप्स', url: 'https://lumalabs.ai/dream-machine' }
+      { name: 'Magic Hour AI', logo: toolLogosMap.magichour, use: 'प्रॉम्प्ट से AI वीडियो एवं एनीमेशन', url: 'https://magichour.ai/products/ai-video-generator' },
+      { name: 'GIZ AI', logo: toolLogosMap.giz_ai, use: 'त्वरित AI वीडियो निर्माण एवं क्लिप्स', url: 'https://www.giz.ai/ai-video-generator/' },
+      { name: 'Omni-Video-Factory', logo: toolLogosMap.omni_video, use: 'ओपन सोर्स HF वीडियो जनरेटर', url: 'https://huggingface.co/spaces/Saravutw/Omni-videos-custom' }
     ]
   }
 ];
