@@ -43,7 +43,6 @@
 Bihar_Ai_Mission/
 ├── public/                     # Static assets, icons, logos, manifest
 │   ├── .htaccess               # Apache/LiteSpeed rewrite & SPA routing
-│   ├── _redirects              # SPA routing rules for Netlify/Cloudflare
 │   ├── index.html              # HTML5 entry template
 │   └── sitemap.xml             # Search engine sitemap
 ├── src/
