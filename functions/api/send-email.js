@@ -42,7 +42,7 @@ export async function onRequest(context) {
     }
 
     const defaultKey = typeof atob === 'function' 
-      ? atob('cmVfaUR5eEh3U2tfSEpGdThSaWJmbndqYVZBRUVzOVljUnpl') 
+      ? atob('cmVfNkxTVWJBOVdfMjFBYzZKalp2dkg5QVlWV0NHa0hSWktZ') 
       : '';
     const apiKey = env?.RESEND_API_KEY || env?.REACT_APP_RESEND_API_KEY || defaultKey;
     if (!apiKey) {
