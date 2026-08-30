@@ -90,7 +90,7 @@ const Modal = ({
   const sizeClass = styles[size] || styles.md;
 
   const modalContent = (
-    <div className={styles.backdrop} onClick={closeOnBackdrop ? onClose : undefined} aria-hidden="true">
+    <div className={styles.backdrop} onClick={closeOnBackdrop ? onClose : undefined}>
       <div
         className={`${styles.container} ${sizeClass} ${className}`}
         style={maxWidth ? { maxWidth } : undefined}

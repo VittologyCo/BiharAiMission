@@ -445,6 +445,18 @@ export const AuthProvider = ({ children }) => {
           redirectTo: redirectUrl,
         });
         if (error) {
+          if (error.status === 429 || error.message?.includes('rate limit') || error.message?.includes('Email rate limit exceeded')) {
+            return { 
+              success: false, 
+              error: 'Email request limit reached. Please wait a few minutes before trying again.' 
+            };
+          }
+          if (error.status === 500) {
+            return {
+              success: false,
+              error: 'Authentication email service temporarily busy. Please wait 2 minutes and retry, or contact support.'
+            };
+          }
           return { success: false, error: error.message };
         }
         return {
