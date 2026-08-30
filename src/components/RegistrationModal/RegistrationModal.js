@@ -40,30 +40,19 @@ const ROLE_TYPES = [
   { value: 'other', labelEn: 'Other', labelHi: 'अन्य' }
 ];
 
-/* ─── Interest Areas ─── */
-const INTEREST_AREAS = [
-  { value: 'ai_basics', label: 'AI Fundamentals & Basics' },
-  { value: 'prompt_engineering', label: 'Prompt Engineering' },
-  { value: 'data_analytics', label: 'Data Analytics & Visualization' },
-  { value: 'ai_governance', label: 'AI in Governance & Public Policy' },
-  { value: 'ai_agriculture', label: 'AI in Agriculture' },
-  { value: 'ai_healthcare', label: 'AI in Healthcare' },
-  { value: 'ai_education', label: 'AI in Education' },
-  { value: 'coding_dev', label: 'Coding & Software Development' },
-  { value: 'ai_content', label: 'AI Content Creation & Marketing' },
-  { value: 'ai_startups', label: 'AI for Startups & Business' },
-  { value: 'cybersecurity', label: 'Cybersecurity & Digital Safety' },
-  { value: 'machine_learning', label: 'Machine Learning & Deep Learning' }
-];
-
-/* ─── Intent Options ─── */
-const INTENT_OPTIONS = [
-  { value: 'General Inquiry', labelEn: 'General Inquiry / Exploration', labelHi: 'सामान्य जानकारी / अन्वेषण' },
-  { value: 'Learn AI Skills', labelEn: 'Learn AI Skills & Get Certified', labelHi: 'AI कौशल सीखें और प्रमाणपत्र प्राप्त करें' },
-  { value: 'Government Training', labelEn: 'Government Officer Training Program', labelHi: 'सरकारी अधिकारी प्रशिक्षण कार्यक्रम' },
-  { value: 'Collaborate', labelEn: 'Collaborate / Contribute to Mission', labelHi: 'मिशन में सहयोग / योगदान' },
-  { value: 'Startup Support', labelEn: 'Startup Mentorship & Support', labelHi: 'स्टार्टअप मेंटरशिप और सहायता' },
-  { value: 'Research Partnership', labelEn: 'Research Partnership', labelHi: 'शोध साझेदारी' }
+/* ─── Unified Primary Interest & Focus Options ─── */
+const INTEREST_OPTIONS = [
+  { value: 'ai_skills_cert', labelEn: 'Learn AI Skills & Get Certified', labelHi: 'AI कौशल सीखें और प्रमाणपत्र प्राप्त करें' },
+  { value: 'ai_basics', labelEn: 'AI Fundamentals & Basics', labelHi: 'AI के बुनियादी सिद्धांत' },
+  { value: 'prompt_engineering', labelEn: 'Prompt Engineering & Tools', labelHi: 'प्रॉम्प्ट इंजीनियरिंग और AI टूल्स' },
+  { value: 'data_analytics', labelEn: 'Data Analytics & Visualization', labelHi: 'डेटा एनालिटिक्स और विज़ुअलाइज़ेशन' },
+  { value: 'ai_governance', labelEn: 'AI in Governance & Public Policy', labelHi: 'शासन और सार्वजनिक नीति में AI' },
+  { value: 'ai_agri_health', labelEn: 'AI in Agriculture & Healthcare', labelHi: 'कृषि और स्वास्थ्य सेवा में AI' },
+  { value: 'coding_dev', labelEn: 'Coding & Software Development', labelHi: 'कोडिंग और सॉफ्टवेयर डेवलपमेंट' },
+  { value: 'ai_startups', labelEn: 'AI for Startups & Business', labelHi: 'स्टार्टअप और बिजनेस के लिए AI' },
+  { value: 'govt_training', labelEn: 'Government Officer Training Program', labelHi: 'सरकारी अधिकारी प्रशिक्षण कार्यक्रम' },
+  { value: 'collaborate', labelEn: 'Collaborate / Contribute to Mission', labelHi: 'मिशन में सहयोग / योगदान' },
+  { value: 'other', labelEn: '✍️ Other (Write Manually)', labelHi: '✍️ अन्य (मैन्युअल लिखें)' }
 ];
 
 export default function RegistrationModal({ isOpen, onClose }) {
@@ -74,11 +63,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
     full_name: '',
     email: '',
     mobile: '',
+    password: '',
+    confirm_password: '',
     gender: '',
     age: '',
     role_type: '',
@@ -86,10 +78,12 @@ export default function RegistrationModal({ isOpen, onClose }) {
     department: '',
     organization: '',
     experience: '',
+    experience_unit: 'Years',
     state: 'Bihar',
     district: '',
     block_city: '',
     interests: [],
+    custom_interest: '',
     intent: 'General Inquiry',
     contribution: '',
     linkedin: '',
@@ -140,14 +134,95 @@ export default function RegistrationModal({ isOpen, onClose }) {
   };
 
   /* ─── Step Validation ─── */
-  const isStep1Valid = () => form.full_name.trim() && form.email.trim() && form.mobile.trim() && form.role_type;
-  const isStep2Valid = () => true; // All optional
-  const isStep3Valid = () => true; // All optional
+  const isStep1Valid = () => {
+    return (
+      form.full_name.trim() &&
+      form.email.trim() &&
+      form.mobile.trim().length === 10 &&
+      form.password &&
+      form.password.length >= 6 &&
+      form.password === form.confirm_password &&
+      form.gender &&
+      form.age &&
+      form.role_type
+    );
+  };
+
+  const isStep2Valid = () => {
+    return (
+      form.designation.trim() &&
+      form.department.trim() &&
+      form.organization.trim() &&
+      (form.experience !== '' && form.experience !== null && !isNaN(form.experience) && Number(form.experience) >= 0) &&
+      form.state.trim() &&
+      form.district.trim() &&
+      form.block_city.trim()
+    );
+  };
 
   const handleNext = () => {
-    if (step === 1 && !isStep1Valid()) {
-      toast?.warning(isHi ? 'कृपया सभी अनिवार्य (*) फ़ील्ड भरें।' : 'Please fill all required (*) fields.');
-      return;
+    if (step === 1) {
+      if (!form.full_name.trim()) {
+        toast?.warning(isHi ? 'कृपया अपना पूरा नाम दर्ज करें।' : 'Please enter your full name.');
+        return;
+      }
+      if (!form.email.trim() || !form.email.includes('@')) {
+        toast?.warning(isHi ? 'कृपया मान्य ईमेल पता दर्ज करें।' : 'Please enter a valid email address.');
+        return;
+      }
+      if (!form.mobile.trim() || form.mobile.trim().length !== 10) {
+        toast?.warning(isHi ? 'कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile number.');
+        return;
+      }
+      if (!form.password || form.password.length < 6) {
+        toast?.warning(isHi ? 'पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।' : 'Password must be at least 6 characters.');
+        return;
+      }
+      if (form.password !== form.confirm_password) {
+        toast?.warning(isHi ? 'पासवर्ड और पुष्टि पासवर्ड मेल नहीं खाते।' : 'Passwords do not match.');
+        return;
+      }
+      if (!form.gender) {
+        toast?.warning(isHi ? 'कृपया लिंग चुनें।' : 'Please select your gender.');
+        return;
+      }
+      if (!form.age) {
+        toast?.warning(isHi ? 'कृपया आयु दर्ज करें।' : 'Please enter your age.');
+        return;
+      }
+      if (!form.role_type) {
+        toast?.warning(isHi ? 'कृपया अपनी भूमिका / प्रकार चुनें।' : 'Please select your role type.');
+        return;
+      }
+    } else if (step === 2) {
+      if (!form.designation.trim()) {
+        toast?.warning(isHi ? 'कृपया अपना पदनाम दर्ज करें।' : 'Please enter your designation / title.');
+        return;
+      }
+      if (!form.department.trim()) {
+        toast?.warning(isHi ? 'कृपया अपना विभाग दर्ज करें।' : 'Please enter your department.');
+        return;
+      }
+      if (!form.organization.trim()) {
+        toast?.warning(isHi ? 'कृपया संस्था / संगठन का नाम दर्ज करें।' : 'Please enter your organization.');
+        return;
+      }
+      if (form.experience === '' || form.experience === null || isNaN(form.experience) || Number(form.experience) < 0) {
+        toast?.warning(isHi ? 'कृपया अनुभव दर्ज करें (0 या अधिक)।' : 'Please enter experience (0 or more).');
+        return;
+      }
+      if (!form.state) {
+        toast?.warning(isHi ? 'कृपया राज्य चुनें।' : 'Please select your state.');
+        return;
+      }
+      if (!form.district.trim()) {
+        toast?.warning(isHi ? 'कृपया जिला चुनें या दर्ज करें।' : 'Please select or enter your district.');
+        return;
+      }
+      if (!form.block_city.trim()) {
+        toast?.warning(isHi ? 'कृपया अपना प्रखंड (Block) दर्ज करें।' : 'Please enter your Block.');
+        return;
+      }
     }
     setStep((s) => Math.min(s + 1, 3));
   };
@@ -157,12 +232,29 @@ export default function RegistrationModal({ isOpen, onClose }) {
   /* ─── Submit to Supabase ─── */
   const handleSubmit = async () => {
     if (!isStep1Valid()) {
-      toast?.warning(isHi ? 'कृपया सभी अनिवार्य (*) फ़ील्ड भरें।' : 'Please fill all required (*) fields.');
+      toast?.warning(isHi ? 'कृपया पहले चरण की सभी अनिवार्य (*) फ़ील्ड भरें।' : 'Please fill all required (*) fields in Step 1.');
       setStep(1);
       return;
     }
+    if (!isStep2Valid()) {
+      toast?.warning(isHi ? 'कृपया दूसरे चरण की सभी अनिवार्य (*) फ़ील्ड भरें।' : 'Please fill all required (*) fields in Step 2.');
+      setStep(2);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      const expVal = parseInt(form.experience, 10) || 0;
+      const expFinal = form.experience_unit === 'Months'
+        ? (expVal >= 12 ? Math.round(expVal / 12) : 0)
+        : expVal;
+
+      const selectedOption = INTEREST_OPTIONS.find(o => o.value === (form.interests && form.interests[0]));
+      const isOther = form.interests && form.interests[0] === 'other';
+      const chosenInterest = isOther 
+        ? (form.custom_interest.trim() || 'Other')
+        : (selectedOption ? (isHi ? selectedOption.labelHi : selectedOption.labelEn) : 'General Inquiry');
+
       const payload = {
         full_name: form.full_name.trim(),
         email: form.email.trim().toLowerCase(),
@@ -173,17 +265,46 @@ export default function RegistrationModal({ isOpen, onClose }) {
         designation: form.designation.trim() || null,
         department: form.department.trim() || null,
         organization: form.organization.trim() || null,
-        experience: form.experience ? parseInt(form.experience, 10) : null,
+        experience: expFinal,
         state: form.state || 'Bihar',
         district: form.district || 'Not Specified',
         block_city: form.block_city.trim() || null,
-        interests: form.interests.length > 0 ? form.interests : null,
-        intent: form.intent || 'General Inquiry',
+        interests: [chosenInterest],
+        intent: chosenInterest,
         contribution: form.contribution.trim() || null,
         linkedin: form.linkedin.trim() || null,
         portfolio: form.portfolio.trim() || null
       };
 
+      // 1. Create or register user in Supabase Auth with encrypted password
+      if (supabase && supabase.auth && form.password) {
+        try {
+          const { error: authErr } = await supabase.auth.signUp({
+            email: payload.email,
+            password: form.password,
+            options: {
+              data: {
+                full_name: payload.full_name,
+                fullName: payload.full_name,
+                designation: payload.designation || 'Member',
+                phone: payload.mobile,
+                district: payload.district,
+              }
+            }
+          });
+          if (authErr && authErr.message && (authErr.message.includes('already registered') || authErr.message.includes('User already exists'))) {
+            // Already in auth, try sign in with provided password
+            await supabase.auth.signInWithPassword({
+              email: payload.email,
+              password: form.password
+            }).catch(() => {});
+          }
+        } catch (authEx) {
+          console.warn('Supabase auth signup warning:', authEx);
+        }
+      }
+
+      // 2. Save profile to public.user_details table
       const { error } = await supabase
         .from('user_details')
         .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
@@ -198,20 +319,20 @@ export default function RegistrationModal({ isOpen, onClose }) {
         return;
       }
 
-      // Send official Thank-You confirmation email to user's provided email address
+      // 3. Send official confirmation email
       sendRegistrationThankYouEmail({
         fullName: payload.full_name,
         email: payload.email,
         roleType: ROLE_TYPES.find((r) => r.value === payload.role_type)?.labelEn || payload.role_type,
         state: payload.state,
         district: payload.district,
-        intent: INTENT_OPTIONS.find((i) => i.value === payload.intent)?.labelEn || payload.intent
+        intent: INTEREST_OPTIONS.find((i) => i.value === payload.intent)?.labelEn || payload.intent
       }).catch((err) => console.warn('Background email dispatch warning:', err));
 
       setIsSuccess(true);
       toast?.success(
         isHi
-          ? '🎉 पंजीकरण सफल! बिहार AI मिशन में आपका स्वागत है।'
+          ? '🎉 पंजीकरण सफल! Bihar AI Mission में आपका स्वागत है।'
           : '🎉 Registration Successful! Welcome to Bihar AI Mission.'
       );
     } catch (err) {
@@ -224,10 +345,10 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
   const handleReset = () => {
     setForm({
-      full_name: '', email: '', mobile: '', gender: '', age: '', role_type: '',
-      designation: '', department: '', organization: '', experience: '',
+      full_name: '', email: '', mobile: '', password: '', confirm_password: '', gender: '', age: '', role_type: '',
+      designation: '', department: '', organization: '', experience: '', experience_unit: 'Years',
       state: 'Bihar', district: '', block_city: '',
-      interests: [], intent: 'General Inquiry', contribution: '', linkedin: '', portfolio: ''
+      interests: [], custom_interest: '', intent: 'General Inquiry', contribution: '', linkedin: '', portfolio: ''
     });
     setStep(1);
     setIsSuccess(false);
@@ -248,15 +369,12 @@ export default function RegistrationModal({ isOpen, onClose }) {
             </h2>
             <p className={styles.successDesc}>
               {isHi
-                ? 'बिहार AI मिशन में आपका पंजीकरण सफलतापूर्वक हो गया है। हम आपसे जल्द ही संपर्क करेंगे।'
-                : 'You have been successfully registered with Bihar AI Mission. We will review your profile and reach out to you soon with updates and opportunities.'}
+                ? 'बिहार AI मिशन में आपका खाता और प्रोफ़ाइल सफलतापूर्वक बन गया है। अब आप सीधे अपने ईमेल और पासवर्ड से साइन इन कर सकते हैं।'
+                : 'Your account and profile have been successfully created with Bihar AI Mission. You can now sign in directly using your email and password to access your dashboard.'}
             </p>
             <div className={styles.successActions}>
-              <button className={styles.primaryBtn} onClick={onClose}>
+              <button className={styles.primaryBtn} onClick={onClose} style={{ minWidth: '160px' }}>
                 {isHi ? 'ठीक है, बंद करें' : 'Okay, Close'}
-              </button>
-              <button className={styles.ghostBtn} onClick={handleReset}>
-                {isHi ? 'एक और पंजीकरण करें' : 'Register Another Person'}
               </button>
             </div>
           </div>
@@ -282,8 +400,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
           </h2>
           <p className={styles.headerSub}>
             {isHi
-              ? 'नीचे अपनी जानकारी भरें और बिहार AI मिशन से जुड़ें। (* अनिवार्य फ़ील्ड)'
-              : 'Fill in your details below to join Bihar AI Mission. (* Required fields)'}
+              ? 'नीचे अपनी सभी अनिवार्य जानकारी भरें और पासवर्ड बनाएं। (* अनिवार्य फ़ील्ड)'
+              : 'Fill in your required details and create your login password below. (* Required fields)'}
           </p>
         </div>
 
@@ -306,7 +424,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* ═══ STEP 1: BASIC INFO ═══ */}
+        {/* ═══ STEP 1: BASIC INFO & PASSWORD ═══ */}
         {step === 1 && (
           <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.fieldGroup}>
@@ -345,9 +463,68 @@ export default function RegistrationModal({ isOpen, onClose }) {
               </div>
             </div>
 
+            {/* PASSWORD CREATION FIELDS */}
+            <div className={styles.row2}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  {isHi ? 'पासवर्ड बनाएं' : 'Create Password'} <span className={styles.req}>*</span>
+                </label>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    className={`${styles.input} ${styles.passwordInput} ${
+                      form.password && form.password.length >= 8 && /[a-zA-Z]/.test(form.password) && /[\d\W]/.test(form.password)
+                        ? styles.inputStrong
+                        : ''
+                    }`}
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={isHi ? 'मजबूत पासवर्ड बनाएं' : 'Create strong password'}
+                    value={form.password}
+                    onChange={(e) => handleChange('password', e.target.value)}
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    className={styles.eyeBtn}
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>
+                  {isHi ? 'पासवर्ड की पुष्टि करें' : 'Confirm Password'} <span className={styles.req}>*</span>
+                </label>
+                <input
+                  className={`${styles.input} ${
+                    form.confirm_password &&
+                    form.confirm_password === form.password &&
+                    form.password.length >= 6
+                      ? styles.inputMatch
+                      : ''
+                  }`}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={isHi ? 'वही पासवर्ड पुनः दर्ज करें' : 'Re-enter password'}
+                  value={form.confirm_password}
+                  onChange={(e) => handleChange('confirm_password', e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className={styles.row3}>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'लिंग' : 'Gender'}</label>
+                <label className={styles.label}>{isHi ? 'लिंग' : 'Gender'} <span className={styles.req}>*</span></label>
                 <select className={styles.select} value={form.gender} onChange={(e) => handleChange('gender', e.target.value)}>
                   <option value="">{isHi ? '— चुनें —' : '— Select —'}</option>
                   <option value="Male">{isHi ? 'पुरुष' : 'Male'}</option>
@@ -357,7 +534,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 </select>
               </div>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'आयु' : 'Age'}</label>
+                <label className={styles.label}>{isHi ? 'आयु' : 'Age'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="number"
@@ -386,7 +563,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
           <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.row2}>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'पदनाम' : 'Designation / Title'}</label>
+                <label className={styles.label}>{isHi ? 'पदनाम' : 'Designation / Title'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="text"
@@ -396,7 +573,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 />
               </div>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'विभाग' : 'Department'}</label>
+                <label className={styles.label}>{isHi ? 'विभाग' : 'Department'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="text"
@@ -409,7 +586,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
             <div className={styles.row2}>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'संस्था / संगठन' : 'Organization'}</label>
+                <label className={styles.label}>{isHi ? 'संस्था / संगठन' : 'Organization'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="text"
@@ -419,22 +596,34 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 />
               </div>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'अनुभव (वर्ष)' : 'Experience (Years)'}</label>
-                <input
-                  className={styles.input}
-                  type="number"
-                  placeholder="e.g. 5"
-                  value={form.experience}
-                  onChange={(e) => handleChange('experience', e.target.value)}
-                  min={0}
-                  max={50}
-                />
+                <label className={styles.label}>
+                  {isHi ? 'अनुभव' : 'Experience'} <span className={styles.req}>*</span>
+                </label>
+                <div className={styles.experienceGroup}>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    placeholder={form.experience_unit === 'Months' ? (isHi ? 'जैसे: 6' : 'e.g. 6') : (isHi ? 'जैसे: 3' : 'e.g. 3')}
+                    value={form.experience}
+                    onChange={(e) => handleChange('experience', e.target.value)}
+                    min={0}
+                    max={form.experience_unit === 'Months' ? 120 : 50}
+                  />
+                  <select
+                    className={styles.select}
+                    value={form.experience_unit || 'Years'}
+                    onChange={(e) => handleChange('experience_unit', e.target.value)}
+                  >
+                    <option value="Years">{isHi ? 'वर्ष (Years)' : 'Years'}</option>
+                    <option value="Months">{isHi ? 'महीने (Months)' : 'Months'}</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             <div className={styles.row3}>
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'राज्य' : 'State'}</label>
+                <label className={styles.label}>{isHi ? 'राज्य' : 'State'} <span className={styles.req}>*</span></label>
                 <select
                   className={styles.select}
                   value={form.state}
@@ -455,7 +644,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>
-                  {isHi ? 'जिला' : 'District'}
+                  {isHi ? 'जिला' : 'District'} <span className={styles.req}>*</span>
                   {(form.state || '').trim().toLowerCase() !== 'bihar' && (
                     <span style={{ fontSize: '10.5px', color: '#C1552C', marginLeft: '4px', fontWeight: 600 }}>
                       ({isHi ? 'मैन्युअल' : 'Manual'})
@@ -485,7 +674,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'ब्लॉक / शहर' : 'Block / City'}</label>
+                <label className={styles.label}>{isHi ? 'प्रखंड (Block)' : 'Block'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="text"
@@ -503,42 +692,50 @@ export default function RegistrationModal({ isOpen, onClose }) {
           <div className={styles.formBody} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
             <div className={styles.fieldGroup}>
               <label className={styles.label}>
-                {isHi ? 'आपकी मुख्य रुचि (केवल 1 चुनें)' : 'Your Primary Interest (Select 1)'}
+                {isHi ? 'आपकी मुख्य रुचि / उद्देश्य (केवल 1 चुनें)' : 'Primary Focus & Purpose (Select 1)'} <span className={styles.req}>*</span>
               </label>
               <div className={styles.chipGrid}>
-                {INTEREST_AREAS.map((ia) => {
-                  const isSelected = form.interests && form.interests[0] === ia.value;
+                {INTEREST_OPTIONS.map((opt) => {
+                  const isSelected = form.interests && form.interests[0] === opt.value;
                   return (
                     <button
-                      key={ia.value}
+                      key={opt.value}
                       type="button"
                       className={`${styles.interestChip} ${isSelected ? styles.chipSelected : ''}`}
-                      onClick={() => selectInterest(ia.value)}
+                      onClick={() => selectInterest(opt.value)}
                     >
-                      {isSelected ? '✓ ' : ''}{ia.label}
+                      {isSelected ? '✓ ' : ''}{isHi ? opt.labelHi : opt.labelEn}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>{isHi ? 'आपका उद्देश्य / Intent' : 'Your Intent / Purpose'}</label>
-              <select className={styles.select} value={form.intent} onChange={(e) => handleChange('intent', e.target.value)}>
-                {INTENT_OPTIONS.map((io) => (
-                  <option key={io.value} value={io.value}>{isHi ? io.labelHi : io.labelEn}</option>
-                ))}
-              </select>
-            </div>
+            {/* Manual custom interest write-in field */}
+            {form.interests && form.interests[0] === 'other' && (
+              <div className={styles.fieldGroup} style={{ marginTop: '12px' }}>
+                <label className={styles.label}>
+                  {isHi ? 'अपनी रुचि / उद्देश्य यहाँ लिखें' : 'Specify Your Interest / Purpose Manually'} <span className={styles.req}>*</span>
+                </label>
+                <input
+                  className={styles.input}
+                  type="text"
+                  placeholder={isHi ? 'जैसे: AI रोबोटिक्स, मशीन लर्निंग रिसर्च, आदि...' : 'e.g. AI Robotics, Machine Learning Research, etc.'}
+                  value={form.custom_interest || ''}
+                  onChange={(e) => handleChange('custom_interest', e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.label}>{isHi ? 'आप कैसे योगदान कर सकते हैं?' : 'How can you contribute?'}</label>
+            <div className={styles.fieldGroup} style={{ marginTop: '14px' }}>
+              <label className={styles.label}>{isHi ? 'आप कैसे योगदान कर सकते हैं? (वैकल्पिक)' : 'How can you contribute? (Optional)'}</label>
               <textarea
                 className={styles.textarea}
                 placeholder={isHi ? 'जैसे: मैं AI वर्कशॉप आयोजित कर सकता/सकती हूँ...' : 'e.g. I can organize AI workshops in my district...'}
                 value={form.contribution}
                 onChange={(e) => handleChange('contribution', e.target.value)}
-                rows={3}
+                rows={2}
               />
             </div>
 

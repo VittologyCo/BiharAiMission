@@ -6,7 +6,7 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(226, 215, 195, 0.22);
   border-radius: var(--radius-lg, 20px);
-  padding: 28px;
+  padding: 20px;
   color: var(--color-sand-50, #FBF8F3);
   box-shadow: 0 20px 40px -12px rgba(24, 21, 18, 0.35);
 }
@@ -15,17 +15,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 24px;
-  padding-bottom: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(226, 215, 195, 0.12);
 }
 
 .hudBadge {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.688rem;
+  font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  padding: 3px 8px;
+  padding: 2px 7px;
   background: rgba(193, 85, 44, 0.25);
   color: var(--color-terracotta-300, #E28B5C);
   border-radius: 4px;
@@ -34,7 +34,7 @@
 
 .hudTitle {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.875rem;
+  font-size: 0.813rem;
   font-weight: 700;
   color: var(--color-text-on-dark, #FBF8F3);
 }
@@ -43,15 +43,15 @@
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .statCard {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(226, 215, 195, 0.1);
-  border-radius: 14px;
-  padding: 18px 16px;
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -92,14 +92,14 @@
 }
 
 .animNum {
-  font-size: clamp(1.8rem, 3vw, 2.3rem);
+  font-size: clamp(1.5rem, 2.2vw, 1.85rem);
   font-weight: 700;
   color: var(--color-sand-50, #FBF8F3);
   line-height: 1;
 }
 
 .suffix {
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-size: clamp(0.95rem, 1.6vw, 1.2rem);
   font-weight: 700;
   color: var(--color-ochre-400, #D99B26);
   margin-left: 2px;
@@ -107,8 +107,8 @@
 
 .label {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.813rem;
-  line-height: 1.35;
+  font-size: 0.75rem;
+  line-height: 1.3;
   color: var(--color-text-muted-on-dark, #C8BFB3);
   font-weight: 500;
 }
@@ -116,19 +116,19 @@
 /* MILESTONE STRIP AT BOTTOM */
 .milestoneStrip {
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: 10px;
+  padding: 10px 14px;
   border: 1px solid rgba(226, 215, 195, 0.1);
 }
 
 .milestoneTitle {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.75rem;
+  font-size: 0.688rem;
   font-weight: 700;
   color: var(--color-ochre-400, #D99B26);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .milestoneRow {
@@ -136,8 +136,8 @@
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.813rem;
-  padding: 4px 0;
+  font-size: 0.75rem;
+  padding: 2px 0;
 }
 
 .mLabel {

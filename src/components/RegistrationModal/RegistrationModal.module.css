@@ -298,6 +298,82 @@
   min-height: 68px;
 }
 
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.passwordInput {
+  padding-right: 38px !important;
+}
+
+/* Hide native Edge/Safari password eye reveal */
+.input::-ms-reveal,
+.input::-ms-clear,
+.input::-webkit-contacts-auto-fill-button,
+.input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  -webkit-appearance: none !important;
+}
+
+/* Green box highlight for strong password & confirmed match */
+.inputStrong,
+.inputStrong:focus {
+  border-color: #16A34A !important;
+  background-color: #F4FBF7 !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18) !important;
+}
+
+.inputMatch,
+.inputMatch:focus {
+  border-color: #16A34A !important;
+  background-color: #F4FBF7 !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18) !important;
+}
+
+.eyeBtn,
+.eyeBtn:focus,
+.eyeBtn:active {
+  position: absolute !important;
+  right: 10px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #8C8275 !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 5 !important;
+  transition: color 0.15s ease !important;
+}
+
+.eyeBtn:hover {
+  color: var(--color-charcoal-900, #181512) !important;
+}
+
+.experienceGroup {
+  display: grid;
+  grid-template-columns: 1fr 130px;
+  gap: 8px;
+  width: 100%;
+}
+
 /* ─── GRID ROWS ─── */
 .row2 {
   display: grid;
@@ -386,39 +462,55 @@
 }
 
 .primaryBtn {
-  padding: 9px 22px;
-  border-radius: 9px;
-  border: none;
-  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, #A3411B 100%);
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%);
   color: #FFFFFF;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 12px rgba(193, 85, 44, 0.28);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
+              0 4px 14px rgba(193, 85, 44, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .primaryBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 18px rgba(193, 85, 44, 0.4);
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, #DE6739 0%, #C45125 60%, #A83E16 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5),
+              0 8px 20px rgba(193, 85, 44, 0.48);
+}
+
+.primaryBtn:active {
+  transform: translateY(0.5px) scale(0.98);
 }
 
 .submitBtn {
-  padding: 9px 24px;
-  border-radius: 9px;
-  border: none;
-  background: linear-gradient(135deg, #1A7D4B 0%, #0F5D35 100%);
+  padding: 10px 26px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #248A54 0%, #176B3F 60%, #0F4E2C 100%);
   color: #FFFFFF;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 12px rgba(26, 125, 75, 0.28);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45),
+              0 4px 16px rgba(26, 125, 75, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .submitBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 5px 18px rgba(26, 125, 75, 0.4);
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, #2EA063 0%, #1F7C49 60%, #135A34 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6),
+              0 8px 22px rgba(26, 125, 75, 0.48);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0.5px) scale(0.98);
 }
 
 .submitBtn:disabled,

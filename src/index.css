@@ -149,6 +149,20 @@ textarea:focus {
   caret-color: var(--color-charcoal-900, #181512) !important;
 }
 
+/* HIDE BROWSER (EDGE/SAFARI/CHROME) NATIVE DUPLICATE PASSWORD REVEAL & CLEAR ICONS */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
 /* AMBIENT CURSOR SPOTLIGHT AURA */
 #cursor-spotlight {
   position: fixed;
@@ -501,37 +515,73 @@ body:hover #cursor-spotlight { opacity: 1; }
   transform: translateY(0px) scale(0.98) !important;
 }
 
-/* PREMIUM UNIFIED GOOGLE SIGN-IN NAVBAR BUTTON */
-.nav-google-btn {
-  background: var(--color-charcoal-900, #181512) !important;
-  color: var(--color-sand-50, #FBF8F3) !important;
+/* NAVBAR AUTH & REGISTRATION ACTIONS */
+.nav-auth-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.nav-signin-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--color-charcoal-900, #181512) !important;
   padding: 0 16px !important;
-  height: 32px !important;
-  line-height: 30px !important;
+  height: 34px !important;
+  line-height: 32px !important;
   border-radius: 9999px !important;
   font-size: 12.5px !important;
   font-weight: 700 !important;
-  border: 1px solid var(--color-charcoal-900, #181512) !important;
+  border: 1px solid rgba(24, 21, 18, 0.18) !important;
   font-family: inherit !important;
-  transition: all 0.22s var(--ease-smooth) !important;
-  box-shadow: 0 2px 6px rgba(24, 21, 18, 0.15) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+.nav-signin-btn:hover {
+  background: #FFFFFF !important;
+  border-color: rgba(193, 85, 44, 0.5) !important;
+  color: var(--color-terracotta-600, #A84722) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 1px #FFFFFF !important;
+}
+.nav-signin-btn:active {
+  transform: translateY(0px) scale(0.97) !important;
+}
+
+.nav-register-btn {
+  background: linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%) !important;
+  color: #FFFFFF !important;
+  padding: 0 18px !important;
+  height: 34px !important;
+  line-height: 32px !important;
+  border-radius: 9999px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  font-family: inherit !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 4px 14px rgba(193, 85, 44, 0.38) !important;
   white-space: nowrap !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
 }
-.nav-google-btn:hover {
-  background: var(--color-terracotta-500, #C1552C) !important;
-  border-color: var(--color-terracotta-500, #C1552C) !important;
+.nav-register-btn:hover {
+  background: linear-gradient(135deg, #DE6739 0%, #C45125 60%, #A83E16 100%) !important;
   color: #FFFFFF !important;
-  transform: translateY(-1.5px) !important;
-  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.3) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 8px 20px rgba(193, 85, 44, 0.5) !important;
 }
-.nav-google-btn:active {
+.nav-register-btn:active {
   transform: translateY(0px) scale(0.97) !important;
-  box-shadow: 0 2px 4px rgba(24, 21, 18, 0.06) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* NAVBAR USER PROFILE BADGE & DROPDOWN */
@@ -4599,27 +4649,53 @@ h2.sh {
     padding: 12px 0;
   }
 
-  .mobile-menu-signin-btn {
+  .mobile-auth-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
     width: 100% !important;
-    min-height: 46px !important;
-    background: #FFFFFF !important;
-    color: var(--color-charcoal-900, #181512) !important;
-    border: 1.5px solid var(--color-line, #E2D7C3) !important;
-    border-radius: 14px !important;
+  }
+
+  .mobile-menu-register-btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    background: var(--color-terracotta-500, #C1552C) !important;
+    color: #FFFFFF !important;
+    border: 1px solid var(--color-terracotta-500, #C1552C) !important;
+    border-radius: 12px !important;
     font-size: 13.5px !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 10px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 4px 14px rgba(193, 85, 44, 0.25) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+  .mobile-menu-register-btn:hover {
+    background: var(--color-terracotta-600, #A3411B) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .mobile-menu-signin-btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    background: #FFFFFF !important;
+    color: var(--color-charcoal-900, #181512) !important;
+    border: 1.5px solid var(--color-line, #E2D7C3) !important;
+    border-radius: 12px !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
   }
   .mobile-menu-signin-btn:hover {
     background: var(--color-sand-50, #FBF8F3) !important;
-    border-color: var(--color-terracotta-500, #C1552C) !important;
-    color: var(--color-terracotta-500, #C1552C) !important;
+    border-color: var(--color-charcoal-900, #181512) !important;
     transform: translateY(-1px) !important;
   }
 
@@ -5212,9 +5288,7 @@ body, html, #root, .app-container {
 }
 
 /* 7. BUTTONS (18px Radius, 48px Height, Lift & Arrow Animation) */
-button, .btn, .btn-main, .b-wh, .b-ow, .btn-primary, .cta-btn, .submitBtn, 
-.cancelBtn, .pageBtn, .viewToggleBtn, .resetFilterBtn, .readMoreBtn, .backBtn,
-.read-story-btn, .modal-close-btn {
+.btn-action-primary, .b-wh, .b-ow, .btn-primary, .cta-btn, .read-story-btn {
   border-radius: 18px !important;
   min-height: 48px !important;
   padding: 12px 26px !important;
@@ -5229,7 +5303,7 @@ button, .btn, .btn-main, .b-wh, .b-ow, .btn-primary, .cta-btn, .submitBtn,
   gap: 8px !important;
 }
 
-button:hover, .btn:hover, .btn-main:hover, .btn-primary:hover, .read-story-btn:hover {
+.btn-action-primary:hover, .btn-primary:hover, .read-story-btn:hover {
   background: var(--btn-primary-hover, var(--color-charcoal-900, #181512)) !important;
   transform: translateY(-3px) !important;
   box-shadow: 0 10px 25px rgba(24, 21, 18, 0.2) !important;

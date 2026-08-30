@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom';
 import styles from './Button.module.css';
 
 /**
- * Button Component — Bihar AI Mission Design System (§4.1)
- * Supports primary, secondary, and ghost variants.
- * Can render as a <button>, React Router <Link>, or standard <a> element.
+ * Luxury Interactive Button Component — Bihar AI Mission Design System
+ * Features:
+ * - Multi-stop depth gradients with inner specular highlights
+ * - Animated shimmer sheen on hover
+ * - "Button-in-Button" trailing badge / arrow physics
+ * - Haptic spring click dynamics
  */
 const Button = ({
   children,
-  variant = 'primary', // 'primary' | 'secondary' | 'ghost'
+  variant = 'primary', // 'primary' | 'secondary' | 'ghost' | 'glass'
   size = 'md',        // 'sm' | 'md' | 'lg'
   to,                 // React Router link target
   href,               // External link target
@@ -19,6 +22,7 @@ const Button = ({
   className = '',
   icon,
   iconPosition = 'left',
+  showArrow = false,
   fullWidth = false,
   ...props
 }) => {
@@ -33,10 +37,28 @@ const Button = ({
 
   const content = (
     <>
-      {icon && iconPosition === 'left' && <span className={styles.iconLeft}>{icon}</span>}
+      <span className={styles.shimmer} aria-hidden="true" />
+      
+      {icon && iconPosition === 'left' && (
+        <span className={styles.iconLeft}>{icon}</span>
+      )}
+      
       <span className={styles.label}>{children}</span>
+
+      {icon && iconPosition === 'right' && (
+        <span className={styles.iconRight}>{icon}</span>
+      )}
+
+      {showArrow && (
+        <span className={styles.arrowBadge}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14" />
+            <path d="M12 5l7 7-7 7" />
+          </svg>
+        </span>
+      )}
+
       {variant === 'ghost' && <span className={styles.ghostLine} />}
-      {icon && iconPosition === 'right' && <span className={styles.iconRight}>{icon}</span>}
     </>
   );
 

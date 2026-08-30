@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-
+// Legacy in-memory dictionary
 const translations = {
   en: {
     // Navbar
@@ -12,6 +11,8 @@ const translations = {
     navAbout: 'About',
     navGetInvolved: 'Get Involved ↗',
     navBlog: 'Blog',
+    navSignIn: 'Sign In',
+    navRegister: 'Register',
 
     // Banner & Ribbon
     bannerText: 'This is an independent, citizen-led initiative — not affiliated with or endorsed by any government.',
@@ -52,16 +53,10 @@ const translations = {
     pilSub: 'A high-level overview of our mission. Click on any section below to visit its dedicated page with complete, detailed information and interactive tools.',
     p1Title: 'AI Tools & Prompts',
     p1Desc: 'Practical AI tools, prompt generators, and department workflows for Bihar officers and citizens.',
-    p1Link: 'Open AI Tools Page →',
-    p2Title: 'AI Learning Hub',
-    p2Desc: 'Free bilingual courses, certificates, and hands-on modules inspired by IndiaAI FutureSkills.',
-    p2Link: 'Open Learning Hub Page →',
-    p3Title: 'Civic Use Cases',
-    p3Desc: 'Real-world Bihar deployments in agriculture, flood management, health, land records, and governance.',
-    p3Link: 'Open Use Cases Page →',
-    p4Title: 'Startup Ecosystem',
-    p4Desc: "Connecting Bihar's AI entrepreneurs with IndiaAI seed funding, mentorship, and government pilots.",
-    p4Link: 'Open Startups Page →',
+    p1Link: 'Explore AI Tools',
+    p2Link: 'Explore Learning Hub',
+    p3Link: 'Read Articles & Policy',
+    p4Link: 'Connect with Startups',
 
     // Sections
     learnEye: 'AI Learning Hub',
@@ -117,6 +112,8 @@ const translations = {
     navAbout: 'हमारे बारे में',
     navGetInvolved: 'जुड़ें ↗',
     navBlog: 'ब्लॉग',
+    navSignIn: 'साइन इन',
+    navRegister: 'पंजीकरण',
 
     // Banner & Ribbon
     bannerText: 'यह एक स्वतंत्र, नागरिक-नेतृत्व वाली पहल है — किसी भी सरकार से संबद्ध या समर्थित नहीं है।',
@@ -157,16 +154,10 @@ const translations = {
     pilSub: 'हमारे मिशन का समग्र अवलोकन। पूर्ण, विस्तृत जानकारी और इंटरैक्टिव टूल्स के लिए नीचे दिए गए किसी भी अनुभाग पर क्लिक करें।',
     p1Title: 'AI टूल्स और प्रॉम्प्ट्स',
     p1Desc: 'बिहार के अधिकारियों और नागरिकों के लिए व्यावहारिक AI टूल्स, प्रॉम्प्ट जनरेटर और विभागीय वर्कफ़्लो।',
-    p1Link: 'AI टूल्स पेज खोलें →',
-    p2Title: 'AI लर्निंग हब',
-    p2Desc: 'IndiaAI फ्यूचरस्किल्स से प्रेरित निःशुल्क द्विभाषी पाठ्यक्रम, प्रमाणपत्र और व्यावहारिक मॉड्यूल।',
-    p2Link: 'लर्निंग हब पेज खोलें →',
-    p3Title: 'नागरिक उपयोग के मामले (Use Cases)',
-    p3Desc: 'कृषि, बाढ़ प्रबंधन, स्वास्थ्य, भूमि अभिलेख और शासन में वास्तविक बिहार AI परिनियोजन।',
-    p3Link: 'उपयोग के मामले देखें →',
-    p4Title: 'स्टार्टअप इकोसिस्टम',
-    p4Desc: 'बिहार के AI उद्यमियों को IndiaAI सीड फंडिंग, मेंटरशिप और सरकारी पायलट प्रोजेक्ट्स से जोड़ना।',
-    p4Link: 'स्टार्टअप्स पेज खोलें →',
+    p1Link: 'AI टूल्स एक्सप्लोर करें',
+    p2Link: 'लर्निंग हब एक्सप्लोर करें',
+    p3Link: 'लेख और नीतियां पढ़ें',
+    p4Link: 'स्टार्टअप्स से जुड़ें',
 
     // Sections
     learnEye: 'AI लर्निंग हब',
@@ -213,63 +204,41 @@ const translations = {
   }
 };
 
-// Google Translate helper: programmatically switch translation language
-function triggerGoogleTranslate(langCode) {
-  try {
-    const domain = window.location.hostname;
-    if (langCode === 'en') {
-      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain}`;
-      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-      document.cookie = `googtrans=/en/en; path=/; domain=.${domain}`;
-      document.cookie = `googtrans=/en/en; path=/`;
-    } else {
-      document.cookie = `googtrans=/en/${langCode}; path=/; domain=.${domain}`;
-      document.cookie = `googtrans=/en/${langCode}; path=/`;
-    }
+import { createContext, useContext, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
-    const select = document.querySelector('.goog-te-combo');
-    if (select) {
-      select.value = langCode;
-      select.dispatchEvent(new Event('change'));
-    }
-  } catch (e) {
-    console.warn('Google Translate switch error:', e);
-  }
-}
+// Backward compatibility dictionary for legacy un-migrated components during staged migration
+const legacyTranslations = {
+  en: translations.en,
+  hi: translations.hi
+};
 
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState(() => {
-    try {
-      const savedLang = localStorage.getItem('bihar_ai_lang');
-      if (savedLang === 'hi' || savedLang === 'en') return savedLang;
-      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('googtrans='));
-      if (cookie && cookie.includes('/hi')) return 'hi';
-    } catch (e) {}
-    return 'en';
-  });
+  const { i18n: i18nInstance } = useTranslation();
+  const currentLang = i18nInstance.language || 'en';
 
-  const t = translations[lang] || translations['en'];
+  const tLegacy = legacyTranslations[currentLang] || legacyTranslations['en'];
 
   const setLang = useCallback((newLang) => {
     if (newLang !== 'en' && newLang !== 'hi') return;
-    setLangState(newLang);
+    i18nInstance.changeLanguage(newLang);
     try {
       localStorage.setItem('bihar_ai_lang', newLang);
       document.documentElement.lang = newLang;
     } catch (e) {}
-    triggerGoogleTranslate(newLang);
-  }, []);
+  }, [i18nInstance]);
 
   useEffect(() => {
     try {
-      document.documentElement.lang = lang;
+      document.documentElement.lang = currentLang;
     } catch (e) {}
-  }, [lang]);
+  }, [currentLang]);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang: currentLang, setLang, t: tLegacy, i18n: i18nInstance }}>
       {children}
     </LanguageContext.Provider>
   );

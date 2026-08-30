@@ -19,7 +19,7 @@
 /* SECTION HEADER */
 .sectionHeader {
   margin-bottom: 40px;
-  max-width: 700px;
+  max-width: 720px;
 }
 
 .sectionBadge {
@@ -29,32 +29,57 @@
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-terracotta-500, #C1552C);
+  color: var(--color-terracotta-400, #E28B5C);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  background: rgba(193, 85, 44, 0.14);
+  border: 1px solid rgba(226, 139, 92, 0.32);
+  border-radius: var(--radius-sm, 10px);
+  padding: 5px 12px;
+}
+
+.beaconDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  animation: pulseBeacon 2s infinite ease-in-out;
+}
+
+@keyframes pulseBeacon {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
 }
 
 .badgeLine {
-  width: 16px;
+  width: 12px;
   height: 2px;
-  background-color: var(--color-terracotta-500, #C1552C);
+  background-color: var(--color-terracotta-400, #E28B5C);
   border-radius: 2px;
 }
 
 .title {
   font-family: var(--font-display, 'Fraunces', serif);
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-size: clamp(2.1rem, 3.8vw, 2.9rem);
   font-weight: 600;
   line-height: 1.15;
   color: var(--color-sand-50, #FBF8F3);
-  letter-spacing: -0.02em;
-  margin-bottom: 8px;
+  letter-spacing: -0.025em;
+  margin-bottom: 10px;
+}
+
+.accentText {
+  background: linear-gradient(135deg, #C1552C 0%, #D99B26 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: italic;
 }
 
 .subtitle {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 1rem;
+  font-size: 1.02rem;
   color: var(--color-text-muted-on-dark, #C8BFB3);
   line-height: 1.6;
 }

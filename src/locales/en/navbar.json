@@ -1,0 +1,29 @@
+{
+  "links": {
+    "home": "Home",
+    "learning": "Learning Hub",
+    "tools": "AI Tools",
+    "cases": "Use Cases",
+    "policy": "Policy",
+    "startups": "Startups",
+    "about": "About",
+    "blog": "Blog",
+    "getInvolved": "Get Involved ↗"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "register": "Register",
+    "dashboard": "🎓 My Dashboard",
+    "admin": "Admin Portal",
+    "logout": "Logout"
+  },
+  "menu": {
+    "title": "Navigation",
+    "close": "Close Menu",
+    "toggle": "Toggle navigation menu",
+    "userMenu": "User profile menu",
+    "switchLang": "भाषा / Language",
+    "switchEn": "Switch to English",
+    "switchHi": "हिंदी में बदलें"
+  }
+}

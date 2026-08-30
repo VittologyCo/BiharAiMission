@@ -307,11 +307,16 @@ export default function UseCases() {
         {/* Section Header */}
         <div className={styles.sectionHeader}>
           <div className={styles.sectionBadge}>
+            <span className={styles.beaconDot} />
             <span className={styles.badgeLine} />
-            {isHi ? 'प्रमाणित नागरिक उपयोग के मामले' : 'VERIFIED CIVIC AI DEPLOYMENTS'}
+            <span>{isHi ? 'प्रमाणित नागरिक AI परिनियोजन' : 'VERIFIED CIVIC AI DEPLOYMENTS · 9 INITIATIVES'}</span>
           </div>
           <h2 className={styles.title}>
-            {isHi ? 'बिहार में AI का वास्तविक प्रभाव' : 'Real-World AI Impact Across Bihar'}
+            {isHi ? (
+              <>बिहार भर में <span className={styles.accentText}>AI का वास्तविक प्रभाव</span></>
+            ) : (
+              <>Real-World <span className={styles.accentText}>AI Impact</span> Across Bihar</>
+            )}
           </h2>
           <p className={styles.subtitle}>
             {isHi

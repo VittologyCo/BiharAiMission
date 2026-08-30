@@ -1,0 +1,29 @@
+{
+  "links": {
+    "home": "होम",
+    "learning": "लर्निंग हब",
+    "tools": "AI टूल्स",
+    "cases": "केस स्टडीज",
+    "policy": "नीति एवं ढांचा",
+    "startups": "स्टार्टअप्स",
+    "about": "हमारे बारे में",
+    "blog": "ब्लॉग",
+    "getInvolved": "जुड़ें ↗"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "register": "Register",
+    "dashboard": "🎓 मेरा डैशबोर्ड",
+    "admin": "एडमिन पोर्टल",
+    "logout": "लॉगआउट"
+  },
+  "menu": {
+    "title": "नेविगेशन",
+    "close": "मेनू बंद करें",
+    "toggle": "नेविगेशन मेनू खोलें / बंद करें",
+    "userMenu": "उपयोगकर्ता प्रोफ़ाइल मेनू",
+    "switchLang": "भाषा / Language",
+    "switchEn": "Switch to English",
+    "switchHi": "हिंदी में बदलें"
+  }
+}

@@ -123,6 +123,7 @@ const AppLayout = ({
             isOpen={isAuthModalOpen} 
             onClose={() => setIsAuthModalOpen(false)} 
             defaultTab={authDefaultTab}
+            onOpenRegistration={onOpenRegistration}
           />
           <ContactUsModal
             isOpen={isContactModalOpen}

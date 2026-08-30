@@ -1,0 +1,55 @@
+{
+  "actions": {
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next →",
+    "copy": "Copy",
+    "copied": "Copied! ✓",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "downloadPdf": "Download PDF",
+    "viewDetails": "View Details →",
+    "explore": "Explore →",
+    "learnMore": "Learn More →",
+    "startLearning": "Start Learning AI",
+    "tryAgain": "Try Again"
+  },
+  "status": {
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "pending": "Pending",
+    "passed": "Passed",
+    "failed": "Needs Improvement",
+    "active": "Active",
+    "comingSoon": "Coming Soon",
+    "completed": "Completed"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalidEmail": "Please enter a valid email address.",
+    "invalidMobile": "Please enter a valid 10-digit mobile number.",
+    "passwordMin": "Password must be at least {{min}} characters.",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "fillAllRequired": "Please fill all required (*) fields."
+  },
+  "units": {
+    "year_one": "{{count}} Year",
+    "year_other": "{{count}} Years",
+    "month_one": "{{count}} Month",
+    "month_other": "{{count}} Months",
+    "day_one": "{{count}} Day",
+    "day_other": "{{count}} Days",
+    "minute_one": "{{count}} Min",
+    "minute_other": "{{count}} Mins"
+  },
+  "scores": {
+    "passingThreshold": "Passing Criteria: {{percent}}%",
+    "achievedScore": "Your Score: {{score}} / {{total}} ({{percent}}%)"
+  }
+}
