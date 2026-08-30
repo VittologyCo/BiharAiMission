@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import UserAvatar from '../UserAvatar/UserAvatar';
 
 export default function Navbar({ onOpenAuth, onOpenRegistration }) {
   const { t, i18n } = useTranslation(['navbar', 'common']);
   const { user, logout } = useAuth();
+  const toast = useToast();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -60,6 +62,14 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
 
   const handleNavClick = () => {
     setMobileOpen(false);
+  };
+
+  const handleLockedSignIn = () => {
+    toast?.info(
+      isHi 
+        ? '🔒 सदस्य पोर्टल साइन-इन जल्द शुरू होगा। कृपया नए सदस्य के रूप में पंजीकरण करें।' 
+        : '🔒 Member Portal Sign-In is launching soon. Please click Register to join.'
+    );
   };
 
   const handleLanguageChange = (newLang) => {
@@ -187,10 +197,13 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                     className="mobile-menu-signin-btn" 
                     onClick={() => {
                       handleNavClick();
-                      if (onOpenAuth) onOpenAuth('login');
+                      handleLockedSignIn();
                     }}
+                    title={isHi ? 'साइन-इन जल्द शुरू होगा' : 'Sign-In Coming Soon'}
+                    style={{ opacity: 0.9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                   >
                     <span>{t('auth.signIn', { defaultValue: 'Sign In' })}</span>
+                    <span className="nav-lock-badge" title="Coming Soon" style={{ fontSize: '11px' }}>🔒</span>
                   </button>
                 </div>
               )}
@@ -330,9 +343,12 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                 <button 
                   type="button" 
                   className="nav-signin-btn" 
-                  onClick={() => onOpenAuth && onOpenAuth('login')}
+                  onClick={handleLockedSignIn}
+                  title={isHi ? 'साइन-इन जल्द शुरू होगा' : 'Sign-In Coming Soon'}
+                  style={{ opacity: 0.9, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                 >
-                  {t('auth.signIn', { defaultValue: 'Sign In' })}
+                  <span>{t('auth.signIn', { defaultValue: 'Sign In' })}</span>
+                  <span className="nav-lock-badge" title="Coming Soon" style={{ fontSize: '11px' }}>🔒</span>
                 </button>
                 <button 
                   type="button" 
