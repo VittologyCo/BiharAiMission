@@ -815,25 +815,28 @@ body:hover #cursor-spotlight { opacity: 1; }
   cursor: pointer !important;
 }
 
-/* MOBILE MENU TOGGLE BUTTON (STRICTLY HIDDEN ON DESKTOP) */
-@media (min-width: 992px) {
+/* MOBILE MENU TOGGLE BUTTON (STRICTLY HIDDEN ON DESKTOP >1180px) */
+@media (min-width: 1181px) {
   .mobile-toggle {
     display: none !important;
   }
 }
 
-@media (max-width: 991px) {
+@media (max-width: 1180px) {
   .mobile-toggle {
     display: flex !important;
     background: var(--color-sand-100, #F3ECE0) !important;
-    border: none !important;
+    border: 1px solid var(--color-line, #E2D7C3) !important;
     color: var(--color-charcoal-900, #181512) !important;
     padding: 7px !important;
-    border-radius: 9999px !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
     transition: all 0.25s ease !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
+    flex-shrink: 0 !important;
   }
   .mobile-toggle:hover {
     transform: scale(1.05) !important;
@@ -841,15 +844,9 @@ body:hover #cursor-spotlight { opacity: 1; }
     color: var(--color-charcoal-900, #181512) !important;
   }
 }
-.mobile-toggle:hover {
-  transform: scale(1.05);
-  background: var(--color-sand-100, #F3ECE0);
-  color: var(--color-charcoal-900, #181512);
-  border-color: var(--color-charcoal-900, #181512);
-}
 .mobile-toggle svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2.5;

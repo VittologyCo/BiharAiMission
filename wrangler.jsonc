@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bihar-ai-mission",
+  "main": "worker.js",
   "compatibility_date": "2026-04-19",
   "observability": {
     "enabled": true

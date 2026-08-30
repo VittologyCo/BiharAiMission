@@ -310,20 +310,20 @@ export default function RegistrationModal({ isOpen, onClose }) {
           });
 
           if (authErr) {
-            if (authErr.message && (authErr.message.includes('already registered') || authErr.message.includes('User already exists'))) {
-              // Already registered in auth, try logging in
+            const isExisting = authErr.status === 422 || 
+                               (authErr.message && (authErr.message.includes('already registered') || authErr.message.includes('User already exists')));
+            if (isExisting) {
+              // Already registered in Supabase Auth, attempt silent login
               await supabase.auth.signInWithPassword({
                 email: payload.email,
                 password: form.password
               }).catch(() => {});
-            } else {
-              console.warn('Supabase auth signup warning:', authErr);
             }
           } else if (authData && authData.user) {
             authUser = authData.user;
           }
         } catch (authEx) {
-          console.warn('Supabase auth signup exception:', authEx);
+          // Silent fallback
         }
       }
 
