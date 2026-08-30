@@ -307,7 +307,7 @@ body:hover #cursor-spotlight { opacity: 1; }
   margin-top: 1px !important;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1181px) {
   .nav-links {
     display: flex !important;
     gap: 4px !important;
@@ -318,7 +318,7 @@ body:hover #cursor-spotlight { opacity: 1; }
   font-size: 13.5px !important;
   font-weight: 600 !important;
   color: var(--color-ink-muted, #5E554D) !important;
-  padding: 7px 16px !important;
+  padding: 6px 13px !important;
   border-radius: 9999px !important;
   text-decoration: none !important;
   position: relative !important;
@@ -350,7 +350,8 @@ body:hover #cursor-spotlight { opacity: 1; }
 .nav-r {
   display: flex !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
 }
 .desktop-only {
   display: flex !important;
@@ -4475,7 +4476,7 @@ h2.sh {
    COMPREHENSIVE RESPONSIVE MEDIA QUERIES
    ============================================================================ */
 
-@media (max-width: 1024px) {
+@media (max-width: 1180px) {
   /* NAVBAR */
   .topnav {
     top: 8px;

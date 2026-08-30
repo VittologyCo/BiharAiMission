@@ -5,7 +5,6 @@ const getDefaultSender = () => {
 };
 
 const sendEmailPayload = async (payload) => {
-  const apiKey = process.env.REACT_APP_RESEND_API_KEY || process.env.RESEND_API_KEY || '';
   const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const finalPayload = {
@@ -13,49 +12,36 @@ const sendEmailPayload = async (payload) => {
     from: payload.from || getDefaultSender(),
   };
 
-  // 1. Primary Strategy: Call Serverless Function (Server-to-Server, No CORS in production)
-  try {
-    const netlifyRes = await fetch('/.netlify/functions/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(finalPayload),
-    });
-    if (netlifyRes.ok) {
-      const data = await netlifyRes.json().catch(() => ({}));
-      console.log('✅ Email delivered via serverless function:', data);
-      return { success: true, data };
+  // 1. Primary Strategy: Call Serverless Function (/api/send-email on Cloudflare, /.netlify/functions/send-email on Netlify)
+  const endpoints = [
+    '/api/send-email',
+    '/.netlify/functions/send-email'
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalPayload),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.log(`✅ Email delivered via serverless function (${ep}):`, data);
+        return { success: true, data };
+      }
+    } catch (e) {
+      // Endpoint not available or network error, continue to next
     }
-  } catch (e) {
-    // Standalone local development without serverless emulator
   }
 
-  // 2. In local development without a running backend function, simulate success to avoid browser CORS errors
+  // 2. In local development without a running serverless backend, simulate success
   if (isLocal) {
     console.info(`ℹ️ [Local Dev] Email queued/simulated for ${finalPayload.to}: "${finalPayload.subject}"`);
     return { success: true, simulated: true };
   }
 
-  // 3. Fallback when deployed if serverless function not present
-  if (apiKey) {
-    try {
-      const directRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(finalPayload),
-      });
-      if (directRes.ok) {
-        const data = await directRes.json().catch(() => ({}));
-        return { success: true, data };
-      }
-    } catch (e) {
-      // Direct browser-to-API calls will be blocked by CORS
-    }
-  }
-
-  return { success: false, reason: 'Email service unavailable in current environment' };
+  return { success: false, reason: 'Email serverless function unavailable or returned non-200' };
 };
 
 export const sendContactEmailViaResend = async ({ name, email, description }) => {

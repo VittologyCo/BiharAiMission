@@ -243,10 +243,11 @@
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
   color: var(--color-charcoal-900, #181512);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
 }
 
 .req {

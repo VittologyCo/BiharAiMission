@@ -709,7 +709,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>{isHi ? 'प्रखंड (Block)' : 'Block'} <span className={styles.req}>*</span></label>
+                <label className={styles.label}>{isHi ? 'प्रखंड (Block / City)' : 'Block / Tehsil'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="text"

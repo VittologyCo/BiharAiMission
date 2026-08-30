@@ -25,7 +25,7 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
   // Automatically close mobile navbar on screen resize to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 992) {
+      if (window.innerWidth >= 1180) {
         setMobileOpen(false);
       }
     };
