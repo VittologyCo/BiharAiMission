@@ -29,26 +29,26 @@ BEGIN
   -- 2. Delete from public.user_details (triggers RLS & Realtime DELETE events)
   DELETE FROM public.user_details 
   WHERE lower(email) = clean_email 
-     OR (auth_user_id IS NOT NULL AND user_id = auth_user_id::text);
+     OR (auth_user_id IS NOT NULL AND user_id::text = auth_user_id::text);
   
   -- 3. Delete from daily_task_submissions (all practical exercises & uploads)
   IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'daily_task_submissions') THEN
     DELETE FROM public.daily_task_submissions 
     WHERE lower(user_email) = clean_email 
-       OR (auth_user_id IS NOT NULL AND user_id = auth_user_id::text);
+       OR (auth_user_id IS NOT NULL AND user_id::text = auth_user_id::text);
   END IF;
 
   -- 4. Delete from officer_program_enrollments & masterclass_enrollments
   IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'officer_program_enrollments') THEN
     DELETE FROM public.officer_program_enrollments 
     WHERE lower(user_email) = clean_email 
-       OR (auth_user_id IS NOT NULL AND user_id = auth_user_id::text);
+       OR (auth_user_id IS NOT NULL AND user_id::text = auth_user_id::text);
   END IF;
 
   IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'masterclass_enrollments') THEN
     DELETE FROM public.masterclass_enrollments 
     WHERE lower(user_email) = clean_email 
-       OR (auth_user_id IS NOT NULL AND user_id = auth_user_id::text);
+       OR (auth_user_id IS NOT NULL AND user_id::text = auth_user_id::text);
   END IF;
 
   -- 5. Delete from user_enrollments (if exists)
@@ -83,7 +83,7 @@ BEGIN
   IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'admin_users') THEN
     DELETE FROM public.admin_users 
     WHERE lower(email) = clean_email 
-       OR (auth_user_id IS NOT NULL AND user_id = auth_user_id::text);
+       OR (auth_user_id IS NOT NULL AND user_id::text = auth_user_id::text);
   END IF;
 
   -- 10. Delete legacy registered_users / users_details (safe table checks)
@@ -96,6 +96,7 @@ BEGIN
   END IF;
 
   -- 11. Instantly terminate active Supabase Auth sessions & remove from auth.users
+  DELETE FROM auth.users WHERE lower(email) = clean_email;
   IF auth_user_id IS NOT NULL THEN
     -- Invalidate and purge all active session tokens
     DELETE FROM auth.sessions WHERE user_id = auth_user_id;

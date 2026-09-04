@@ -1,12 +1,18 @@
--- ====================================================================
--- SUPABASE RPC FUNCTION: DELETE USER BY ADMIN (FIXED & HARDENED)
--- Run this script in your Supabase SQL Editor (SQL Editor -> New Query -> Run)
--- ====================================================================
+-- ==============================================================================
+-- Migration 017: Fix User Purge RPC (UUID casting bug) & Purge Test Accounts
+-- Run this script in the Supabase SQL Editor (SQL Editor -> New Query -> Run)
+-- 
+-- Fixes:
+-- 1. Corrects `operator does not exist: uuid = text` in `delete_user_by_admin`.
+-- 2. Directly purges `praveerkishore45@gmail.com` and `praveerkishore456@gmail.com`
+--    from auth.users, auth.sessions, public.user_details, and all related tables.
+-- ==============================================================================
 
--- Drop any existing function signature with different return types (boolean, void, jsonb)
+-- 1. Drop existing function signatures to ensure clean replacement
 DROP FUNCTION IF EXISTS public.delete_user_by_admin(text);
 DROP FUNCTION IF EXISTS public.delete_user_by_admin(character varying);
 
+-- 2. Create the fixed SECURITY DEFINER purge RPC
 CREATE OR REPLACE FUNCTION public.delete_user_by_admin(email_input TEXT)
 RETURNS jsonb AS $$
 DECLARE
@@ -107,4 +113,38 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Grant execution permissions
 GRANT EXECUTE ON FUNCTION public.delete_user_by_admin(TEXT) TO anon, authenticated, service_role;
+
+-- ==============================================================================
+-- 3. IMMEDIATE DIRECT PURGE OF TEST EMAILS:
+--    praveerkishore45@gmail.com and praveerkishore456@gmail.com
+-- ==============================================================================
+
+-- A. Delete from public.user_details
+DELETE FROM public.user_details 
+WHERE lower(email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+
+-- B. Delete any related enrollments / submissions if present
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'daily_task_submissions') THEN
+    DELETE FROM public.daily_task_submissions WHERE lower(user_email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'officer_program_enrollments') THEN
+    DELETE FROM public.officer_program_enrollments WHERE lower(user_email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'masterclass_enrollments') THEN
+    DELETE FROM public.masterclass_enrollments WHERE lower(user_email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+  END IF;
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'user_course_progress') THEN
+    DELETE FROM public.user_course_progress WHERE lower(user_email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+  END IF;
+END $$;
+
+-- C. Delete from auth.users (cascades to auth.sessions and auth.identities)
+DELETE FROM auth.users 
+WHERE lower(email) IN ('praveerkishore45@gmail.com', 'praveerkishore456@gmail.com');
+
+-- 4. Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
