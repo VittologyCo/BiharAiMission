@@ -41,10 +41,10 @@ export async function onRequest(context) {
       });
     }
 
-    const defaultKey = typeof atob === 'function' 
-      ? atob('cmVfNkxTVWJBOVdfMjFBYzZKalp2dkg5QVlWV0NHa0hSWktZ') 
-      : '';
-    const apiKey = env?.RESEND_API_KEY || env?.REACT_APP_RESEND_API_KEY || defaultKey;
+    const apiKey =
+      env?.RESEND_API_KEY ||
+      env?.REACT_APP_RESEND_API_KEY ||
+      env?.REACT_APP_RESEND_API_KI;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured' }), {
         status: 500,
@@ -55,7 +55,12 @@ export async function onRequest(context) {
       });
     }
 
-    const sender = from || env?.RESEND_FROM_EMAIL || env?.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@resend.dev>';
+    const sender =
+      from ||
+      env?.RESEND_FROM_EMAIL ||
+      env?.REACT_APP_RESEND_FROM_EMAIL ||
+      env?.REACT_APP_RESEND_FROM ||
+      'Bihar AI Mission <onboarding@biharaimission.org>';
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',

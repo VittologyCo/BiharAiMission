@@ -372,23 +372,62 @@ export default function RegistrationModal({ isOpen, onClose }) {
         }
       }
 
-      // 2. Save profile directly to public.user_details table with password
-      try {
-        const { error: dbError } = await supabase
-          .from('user_details')
-          .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
-        if (dbError) {
-          console.warn('user_details upsert warning (RLS or unconfirmed session):', dbError);
-          // If duplicate key error specifically
-          if (dbError.code === '23505') {
-            toast?.info(isHi ? 'आपकी जानकारी अपडेट कर दी गई है।' : 'Your existing profile has been updated.');
-          }
-        }
-      } catch (dbEx) {
-        console.warn('Database save exception:', dbEx);
+      // 2. Link user_id from auth user if available
+      if (authUser && authUser.id) {
+        payload.user_id = authUser.id;
       }
 
-      // 3. Store local profile and active login session
+      // 3. Save profile to public.user_details with resilient multi-tier strategy
+      let dbSaved = false;
+      let lastDbError = null;
+
+      // Strategy A: Secure SECURITY DEFINER RPC (immune to client RLS restrictions)
+      try {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('register_candidate_profile', {
+          profile_data: payload
+        });
+        if (!rpcErr && rpcRes && rpcRes.success) {
+          dbSaved = true;
+          console.log('✅ Candidate registered via secure RPC:', rpcRes);
+        } else if (rpcErr) {
+          lastDbError = rpcErr;
+          console.warn('RPC register_candidate_profile notice:', rpcErr.message);
+        }
+      } catch (rpcEx) {
+        lastDbError = rpcEx;
+      }
+
+      // Strategy B: Direct public.user_details upsert fallback
+      if (!dbSaved) {
+        try {
+          const { error: dbError } = await supabase
+            .from('user_details')
+            .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
+          if (!dbError) {
+            dbSaved = true;
+            console.log('✅ Candidate registered via direct table upsert');
+          } else {
+            lastDbError = dbError;
+            console.warn('user_details direct upsert error:', dbError);
+            if (dbError.code === '23505') {
+              dbSaved = true; // Unique constraint conflict means record already exists
+              toast?.info(isHi ? 'आपकी जानकारी अपडेट कर दी गई है।' : 'Your existing profile has been updated.');
+            }
+          }
+        } catch (dbEx) {
+          lastDbError = dbEx;
+          console.warn('Database save exception:', dbEx);
+        }
+      }
+
+      // Verify that database persistence actually succeeded before declaring registration complete
+      if (!dbSaved) {
+        const errMsg = lastDbError?.message || 'Database registration failed';
+        console.error('Registration persistence failed:', lastDbError);
+        throw new Error(isHi ? 'डेटाबेस में पंजीकरण विफल रहा। कृपया पुनः प्रयास करें।' : `Database save failed: ${errMsg}`);
+      }
+
+      // 4. Store local profile and active login session
       try {
         const sessionUser = {
           id: authUser?.id || 'usr-' + Date.now(),
@@ -403,7 +442,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
         localStorage.setItem('bihar_ai_user', JSON.stringify(sessionUser));
       } catch (e) {}
 
-      // 4. Send official Resend Welcome Confirmation Email
+      // 5. Send official Resend Welcome Confirmation Email
       try {
         await sendRegistrationThankYouEmail({
           fullName: payload.full_name,
@@ -417,7 +456,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
         console.warn('Background welcome email dispatch notice:', emailErr);
       }
 
-      // 5. Success screen display
+      // 6. Success screen display
       setIsSuccess(true);
       toast?.success(
         isHi
@@ -426,7 +465,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
       );
     } catch (err) {
       console.error('Registration exception:', err);
-      toast?.error(isHi ? 'नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।' : 'Network error. Please try again.');
+      toast?.error(err?.message || (isHi ? 'पंजीकरण त्रुटि। कृपया पुनः प्रयास करें।' : 'Registration error. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

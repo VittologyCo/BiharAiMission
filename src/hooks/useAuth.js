@@ -159,10 +159,17 @@ const syncUserToDetails = async (fullName, email, designation, phone, district, 
         detailData.password = password;
       }
 
-      await withAuthRetry(
-        () => supabase.from('user_details').upsert([detailData], { onConflict: 'email' }),
-        { isWrite: true, idempotent: true }
-      ).catch(() => {});
+      // Try secure RPC first (immune to client RLS restrictions), fallback to direct upsert
+      const rpcResult = await supabase.rpc('register_candidate_profile', {
+        profile_data: detailData
+      }).catch(() => null);
+
+      if (!rpcResult || !rpcResult.data || !rpcResult.data.success) {
+        await withAuthRetry(
+          () => supabase.from('user_details').upsert([detailData], { onConflict: 'email' }),
+          { isWrite: true, idempotent: true }
+        ).catch(() => {});
+      }
     }
   } catch (err) {
     console.warn('Sync user_details info:', err);
