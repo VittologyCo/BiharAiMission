@@ -1,5 +1,6 @@
 import React from 'react';
 import Hero from '../../components/Hero/Hero';
+import DailyNewsRadar from '../../components/DailyNewsRadar/DailyNewsRadar';
 import Pillars from '../../components/Pillars/Pillars';
 import UseCases from '../../components/UseCases/UseCases';
 import CTA from '../../components/CTA/CTA';
@@ -21,6 +22,7 @@ const HomePage = ({ onOpenContact, onOpenRegistration }) => {
         schema={homeSchema}
       />
       <Hero onOpenRegistration={onOpenRegistration} />
+      <DailyNewsRadar />
       <Pillars />
       <UseCases />
       <CTA onOpenContact={onOpenContact} />

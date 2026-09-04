@@ -223,7 +223,7 @@ const GetInvolvedModal = ({ isOpen, onClose }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg" title="Get Involved with Bihar AI" subtitle="Translate the national AI vision into local action for Bihar.">
-      <form className={styles.body} onSubmit={handleSubmit}>
+      <form className={styles.body} onSubmit={handleSubmit} autoComplete="off">
         {/* Personal Details */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
@@ -233,17 +233,17 @@ const GetInvolvedModal = ({ isOpen, onClose }) => {
           <div className={styles.grid}>
             <div className={styles.field}>
               <label className={styles.label}>Full Name<span className={styles.required}>*</span></label>
-              <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className={`${styles.input} ${errors.fullName ? styles.inputError : ''}`} placeholder="Enter your full name" />
+              <input type="text" name="gi_fullName" id="gi_fullName" value={formData.fullName} onChange={handleChange} className={`${styles.input} ${errors.fullName ? styles.inputError : ''}`} placeholder="Enter your full name" autoComplete="off" autoCorrect="off" spellCheck="false" />
               {errors.fullName && <span className={styles.errorMsg}>{errors.fullName}</span>}
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Email Address<span className={styles.required}>*</span></label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} className={`${styles.input} ${errors.email ? styles.inputError : ''}`} placeholder="yourname@domain.com" />
+              <input type="email" name="gi_email" id="gi_email" value={formData.email} onChange={handleChange} className={`${styles.input} ${errors.email ? styles.inputError : ''}`} placeholder="yourname@domain.com" autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck="false" />
               {errors.email && <span className={styles.errorMsg}>{errors.email}</span>}
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Mobile Number<span className={styles.required}>*</span></label>
-              <input type="tel" name="mobile" value={formData.mobile} onChange={handleChange} className={`${styles.input} ${errors.mobile ? styles.inputError : ''}`} placeholder="+91" />
+              <input type="tel" name="gi_mobile" id="gi_mobile" value={formData.mobile} onChange={handleChange} className={`${styles.input} ${errors.mobile ? styles.inputError : ''}`} placeholder="+91" autoComplete="off" autoCorrect="off" spellCheck="false" />
               {errors.mobile && <span className={styles.errorMsg}>{errors.mobile}</span>}
             </div>
             <div className={styles.field}>
@@ -257,7 +257,7 @@ const GetInvolvedModal = ({ isOpen, onClose }) => {
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Age (Optional)</label>
-              <input type="number" name="age" value={formData.age} onChange={handleChange} className={styles.input} placeholder="Enter age" min="10" max="100" />
+              <input type="number" name="gi_age" id="gi_age" value={formData.age} onChange={handleChange} className={styles.input} placeholder="Enter age" min="10" max="100" autoComplete="off" />
             </div>
           </div>
         </div>

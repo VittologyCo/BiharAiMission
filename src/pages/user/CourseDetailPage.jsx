@@ -13,6 +13,7 @@ import {
   resetUserCourseProgressAndAttempts
 } from '../../utils/coursesStorage';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../context/ToastContext';
 import { hasUserPassedExamLevel } from '../../utils/examStorage';
 import SEO from '../../components/SEO/SEO';
 const DEFAULT_FAQS_EN = [
@@ -58,6 +59,7 @@ export default function CourseDetailPage({ onGetInvolved }) {
   const navigate = useNavigate();
   const { lang } = useLanguage();
   const { user } = useAuth();
+  const toast = useToast();
   const isHi = lang === 'hi';
   const faqs = isHi ? DEFAULT_FAQS_HI : DEFAULT_FAQS_EN;
 
@@ -754,7 +756,7 @@ export default function CourseDetailPage({ onGetInvolved }) {
                                 cursor: isModuleUnlocked ? 'pointer' : 'not-allowed'
                               }}
                             >
-                              📁 Google Drive Resources
+                              📁 Study Materials & Notes ↗
                             </a>
                           )}
                           {clsLink && String(clsLink).trim().length > 0 && (

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { supabase } from '../../utils/supabase';
 import {
@@ -56,12 +56,24 @@ import {
   deleteExamSubmission,
   clearAllExamSubmissions,
   getCertificateSignatories,
+  fetchCertificateSignatoriesFromSupabase,
   setCertificateSignatories,
   getCleanCourseTitle,
   getExamLevelBadge
 } from '../../utils/examStorage';
+import { purgeAllUserData } from '../../hooks/useAuth';
 import styles from './Admin.module.css';
 import CertificateModal from '../../components/CertificateModal/CertificateModal';
+import AdminAnalyticsPanel from '../../components/AdminAnalyticsPanel/AdminAnalyticsPanel';
+import {
+  getAllTaskSubmissions,
+  reviewTaskSubmission,
+  getDailyTasks,
+  saveDailyTask,
+  deleteDailyTask,
+  getSubmissionLeaderboard,
+  subscribeToLeaderboardRealtime
+} from '../../services/taskService';
 
 function getCleanCandidateName(rawName, email) {
   let target = '';
@@ -147,7 +159,21 @@ const emptyCourseTemplate = {
 };
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('inquiries'); // 'inquiries' | 'courses' | 'programs'
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const validTabs = ['analytics', 'inquiries', 'live_classes', 'programs', 'exams', 'daily_tasks', 'blogs'];
+  const activeTab = validTabs.includes(rawTab) ? rawTab : 'analytics';
+
+  const setActiveTab = (tabId) => {
+    setSearchParams({ tab: tabId });
+    if (tabId === 'daily_tasks') {
+      loadAdminTaskSubmissions();
+    }
+  };
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Submissions State
   const [submissions, setSubmissions] = useState([]);
@@ -247,6 +273,163 @@ const AdminDashboard = () => {
   };
 
   const toast = useToast();
+
+  // Daily Tasks (Creation & Review) State
+  const [dailyTaskSubTab, setDailyTaskSubTab] = useState('manage'); // 'manage' | 'reviews'
+  const [adminDailyTasks, setAdminDailyTasks] = useState([]);
+  const [adminTaskSubmissions, setAdminTaskSubmissions] = useState([]);
+  const [adminUserDetailsMap, setAdminUserDetailsMap] = useState({});
+  const [taskSubFilter, setTaskSubFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  const [taskSearchQuery, setTaskSearchQuery] = useState('');
+  const [rejectModalTask, setRejectModalTask] = useState(null);
+  const [rejectFeedbackText, setRejectFeedbackText] = useState('');
+
+  // Task Creator Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTaskData, setEditingTaskData] = useState({
+    num: '',
+    toolName: '',
+    title: '',
+    classwork: '',
+    instructions: '',
+    finalSubmission: '',
+    category: 'AI Practical Classwork',
+  });
+
+  const loadAdminTasksData = async () => {
+    try {
+      const tasks = await getDailyTasks();
+      setAdminDailyTasks(tasks || []);
+    } catch (err) {
+      console.warn('Error loading admin daily tasks:', err);
+    }
+  };
+
+  const loadAdminTaskSubmissions = async () => {
+    try {
+      const subs = await getAllTaskSubmissions();
+      setAdminTaskSubmissions(subs || []);
+
+      if (supabase) {
+        const { data: users } = await supabase
+          .from('user_details')
+          .select('email, full_name, designation, role_type, organization, department, district');
+        if (users && Array.isArray(users)) {
+          const map = {};
+          users.forEach((u) => {
+            if (u.email) map[u.email.toLowerCase().trim()] = u;
+          });
+          setAdminUserDetailsMap(map);
+        }
+      }
+    } catch (err) {
+      console.warn('Error loading admin task submissions:', err);
+    }
+  };
+
+  const handleOpenCreateTaskModal = (taskToEdit = null) => {
+    if (taskToEdit) {
+      setEditingTaskData({
+        num: taskToEdit.num,
+        toolName: taskToEdit.toolName || '',
+        title: taskToEdit.title || '',
+        classwork: taskToEdit.classwork || '',
+        instructions: taskToEdit.instructions || '',
+        finalSubmission: Array.isArray(taskToEdit.finalSubmission)
+          ? taskToEdit.finalSubmission.join('\n')
+          : taskToEdit.finalSubmission || '',
+        category: taskToEdit.category || 'AI Practical Classwork',
+      });
+    } else {
+      const nextNum = adminDailyTasks.length > 0 ? Math.max(...adminDailyTasks.map((t) => Number(t.num))) + 1 : 1;
+      setEditingTaskData({
+        num: nextNum,
+        toolName: '',
+        title: '',
+        classwork: '',
+        instructions: '',
+        finalSubmission: '',
+        category: 'AI Practical Classwork',
+      });
+    }
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSaveTaskForm = async (e) => {
+    e.preventDefault();
+    if (!editingTaskData.toolName.trim() || !editingTaskData.title.trim()) {
+      toast.error('Tool Name and Task Title are required.');
+      return;
+    }
+
+    try {
+      await saveDailyTask(editingTaskData);
+      toast.success(`Task #${editingTaskData.num} saved successfully!`);
+      setIsTaskModalOpen(false);
+      await loadAdminTasksData();
+    } catch (err) {
+      toast.error('Failed to save task.');
+    }
+  };
+
+  const handleDeleteTaskAction = async (taskNum) => {
+    if (!window.confirm(`Are you sure you want to delete Task #${taskNum}?`)) return;
+    try {
+      await deleteDailyTask(taskNum);
+      toast.success(`Task #${taskNum} removed successfully.`);
+      await loadAdminTasksData();
+    } catch (err) {
+      toast.error('Failed to delete task.');
+    }
+  };
+
+  const handleApproveTask = async (sub) => {
+    try {
+      await reviewTaskSubmission({
+        submissionId: sub.id,
+        userEmail: sub.user_email,
+        taskId: sub.task_id,
+        status: 'APPROVED',
+        adminFeedback: null,
+        reviewedBy: 'Admin Reviewer',
+      });
+      toast.success(`✅ Task #${sub.task_id} approved for ${sub.user_name || sub.user_email}!`);
+      await loadAdminTaskSubmissions();
+    } catch (err) {
+      toast.error('Failed to approve task.');
+    }
+  };
+
+  const handleOpenRejectModal = (sub) => {
+    setRejectModalTask(sub);
+    setRejectFeedbackText(sub.admin_feedback || '');
+  };
+
+  const handleConfirmRejectTask = async (e) => {
+    e.preventDefault();
+    if (!rejectFeedbackText.trim()) {
+      toast.error('Please provide a reason / feedback instructions for rejection.');
+      return;
+    }
+
+    try {
+      await reviewTaskSubmission({
+        submissionId: rejectModalTask.id,
+        userEmail: rejectModalTask.user_email,
+        taskId: rejectModalTask.task_id,
+        status: 'REJECTED',
+        adminFeedback: rejectFeedbackText.trim(),
+        reviewedBy: 'Admin Reviewer',
+      });
+      toast.success(`Task #${rejectModalTask.task_id} marked as REJECTED with feedback instructions.`);
+      setRejectModalTask(null);
+      setRejectFeedbackText('');
+      await loadAdminTaskSubmissions();
+    } catch (err) {
+      toast.error('Failed to update task rejection status.');
+    }
+  };
+
   const loadEnrollmentsData = async () => {
     try {
       const [mcEnr, offEnr, offProg] = await Promise.all([
@@ -269,18 +452,30 @@ const AdminDashboard = () => {
     loadExamSubmissions();
     loadSignatories();
     loadEnrollmentsData();
+    loadAdminTaskSubmissions();
+    loadAdminTasksData();
 
     const handleExamUpdate = () => loadExamSubmissions();
     const handleLiveClassUpdate = () => setLiveClasses(getLiveClassesFromStorage());
     const handleQuestionsUpdate = () => setMasterclassQuestions(getMasterclassQuestionsFromStorage());
     const handleBlogsUpdate = () => setBlogs(getBlogsFromStorage());
     const handleProgressUpdate = () => loadEnrollmentsData();
+    const handleTasksUpdate = () => {
+      loadAdminTaskSubmissions();
+      loadAdminTasksData();
+    };
 
     window.addEventListener('bihar_ai_exams_updated', handleExamUpdate);
     window.addEventListener('bihar_ai_live_classes_updated', handleLiveClassUpdate);
     window.addEventListener('bihar_ai_masterclass_questions_updated', handleQuestionsUpdate);
     window.addEventListener('bihar_ai_blogs_updated', handleBlogsUpdate);
     window.addEventListener('bihar_ai_progress_updated', handleProgressUpdate);
+    window.addEventListener('storage', handleTasksUpdate);
+    window.addEventListener('bihar_ai_tasks_updated', handleTasksUpdate);
+
+    const unsubscribeLeaderboard = subscribeToLeaderboardRealtime(() => {
+      loadAdminTaskSubmissions();
+    });
 
     return () => {
       window.removeEventListener('bihar_ai_exams_updated', handleExamUpdate);
@@ -288,6 +483,9 @@ const AdminDashboard = () => {
       window.removeEventListener('bihar_ai_masterclass_questions_updated', handleQuestionsUpdate);
       window.removeEventListener('bihar_ai_blogs_updated', handleBlogsUpdate);
       window.removeEventListener('bihar_ai_progress_updated', handleProgressUpdate);
+      window.removeEventListener('storage', handleTasksUpdate);
+      window.removeEventListener('bihar_ai_tasks_updated', handleTasksUpdate);
+      if (typeof unsubscribeLeaderboard === 'function') unsubscribeLeaderboard();
     };
     // eslint-disable-next-line
   }, [currentPage, searchTerm]);
@@ -370,8 +568,15 @@ const AdminDashboard = () => {
     }
 
     try {
+      const remoteCourses = await fetchCoursesFromSupabase();
+      if (Array.isArray(remoteCourses)) {
+        setCourses(remoteCourses);
+      }
+    } catch (e) {}
+
+    try {
       const remoteProgs = await fetchProgramsFromSupabase();
-      if (Array.isArray(remoteProgs) && remoteProgs.length > 0) {
+      if (Array.isArray(remoteProgs)) {
         setPrograms(remoteProgs);
       }
     } catch (e) {}
@@ -502,15 +707,61 @@ const AdminDashboard = () => {
       `Are you sure you want to delete the application/inquiry for "${candidateIdentifier}"? This will delete the record permanently from the database.`,
       async () => {
         try {
-          // 1. Delete from Supabase tables and auth.users via RPC cleanly using try/catch blocks
+          // 1. Delete from Supabase tables and auth.users via RPC & direct parallel deletes
           if (sub.email) {
             const cleanEmail = sub.email.toLowerCase().trim();
-            try { await supabase.rpc('delete_user_by_admin', { email_input: cleanEmail }); } catch (rpcErr) { console.warn('RPC delete info:', rpcErr); }
-            try { await supabase.from('user_details').delete().eq('email', cleanEmail); } catch (e) {}
-            try { await supabase.from('masterclass_enrollments').delete().eq('user_email', cleanEmail); } catch (e) {}
-            try { await supabase.from('masterclass_exam_submissions').delete().eq('candidate_email', cleanEmail); } catch (e) {}
-            try { await supabase.from('officer_program_exam_submissions').delete().eq('candidate_email', cleanEmail); } catch (e) {}
-            localStorage.removeItem('bihar_ai_welcome_sent_' + cleanEmail);
+            
+            // A. Execute backend RPC purge (deletes from auth.users, auth.sessions, and custom tables)
+            try { 
+              await supabase.rpc('delete_user_by_admin', { email_input: cleanEmail }); 
+            } catch (rpcErr) { 
+              console.warn('RPC delete info:', rpcErr); 
+            }
+
+            // B. Explicit direct parallel deletes across every user table to guarantee zero leftovers
+            try {
+              await Promise.allSettled([
+                supabase.from('user_details').delete().eq('email', cleanEmail),
+                supabase.from('daily_task_submissions').delete().eq('user_email', cleanEmail),
+                supabase.from('officer_program_enrollments').delete().eq('user_email', cleanEmail),
+                supabase.from('masterclass_enrollments').delete().eq('user_email', cleanEmail),
+                supabase.from('user_enrollments').delete().eq('user_email', cleanEmail),
+                supabase.from('officer_program_exam_submissions').delete().eq('candidate_email', cleanEmail),
+                supabase.from('masterclass_exam_submissions').delete().eq('candidate_email', cleanEmail),
+                supabase.from('exam_submissions').delete().eq('candidate_email', cleanEmail),
+                supabase.from('user_course_progress').delete().eq('user_email', cleanEmail),
+                supabase.from('masterclass_payments').delete().eq('user_email', cleanEmail),
+                supabase.from('admin_users').delete().eq('email', cleanEmail),
+              ]);
+              if (sub.user_id) {
+                await Promise.allSettled([
+                  supabase.from('user_details').delete().eq('user_id', sub.user_id),
+                  supabase.from('daily_task_submissions').delete().eq('user_id', sub.user_id),
+                ]);
+              }
+            } catch (e) {
+              console.warn('Direct tables delete error:', e);
+            }
+
+            // C. Broadcast Realtime force-logout event to instantly kick out any active user sessions
+            try {
+              const authBroadcastChannel = supabase.channel('bihar_ai_auth_events');
+              authBroadcastChannel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  authBroadcastChannel.send({
+                    type: 'broadcast',
+                    event: 'user_deleted',
+                    payload: { email: cleanEmail, id: sub.id, user_id: sub.user_id }
+                  });
+                  setTimeout(() => supabase.removeChannel(authBroadcastChannel), 2000);
+                }
+              });
+            } catch (bcErr) {
+              console.warn('Auth event broadcast warning:', bcErr);
+            }
+
+            // D. Completely wipe all client-side data, enrollments, cached exams, & tokens for this user
+            purgeAllUserData(cleanEmail);
           }
           if (sub.id) {
             try { await supabase.from('user_details').delete().eq('id', sub.id); } catch (e) {}
@@ -612,6 +863,59 @@ const AdminDashboard = () => {
     );
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshAll = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        fetchSubmissions(),
+        fetchStats(),
+        loadCoursesAndPrograms(),
+        loadExamSubmissions(),
+        loadEnrollmentsData(),
+        loadAdminTaskSubmissions(),
+        loadAdminTasksData(),
+        (async () => {
+          try {
+            const remoteBlogs = await fetchBlogsFromSupabase();
+            if (Array.isArray(remoteBlogs)) setBlogs(remoteBlogs);
+            else setBlogs(getBlogsFromStorage());
+          } catch (e) {
+            setBlogs(getBlogsFromStorage());
+          }
+        })(),
+        (async () => {
+          try {
+            const remoteClasses = await fetchLiveClassesFromSupabase();
+            if (Array.isArray(remoteClasses)) setLiveClasses(remoteClasses);
+            else setLiveClasses(getLiveClassesFromStorage());
+          } catch (e) {
+            setLiveClasses(getLiveClassesFromStorage());
+          }
+        })(),
+        (async () => {
+          try {
+            await loadSignatories();
+          } catch (e) {}
+        })(),
+      ]);
+
+      window.dispatchEvent(new Event('bihar_ai_live_classes_updated'));
+      window.dispatchEvent(new Event('bihar_ai_blogs_updated'));
+      window.dispatchEvent(new Event('bihar_ai_exams_updated'));
+      window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
+      window.dispatchEvent(new Event('bihar_ai_progress_updated'));
+
+      toast.success('✨ Dashboard data refreshed and synced with Supabase!');
+    } catch (err) {
+      console.error('Refresh error:', err);
+      toast.error('Failed to refresh data.');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/admin');
@@ -698,42 +1002,62 @@ const AdminDashboard = () => {
     setIsModalOpen(true);
   };
 
-  const handleToggleCurtain = (item) => {
+  const handleToggleCurtain = async (item) => {
     const updated = { ...item, isComingSoon: !item.isComingSoon };
+    let res;
     if (item.type === 'course') {
       const list = courses.map((c) => (c.id === item.id ? updated : c));
       setCourses(list);
       saveCoursesToStorage(list);
-      saveCourseToSupabase(updated);
+      res = await saveCourseToSupabase(updated);
     } else {
       const list = programs.map((p) => (p.id === item.id ? updated : p));
       setPrograms(list);
       saveProgramsToStorage(list);
-      saveProgramToSupabase(updated);
+      res = await saveProgramToSupabase(updated);
+    }
+    if (res && res.error) {
+      toast.error(`⚠️ Status saved locally, but Supabase error: ${res.error.message || 'Database error'}`);
+    } else if (updated.isComingSoon) {
+      toast.info(`🏷️ "${item.title}" status changed to COMING SOON.`);
+    } else {
+      toast.success(`🚀 "${item.title}" is now LIVE / ACTIVE!`);
     }
   };
 
   const handleDeleteItem = (item) => {
+    const itemTypeLabel = item.type === 'course' ? 'Course' : 'Officer Program';
     requestConfirmation(
-      'Delete Item',
-      `Are you sure you want to delete "${item.title}"?`,
-      () => {
-        if (item.type === 'course') {
-          const list = courses.filter((c) => c.id !== item.id);
-          setCourses(list);
-          saveCoursesToStorage(list);
-          deleteCourseFromSupabase(item.id);
-        } else {
-          const list = programs.filter((p) => p.id !== item.id);
-          setPrograms(list);
-          saveProgramsToStorage(list);
-          deleteProgramFromSupabase(item.id);
+      `Delete ${itemTypeLabel}`,
+      `Are you sure you want to permanently delete "${item.title}"? This will remove it from the website and Supabase database.`,
+      async () => {
+        try {
+          let res;
+          if (item.type === 'course') {
+            const list = courses.filter((c) => c.id !== item.id);
+            setCourses(list);
+            saveCoursesToStorage(list);
+            res = await deleteCourseFromSupabase(item.id);
+          } else {
+            const list = programs.filter((p) => p.id !== item.id);
+            setPrograms(list);
+            saveProgramsToStorage(list);
+            res = await deleteProgramFromSupabase(item.id);
+          }
+
+          if (res && res.error) {
+            toast.error(`Failed to delete "${item.title}" from Supabase: ${res.error.message || 'Database error'}`);
+          } else {
+            toast.success(`🗑️ ${itemTypeLabel} "${item.title}" deleted permanently from Supabase & website!`);
+          }
+        } catch (err) {
+          toast.error(`Error deleting ${itemTypeLabel.toLowerCase()}: ${err.message || 'Unknown error'}`);
         }
       }
     );
   };
 
-  const handleSaveItem = (e) => {
+  const handleSaveItem = async (e) => {
     e.preventDefault();
     if (!editingItem) return;
 
@@ -765,6 +1089,9 @@ const AdminDashboard = () => {
         .filter(Boolean),
     };
 
+    let res;
+    const itemTypeLabel = editingItem.type === 'course' ? 'Foundational Course' : 'Officer Program';
+
     if (editingItem.type === 'course') {
       const exists = courses.some((c) => c.id === formattedItem.id);
       const list = exists
@@ -772,7 +1099,7 @@ const AdminDashboard = () => {
         : [...courses, formattedItem];
       setCourses(list);
       saveCoursesToStorage(list);
-      saveCourseToSupabase(formattedItem);
+      res = await saveCourseToSupabase(formattedItem);
     } else {
       const exists = programs.some((p) => p.id === formattedItem.id);
       const list = exists
@@ -780,11 +1107,17 @@ const AdminDashboard = () => {
         : [...programs, formattedItem];
       setPrograms(list);
       saveProgramsToStorage(list);
-      saveProgramToSupabase(formattedItem);
+      res = await saveProgramToSupabase(formattedItem);
     }
 
     setIsModalOpen(false);
     setEditingItem(null);
+
+    if (res && res.error) {
+      toast.error(`⚠️ Saved locally, but Supabase error: ${res.error.message || 'Database error'}`);
+    } else {
+      toast.success(`🎉 ${itemTypeLabel} "${formattedItem.title}" saved successfully to Supabase!`);
+    }
   };
 
   const formatForDateTimeLocal = (val) => {
@@ -907,25 +1240,38 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteLiveClass = (id) => {
+    const targetClass = liveClasses.find((item) => String(item.id) === String(id));
+    const title = targetClass?.courseName || 'Live Masterclass';
     requestConfirmation(
       'Delete Live Masterclass',
-      'Are you sure you want to delete this Live Class card and all its certification questions?',
+      `Are you sure you want to permanently delete "${title}" and all its certification questions from Supabase?`,
       async () => {
-        const updated = liveClasses.filter((item) => String(item.id) !== String(id));
-        saveLiveClassesToStorage(updated);
-        setLiveClasses(updated);
-        await deleteLiveClassFromSupabase(id);
-        if (String(selectedClassIdForExam) === String(id)) {
-          const nextId = updated.length > 0 ? updated[0].id : '';
-          setSelectedClassIdForExam(nextId);
-          if (!nextId) setMasterclassQuestions([]);
+        try {
+          const updated = liveClasses.filter((item) => String(item.id) !== String(id));
+          saveLiveClassesToStorage(updated);
+          setLiveClasses(updated);
+
+          const res = await deleteLiveClassFromSupabase(id);
+
+          if (String(selectedClassIdForExam) === String(id)) {
+            const nextId = updated.length > 0 ? updated[0].id : '';
+            setSelectedClassIdForExam(nextId);
+            if (!nextId) setMasterclassQuestions([]);
+          }
+
+          if (res && res.error) {
+            toast.error(`Failed to delete "${title}" from Supabase: ${res.error.message || 'Database error'}`);
+          } else {
+            toast.success(`🗑️ Masterclass "${title}" and all associated questions deleted permanently from Supabase!`);
+          }
+        } catch (err) {
+          toast.error(`Error deleting masterclass: ${err.message || 'Unknown error'}`);
         }
-        toast.success('Live Masterclass and its questions deleted from Supabase!');
       }
     );
   };
 
-  const handleToggleLiveClassExam = (id) => {
+  const handleToggleLiveClassExam = async (id) => {
     let toggledItem = null;
     const updated = liveClasses.map(item => {
       if (item.id === id) {
@@ -937,11 +1283,18 @@ const AdminDashboard = () => {
     saveLiveClassesToStorage(updated);
     setLiveClasses(updated);
     if (toggledItem) {
-      saveLiveClassToSupabase(toggledItem);
+      const res = await saveLiveClassToSupabase(toggledItem);
+      if (res && res.error) {
+        toast.error(`Exam toggle warning: ${res.error.message || 'Supabase update failed'}`);
+      } else if (toggledItem.isExamUnlocked) {
+        toast.success(`🔓 Certification Exam UNLOCKED for "${toggledItem.courseName}"! Students can now take the test.`);
+      } else {
+        toast.info(`🔒 Certification Exam LOCKED for "${toggledItem.courseName}".`);
+      }
     }
   };
 
-  const handleToggleLiveClassSessionEnded = (id) => {
+  const handleToggleLiveClassSessionEnded = async (id) => {
     let toggledItem = null;
     const updated = liveClasses.map(item => {
       if (item.id === id) {
@@ -959,12 +1312,12 @@ const AdminDashboard = () => {
     saveLiveClassesToStorage(updated);
     setLiveClasses(updated);
     if (toggledItem) {
-      saveLiveClassToSupabase(toggledItem);
+      await saveLiveClassToSupabase(toggledItem);
     }
     if (toggledItem?.isSessionEnded) {
-      toast.success('Masterclass session marked as ENDED. 24-hour video & exam access window started!');
+      toast.success(`Masterclass session marked as ENDED. 24-hour video & exam access window started for "${toggledItem?.courseName || 'Masterclass'}"!`);
     } else {
-      toast.info('Masterclass session marked as LIVE NOW.');
+      toast.info(`Masterclass "${toggledItem?.courseName || 'Masterclass'}" marked as LIVE NOW.`);
     }
   };
 
@@ -1175,16 +1528,22 @@ const AdminDashboard = () => {
   const handleOpenAddBlog = () => {
     setEditingBlog({
       id: `blog-${Date.now()}`,
+      slug: `article-${Date.now()}`,
       title: '',
+      title_hi: '',
       category: 'Governance',
       author: 'Bihar AI Mission Editorial Desk',
       authorRole: 'AI Governance Lead',
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }),
-      readTime: '4 min read',
+      readTime: '5 min read',
       excerpt: '',
+      excerpt_hi: '',
       content: '',
-      image: '',
+      content_hi: '',
+      image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+      tags: ['Bihar AI Mission', 'GovTech'],
       isPublished: true,
+      views: 100,
       createdAt: new Date().toISOString()
     });
     setIsBlogModalOpen(true);
@@ -1279,7 +1638,23 @@ const AdminDashboard = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const filteredSubmissions = useMemo(() => {
+    if (!searchTerm.trim()) return submissions;
+    const q = searchTerm.toLowerCase();
+    return submissions.filter((s) => {
+      const name = (s.full_name || '').toLowerCase();
+      const email = (s.email || '').toLowerCase();
+      const role = (s.role_type || '').toLowerCase();
+      const district = (s.district || '').toLowerCase();
+      return name.includes(q) || email.includes(q) || role.includes(q) || district.includes(q);
+    });
+  }, [submissions, searchTerm]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE));
+  const paginatedSubmissions = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredSubmissions.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredSubmissions, currentPage]);
 
   const InfoItem = ({ label, value, fullWidth = false }) => (
     <div className={`${styles.infoItem} ${fullWidth ? styles.fullWidth : ''}`}>
@@ -1288,322 +1663,464 @@ const AdminDashboard = () => {
     </div>
   );
 
+  const navItems = [
+    {
+      id: 'analytics',
+      label: 'Real-Time Analytics',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3v18h18" />
+          <path d="M18 17V9" />
+          <path d="M13 17V5" />
+          <path d="M8 17v-3" />
+        </svg>
+      ),
+      count: 'Live',
+    },
+    {
+      id: 'inquiries',
+      label: 'Applications & Inquiries',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      ),
+      count: stats.total,
+    },
+    {
+      id: 'live_classes',
+      label: 'Live Master Classes',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="23 7 16 12 23 17 23 7"></polygon>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+      ),
+      count: liveClasses.length,
+    },
+    {
+      id: 'programs',
+      label: "Programs for Officers",
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      ),
+      count: programs.length,
+    },
+    {
+      id: 'exams',
+      label: 'Exams & Certificates',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="7"></circle>
+          <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+        </svg>
+      ),
+      count: examSubmissions.length,
+    },
+    {
+      id: 'daily_tasks',
+      label: 'Daily Tasks & Review',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      ),
+      count: adminTaskSubmissions.length,
+    },
+    {
+      id: 'blogs',
+      label: 'Blog Management',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+      ),
+      count: blogs.length,
+    },
+  ];
+
+  const currentNavItem = navItems.find((n) => n.id === activeTab) || navItems[0];
+
   return (
-    <div className={styles.adminContainer}>
-      <header className={styles.dashboardHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img
-            src="/bi_logo.png"
-            alt="Bihar AI Mission Logo"
-            style={{ width: '36px', height: '36px', objectFit: 'contain' }}
-          />
-          <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#111827' }}>
-            Bihar AI Mission{' '}
-            <span style={{ color: '#000000', fontWeight: '600', fontSize: '14px', marginLeft: '4px' }}>
-              Admin Portal
-            </span>
-          </h2>
+    <div className={styles.adminShell}>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileDrawerOpen && (
+        <div
+          className={styles.sidebarBackdrop}
+          style={{ display: 'block' }}
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+      )}
+
+      {/* LEFT SIDEBAR NAVIGATION */}
+      <aside className={`${styles.adminSidebar} ${isSidebarCollapsed ? styles.adminSidebarCollapsed : ''} ${isMobileDrawerOpen ? styles.sidebarDrawerOpen : ''}`}>
+        <div>
+          {/* Header & Logo */}
+          <div className={styles.sidebarHeader}>
+            <div className={styles.sidebarBrand}>
+              <img
+                src="/bi_logo.png"
+                alt="Bihar AI Mission Logo"
+                className={styles.sidebarBrandLogo}
+              />
+              {!isSidebarCollapsed && (
+                <div className={styles.sidebarBrandText}>
+                  <span className={styles.sidebarBrandTitle}>Bihar AI Mission</span>
+                  <span className={styles.sidebarBrandSubtitle}>Admin Portal</span>
+                </div>
+              )}
+            </div>
+
+            {/* Collapse toggle for Desktop */}
+            <button
+              type="button"
+              className={styles.sidebarCollapseToggle}
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              aria-label="Toggle Sidebar"
+            >
+              {isSidebarCollapsed ? '→' : '←'}
+            </button>
+          </div>
+
+          {/* Navigation Items */}
+          <nav className={styles.sidebarNav} aria-label="Admin Sections">
+            {!isSidebarCollapsed && (
+              <span className={styles.sidebarSectionLabel}>Workspace Navigation</span>
+            )}
+
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsMobileDrawerOpen(false);
+                  }}
+                  className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                  title={item.label}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <div className={styles.navItemLeft}>
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    {!isSidebarCollapsed && (
+                      <span className={styles.navLabel}>{item.label}</span>
+                    )}
+                  </div>
+
+                  {!isSidebarCollapsed && (
+                    <span className={styles.navBadge}>
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+
+        {/* Bottom Sidebar User Profile & Actions */}
+        <div className={styles.sidebarFooter}>
+          {!isSidebarCollapsed && (
+            <div className={styles.sidebarUserCard}>
+              <div className={styles.sidebarUserAvatar}>A</div>
+              <div className={styles.sidebarUserInfo}>
+                <span className={styles.sidebarUserName}>Mission Administrator</span>
+                <span className={styles.sidebarUserRole}>Super Admin • 24/7 Active</span>
+              </div>
+            </div>
+          )}
+
           <button
+            type="button"
             onClick={() => navigate('/')}
+            className={styles.sidebarActionBtn}
             style={{
-              background: 'transparent',
-              border: '1px solid rgba(24, 21, 18, 0.4)',
-              color: '#000000',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
+              background: 'rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(24, 21, 18, 0.12)',
+              color: '#111827',
             }}
+            title="Open Public Website"
           >
-            Website ↗
+            <span>↗</span>
+            {!isSidebarCollapsed && <span>View Public Website</span>}
           </button>
-          <button className={styles.logoutBtn} onClick={handleLogout}>
-            Sign Out
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={styles.sidebarActionBtn}
+            style={{
+              background: '#000000',
+              border: '1px solid #000000',
+              color: '#FFFFFF',
+            }}
+            title="Sign Out"
+          >
+            <span>⎋</span>
+            {!isSidebarCollapsed && <span>Sign Out</span>}
           </button>
         </div>
-      </header>
+      </aside>
 
-      <main className={styles.dashboardMain}>
-        {/* RECENT EXAMS PASSED CERTIFICATE ISSUANCE ALERT BANNER */}
-        {(() => {
-          const allSubs = getExamSubmissions();
-          const pendingAlerts = allSubs.filter((s) => s.isPassed && !s.isApproved);
-          if (pendingAlerts.length === 0 || alertDismissed) return null;
+      {/* RIGHT MAIN WORKSPACE */}
+      <div className={styles.adminMainContent}>
+        {/* Sticky Workspace Topbar */}
+        <header className={styles.workspaceTopBar}>
+          <div className={styles.topBarLeft}>
+            <button
+              type="button"
+              className={styles.mobileMenuToggle}
+              onClick={() => setIsMobileDrawerOpen(true)}
+              aria-label="Open Navigation Menu"
+            >
+              ☰ Menu
+            </button>
+            <h2 className={styles.topBarTitle}>
+              <span className={styles.navIcon}>{currentNavItem.icon}</span>
+              <span>{currentNavItem.label}</span>
+              <span className={styles.topBarBadge}>
+                {currentNavItem.count} items
+              </span>
+            </h2>
+          </div>
 
-          const firstPending = pendingAlerts[0];
-          const courseTitle = firstPending.masterclassTitle || firstPending.examTitle || 'Live Masterclass';
-
-          return (
-            <div
+          <div className={styles.topBarRight}>
+            <button
+              type="button"
+              onClick={handleRefreshAll}
+              disabled={isRefreshing}
               style={{
-                background: 'linear-gradient(135deg, #181512 0%, #26211C 100%)',
-                color: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '18px 24px',
-                marginBottom: '24px',
-                boxShadow: '0 12px 36px -4px rgba(0, 0, 0, 0.4), 0 0 24px rgba(217, 119, 6, 0.15)',
-                display: 'flex',
-                justifyContent: 'space-between',
+                background: isRefreshing ? '#F3ECE0' : '#FFFFFF',
+                border: '1.5px solid rgba(24, 21, 18, 0.15)',
+                color: isRefreshing ? '#C1552C' : '#181512',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: isRefreshing ? 'wait' : 'pointer',
+                display: 'inline-flex',
                 alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px',
-                border: '1px solid rgba(245, 158, 11, 0.35)',
-                position: 'relative'
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: isRefreshing ? '0 0 0 2px rgba(193, 85, 44, 0.2)' : 'none'
+              }}
+              title="Refresh and sync all live data from Supabase"
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'transform 0.5s ease',
+                  transform: isRefreshing ? 'rotate(360deg)' : 'none'
+                }}
+              >
+                🔄
+              </span>
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              style={{
+                background: 'transparent',
+                border: '1.5px solid rgba(24, 21, 18, 0.25)',
+                color: '#111827',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: 'pointer',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
-                <div
-                  style={{
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '12px',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '22px',
-                    flexShrink: 0,
-                    boxShadow: '0 0 16px rgba(245, 158, 11, 0.2)'
-                  }}
-                >
-                  🔔
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
-                      Candidate Certification Alert
-                    </h4>
-                    <span
-                      style={{
-                        background: '#FEF3C7',
-                        color: '#92400E',
-                        fontSize: '11px',
-                        fontWeight: '800',
-                        padding: '2px 8px',
-                        borderRadius: '6px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.6px'
-                      }}
-                    >
-                      Action Required
-                    </span>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '13.5px', color: '#D1D5DB', lineHeight: '1.5' }}>
-                    <strong style={{ color: '#FDE68A' }}>{pendingAlerts.length} candidate(s)</strong> have recently passed the certification exam for <strong style={{ color: '#FFFFFF' }}>{courseTitle}</strong>. Please generate their credentials to unlock certificates on their dashboard.
-                  </p>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button
-                  onClick={() => {
-                    setActiveTab('live_classes');
-                    setMasterclassSubTab('certificate_issue');
-                    setCertSelectedMasterclass(String(firstPending.masterclassId || firstPending.examId || 'ALL'));
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #C1552C 0%, #E06738 100%)',
-                    color: '#FFFFFF',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    padding: '11px 20px',
-                    borderRadius: '10px',
-                    fontWeight: '800',
-                    fontSize: '13.5px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(193, 85, 44, 0.4)',
-                    transition: 'all 0.2s ease',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <span>🎓</span>
-                  <span>View Results & Generate Certificates →</span>
-                </button>
-                <button
-                  onClick={() => setAlertDismissed(true)}
-                  title="Close Alert Notification"
-                  aria-label="Close Alert Notification"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    color: '#9CA3AF',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    fontWeight: '700',
-                    fontSize: '15px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#9CA3AF';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-        {/* Responsive Navigation Tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginBottom: '24px',
-            borderBottom: '2px solid rgba(24, 21, 18, 0.2)',
-            paddingBottom: '12px',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-          }}
-        >
-          <button
-            onClick={() => setActiveTab('inquiries')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              border: '1.5px solid #000000',
-              background: activeTab === 'inquiries' ? '#000000' : '#FFFFFF',
-              color: activeTab === 'inquiries' ? '#FFFFFF' : '#111827',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📋 Applications & Inquiries ({stats.total})
-          </button>
-          <button
-            onClick={() => setActiveTab('live_classes')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              border: '1.5px solid #000000',
-              background: activeTab === 'live_classes' ? '#000000' : '#FFFFFF',
-              color: activeTab === 'live_classes' ? '#FFFFFF' : '#111827',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Live master class ({liveClasses.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('programs')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              border: '1.5px solid #000000',
-              background: activeTab === 'programs' ? '#000000' : '#FFFFFF',
-              color: activeTab === 'programs' ? '#FFFFFF' : '#111827',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            🏛️ Programs for Bihar's Officers ({programs.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('exams')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              border: '1.5px solid #000000',
-              background: activeTab === 'exams' ? '#000000' : '#FFFFFF',
-              color: activeTab === 'exams' ? '#FFFFFF' : '#111827',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📜 Exams & Certificate Approvals ({examSubmissions.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('blogs')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              border: '1.5px solid #000000',
-              background: activeTab === 'blogs' ? '#000000' : '#FFFFFF',
-              color: activeTab === 'blogs' ? '#FFFFFF' : '#111827',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            📝 Blog Posts ({blogs.length})
-          </button>
-        </div>
+              Website ↗
+            </button>
 
-        {/* TAB 1: INQUIRIES & APPLICATIONS */}
-        {activeTab === 'inquiries' && (
-          <>
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>Total Submissions</span>
-                <span className={styles.statValue}>{stats.total}</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statLabel}>New Today</span>
-                <span className={styles.statValue}>{stats.today}</span>
-              </div>
-              <div className={styles.statCard} style={{ borderLeft: '4px solid #000000' }}>
-                <span className={styles.statLabel}>System Status</span>
-                <span className={styles.statValue} style={{ fontSize: '18px', color: '#000000' }}>
-                  Active & Syncing
-                </span>
-              </div>
-            </div>
+            <button type="button" className={styles.logoutBtn} onClick={handleLogout}>
+              Sign Out
+            </button>
+          </div>
+        </header>
 
-            <div className={styles.tableContainer}>
-              <div className={styles.tableHeader}>
-                <div className={styles.searchWrapper}>
-                  <svg
-                    className={styles.searchIcon}
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input
-                    type="text"
-                    className={styles.searchInput}
-                    placeholder="Search applications..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
+        {/* Stage Content Container */}
+        <main className={styles.stageContainer}>
+          {/* RECENT EXAMS PASSED CERTIFICATE ISSUANCE ALERT BANNER */}
+          {(() => {
+            const allSubs = getExamSubmissions();
+            const pendingAlerts = allSubs.filter((s) => s.isPassed && !s.isApproved);
+            if (pendingAlerts.length === 0 || alertDismissed) return null;
+
+            const firstPending = pendingAlerts[0];
+            const courseTitle = firstPending.masterclassTitle || firstPending.examTitle || 'Live Masterclass';
+
+            return (
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #181512 0%, #26211C 100%)',
+                  color: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '18px 24px',
+                  marginBottom: '24px',
+                  boxShadow: '0 12px 36px -4px rgba(0, 0, 0, 0.4), 0 0 24px rgba(217, 119, 6, 0.15)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  position: 'relative'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
+                  <div
+                    style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '12px',
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '22px',
+                      flexShrink: 0,
+                      boxShadow: '0 0 16px rgba(245, 158, 11, 0.2)'
                     }}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <button
-                    onClick={exportCSV}
-                    className={styles.pageBtn}
-                    style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
+                    🔔
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px' }}>
+                        Candidate Certification Alert
+                      </h4>
+                      <span
+                        style={{
+                          background: '#FEF3C7',
+                          color: '#92400E',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.6px'
+                        }}
+                      >
+                        Action Required
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '13.5px', color: '#D1D5DB', lineHeight: '1.5' }}>
+                      <strong style={{ color: '#FDE68A' }}>{pendingAlerts.length} candidate(s)</strong> have recently passed the certification exam for <strong style={{ color: '#FFFFFF' }}>{courseTitle}</strong>. Please generate their credentials to unlock certificates on their dashboard.
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('live_classes');
+                      setMasterclassSubTab('certificate_issue');
+                      setCertSelectedMasterclass(String(firstPending.masterclassId || firstPending.examId || 'ALL'));
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #C1552C 0%, #E06738 100%)',
+                      color: '#FFFFFF',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      padding: '11px 20px',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(193, 85, 44, 0.4)',
+                      transition: 'all 0.2s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>🎓</span>
+                    <span>View Results & Generate Certificates →</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAlertDismissed(true)}
+                    title="Close Alert Notification"
+                    aria-label="Close Alert Notification"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: '#9CA3AF',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      fontWeight: '700',
+                      fontSize: '15px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#FFFFFF';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#9CA3AF';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* TAB 0: REAL-TIME WEBSITE ANALYTICS */}
+          {activeTab === 'analytics' && (
+            <div>
+              <AdminAnalyticsPanel />
+            </div>
+          )}
+
+          {/* TAB 1: INQUIRIES & APPLICATIONS */}
+          {activeTab === 'inquiries' && (
+            <>
+              <div className={styles.statsGrid}>
+                <div className={styles.statCard} style={{ borderLeft: '4px solid #C1552C' }}>
+                  <span className={styles.statLabel}>Total Submissions</span>
+                  <span className={styles.statValue} style={{ color: '#181512' }}>{stats.total}</span>
+                </div>
+                <div className={styles.statCard} style={{ borderLeft: '4px solid #E8B23D' }}>
+                  <span className={styles.statLabel}>New Today</span>
+                  <span className={styles.statValue} style={{ color: '#C1552C' }}>{stats.today}</span>
+                </div>
+                <div className={styles.statCard} style={{ borderLeft: '4px solid #2F7A4F' }}>
+                  <span className={styles.statLabel}>System Status</span>
+                  <span className={styles.statValue} style={{ fontSize: '17px', color: '#2F7A4F', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2F7A4F', display: 'inline-block' }}></span>
+                    Active & Syncing
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.tableContainer}>
+                <div className={styles.tableHeader}>
+                  <div className={styles.searchWrapper}>
                     <svg
+                      className={styles.searchIcon}
                       width="16"
                       height="16"
                       viewBox="0 0 24 24"
@@ -1611,153 +2128,206 @@ const AdminDashboard = () => {
                       stroke="currentColor"
                       strokeWidth="2"
                     >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={handlePurgeAllDummyData}
-                    style={{
-                      background: '#FEF2F2',
-                      color: '#DC2626',
-                      border: '1px solid #FCA5A5',
-                      padding: '8px 14px',
-                      borderRadius: '8px',
-                      fontWeight: '800',
-                      fontSize: '12.5px',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 8px rgba(220, 38, 38, 0.12)'
-                    }}
-                    title="Purge all test data to start fresh for production testing"
-                  >
-                    🧹 Purge All Test Data
-                  </button>
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Search applications (name, email, role, district)..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                      onClick={exportCSV}
+                      style={{
+                        background: '#FFFFFF',
+                        border: '1.5px solid rgba(24, 21, 18, 0.15)',
+                        color: '#181512',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.18s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#C1552C';
+                        e.currentTarget.style.color = '#C1552C';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(24, 21, 18, 0.15)';
+                        e.currentTarget.style.color = '#181512';
+                      }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.scrollArea}>
+                  {loading ? (
+                    <div style={{ padding: '80px', textAlign: 'center', color: '#786F66' }}>
+                      Loading submissions...
+                    </div>
+                  ) : filteredSubmissions.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      {searchTerm ? `No applications matching "${searchTerm}"` : 'No submissions found.'}
+                    </div>
+                  ) : (
+                    <>
+                      <table className={styles.dataTable}>
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>District</th>
+                            <th>Date</th>
+                            <th style={{ textAlign: 'right' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedSubmissions.map((s) => (
+                            <tr key={s.id || s.created_at}>
+                              <td style={{ fontWeight: '700', color: '#181512' }}>{s.full_name}</td>
+                              <td style={{ color: '#443D37' }}>{s.email}</td>
+                              <td>
+                                <span
+                                  className={`${styles.roleBadge} ${
+                                    s.role_type === 'Government Officer'
+                                      ? styles.roleGov
+                                      : s.role_type === 'Student'
+                                      ? styles.roleStudent
+                                      : styles.roleDefault
+                                  }`}
+                                >
+                                  {s.role_type}
+                                </span>
+                              </td>
+                              <td style={{ color: '#443D37' }}>{s.district}</td>
+                              <td style={{ color: '#786F66' }}>
+                                {new Date(s.created_at).toLocaleDateString()}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                  <button
+                                    className={styles.viewBtn}
+                                    onClick={() => setSelectedSubmission(s)}
+                                    title="View Details"
+                                  >
+                                    <svg
+                                      width="18"
+                                      height="18"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                    >
+                                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                      <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteSubmission(s)}
+                                    style={{
+                                      background: '#FEF2F2',
+                                      color: '#DC2626',
+                                      border: '1px solid #FCA5A5',
+                                      padding: '5px 10px',
+                                      borderRadius: '6px',
+                                      fontWeight: '700',
+                                      fontSize: '12px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title="Delete Application / Inquiry from Database"
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      <div className={styles.paginationFooter}>
+                        <div className={styles.pageInfo}>
+                          Showing <strong>{filteredSubmissions.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> to{' '}
+                          <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredSubmissions.length)}</strong> of{' '}
+                          <strong>{filteredSubmissions.length}</strong> applications (10 per page)
+                        </div>
+                        <div className={styles.paginationActions} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            className={styles.pageBtn}
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            style={{
+                              background: currentPage === 1 ? '#F3ECE0' : '#FFFFFF',
+                              color: currentPage === 1 ? '#9CA3AF' : '#181512',
+                              border: '1px solid rgba(24, 21, 18, 0.15)',
+                              padding: '6px 14px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            ← Previous
+                          </button>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#5E554D', padding: '0 6px' }}>
+                            Page <strong style={{ color: '#C1552C' }}>{currentPage}</strong> of {totalPages}
+                          </span>
+                          <button
+                            className={styles.pageBtn}
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage >= totalPages}
+                            style={{
+                              background: currentPage >= totalPages ? '#F3ECE0' : '#FFFFFF',
+                              color: currentPage >= totalPages ? '#9CA3AF' : '#181512',
+                              border: '1px solid rgba(24, 21, 18, 0.15)',
+                              padding: '6px 14px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12.5px',
+                              cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-
-              <div className={styles.scrollArea}>
-                {loading ? (
-                  <div style={{ padding: '80px', textAlign: 'center', color: '#6B7280' }}>
-                    Loading submissions...
-                  </div>
-                ) : submissions.length === 0 ? (
-                  <div className={styles.emptyState}>No submissions found.</div>
-                ) : (
-                  <>
-                    <table className={styles.dataTable}>
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>District</th>
-                          <th>Date</th>
-                          <th style={{ textAlign: 'right' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {submissions.map((s) => (
-                          <tr key={s.id || s.created_at}>
-                            <td style={{ fontWeight: '600' }}>{s.full_name}</td>
-                            <td>{s.email}</td>
-                            <td>
-                              <span
-                                className={`${styles.roleBadge} ${
-                                  s.role_type === 'Government Officer'
-                                    ? styles.roleGov
-                                    : s.role_type === 'Student'
-                                    ? styles.roleStudent
-                                    : styles.roleDefault
-                                }`}
-                              >
-                                {s.role_type}
-                              </span>
-                            </td>
-                            <td>{s.district}</td>
-                            <td style={{ color: '#6B7280' }}>
-                              {new Date(s.created_at).toLocaleDateString()}
-                            </td>
-                            <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                                <button
-                                  className={styles.viewBtn}
-                                  onClick={() => setSelectedSubmission(s)}
-                                  title="View Details"
-                                >
-                                  <svg
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                  >
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                    <circle cx="12" cy="12" r="3" />
-                                  </svg>
-                                </button>
-
-                                <button
-                                  onClick={() => handleDeleteSubmission(s)}
-                                  style={{
-                                    background: '#FEF2F2',
-                                    color: '#DC2626',
-                                    border: '1px solid #FCA5A5',
-                                    padding: '5px 10px',
-                                    borderRadius: '6px',
-                                    fontWeight: '700',
-                                    fontSize: '12px',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  title="Delete Application / Inquiry from Database"
-                                >
-                                  🗑️ Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    <div className={styles.paginationFooter}>
-                      <div className={styles.pageInfo}>
-                        Showing <strong>{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> to{' '}
-                        <strong>{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}</strong> of{' '}
-                        <strong>{totalItems}</strong>
-                      </div>
-                      <div className={styles.paginationActions}>
-                        <button
-                          className={styles.pageBtn}
-                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                          disabled={currentPage === 1}
-                        >
-                          Prev
-                        </button>
-                        <button
-                          className={styles.pageBtn}
-                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                          disabled={currentPage >= totalPages}
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
 
 
@@ -1785,7 +2355,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* SUB-TABS: Live classes vs Certification test vs Certificate Issue */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid rgba(17, 24, 39, 0.06)', paddingBottom: '2px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid rgba(24, 21, 18, 0.08)', paddingBottom: '2px', overflowX: 'auto' }}>
               <button
                 onClick={() => setMasterclassSubTab('classes')}
                 style={{
@@ -1794,10 +2364,11 @@ const AdminDashboard = () => {
                   fontWeight: '800',
                   fontSize: '14px',
                   border: 'none',
-                  borderBottom: masterclassSubTab === 'classes' ? '3px solid #000000' : '3px solid transparent',
-                  background: masterclassSubTab === 'classes' ? 'rgba(24, 21, 18, 0.1)' : 'transparent',
-                  color: masterclassSubTab === 'classes' ? '#000000' : '#9CA3AF',
-                  cursor: 'pointer'
+                  borderBottom: masterclassSubTab === 'classes' ? '3px solid #C1552C' : '3px solid transparent',
+                  background: masterclassSubTab === 'classes' ? 'rgba(193, 85, 44, 0.09)' : 'transparent',
+                  color: masterclassSubTab === 'classes' ? '#C1552C' : '#786F66',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 📡 Live classes ({liveClasses.length})
@@ -1810,10 +2381,11 @@ const AdminDashboard = () => {
                   fontWeight: '800',
                   fontSize: '14px',
                   border: 'none',
-                  borderBottom: masterclassSubTab === 'certification_test' ? '3px solid #000000' : '3px solid transparent',
-                  background: masterclassSubTab === 'certification_test' ? 'rgba(24, 21, 18, 0.1)' : 'transparent',
-                  color: masterclassSubTab === 'certification_test' ? '#000000' : '#9CA3AF',
-                  cursor: 'pointer'
+                  borderBottom: masterclassSubTab === 'certification_test' ? '3px solid #C1552C' : '3px solid transparent',
+                  background: masterclassSubTab === 'certification_test' ? 'rgba(193, 85, 44, 0.09)' : 'transparent',
+                  color: masterclassSubTab === 'certification_test' ? '#C1552C' : '#786F66',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 📜 Certification test ({masterclassQuestions.length} Questions)
@@ -1826,10 +2398,11 @@ const AdminDashboard = () => {
                   fontWeight: '800',
                   fontSize: '14px',
                   border: 'none',
-                  borderBottom: masterclassSubTab === 'certificate_issue' ? '3px solid #000000' : '3px solid transparent',
-                  background: masterclassSubTab === 'certificate_issue' ? 'rgba(24, 21, 18, 0.1)' : 'transparent',
-                  color: masterclassSubTab === 'certificate_issue' ? '#000000' : '#9CA3AF',
-                  cursor: 'pointer'
+                  borderBottom: masterclassSubTab === 'certificate_issue' ? '3px solid #C1552C' : '3px solid transparent',
+                  background: masterclassSubTab === 'certificate_issue' ? 'rgba(193, 85, 44, 0.09)' : 'transparent',
+                  color: masterclassSubTab === 'certificate_issue' ? '#C1552C' : '#786F66',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 🎓 Certificate Issue & Exam Results ({(() => {
@@ -1850,10 +2423,11 @@ const AdminDashboard = () => {
                   fontWeight: '800',
                   fontSize: '14px',
                   border: 'none',
-                  borderBottom: masterclassSubTab === 'users_enrollment' ? '3px solid #000000' : '3px solid transparent',
-                  background: masterclassSubTab === 'users_enrollment' ? 'rgba(24, 21, 18, 0.1)' : 'transparent',
-                  color: masterclassSubTab === 'users_enrollment' ? '#000000' : '#9CA3AF',
-                  cursor: 'pointer'
+                  borderBottom: masterclassSubTab === 'users_enrollment' ? '3px solid #C1552C' : '3px solid transparent',
+                  background: masterclassSubTab === 'users_enrollment' ? 'rgba(193, 85, 44, 0.09)' : 'transparent',
+                  color: masterclassSubTab === 'users_enrollment' ? '#C1552C' : '#786F66',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 👥 Users Enrollment ({masterclassEnrollments.length})
@@ -3029,11 +3603,12 @@ const AdminDashboard = () => {
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '13px',
-                  border: '1.5px solid #000000',
-                  background: officerSubTab === 'manage' ? '#000000' : '#FFFFFF',
-                  color: officerSubTab === 'manage' ? '#FFFFFF' : '#111827',
+                  border: officerSubTab === 'manage' ? '1.5px solid #C1552C' : '1.5px solid rgba(24, 21, 18, 0.15)',
+                  background: officerSubTab === 'manage' ? 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)' : '#FFFFFF',
+                  color: officerSubTab === 'manage' ? '#FFFFFF' : '#181512',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: officerSubTab === 'manage' ? '0 4px 12px rgba(193, 85, 44, 0.3)' : 'none'
                 }}
               >
                 🎴 Manage Programs ({programs.length})
@@ -3046,11 +3621,12 @@ const AdminDashboard = () => {
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '13px',
-                  border: '1.5px solid #000000',
-                  background: officerSubTab === 'syllabus' ? '#000000' : '#FFFFFF',
-                  color: officerSubTab === 'syllabus' ? '#FFFFFF' : '#111827',
+                  border: officerSubTab === 'syllabus' ? '1.5px solid #C1552C' : '1.5px solid rgba(24, 21, 18, 0.15)',
+                  background: officerSubTab === 'syllabus' ? 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)' : '#FFFFFF',
+                  color: officerSubTab === 'syllabus' ? '#FFFFFF' : '#181512',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: officerSubTab === 'syllabus' ? '0 4px 12px rgba(193, 85, 44, 0.3)' : 'none'
                 }}
               >
                 📚 Program Syllabus & Resources
@@ -3063,11 +3639,12 @@ const AdminDashboard = () => {
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '13px',
-                  border: '1.5px solid #000000',
-                  background: officerSubTab === 'certification_test' ? '#000000' : '#FFFFFF',
-                  color: officerSubTab === 'certification_test' ? '#FFFFFF' : '#111827',
+                  border: officerSubTab === 'certification_test' ? '1.5px solid #C1552C' : '1.5px solid rgba(24, 21, 18, 0.15)',
+                  background: officerSubTab === 'certification_test' ? 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)' : '#FFFFFF',
+                  color: officerSubTab === 'certification_test' ? '#FFFFFF' : '#181512',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: officerSubTab === 'certification_test' ? '0 4px 12px rgba(193, 85, 44, 0.3)' : 'none'
                 }}
               >
                 📜 Certification Test ({officerQuestions.length} Questions)
@@ -3080,11 +3657,12 @@ const AdminDashboard = () => {
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '13px',
-                  border: '1.5px solid #000000',
-                  background: officerSubTab === 'certificate_issue' ? '#000000' : '#FFFFFF',
-                  color: officerSubTab === 'certificate_issue' ? '#FFFFFF' : '#111827',
+                  border: officerSubTab === 'certificate_issue' ? '1.5px solid #C1552C' : '1.5px solid rgba(24, 21, 18, 0.15)',
+                  background: officerSubTab === 'certificate_issue' ? 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)' : '#FFFFFF',
+                  color: officerSubTab === 'certificate_issue' ? '#FFFFFF' : '#181512',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: officerSubTab === 'certificate_issue' ? '0 4px 12px rgba(193, 85, 44, 0.3)' : 'none'
                 }}
               >
                 🎓 Certificate Issue & Exam Results
@@ -3097,11 +3675,12 @@ const AdminDashboard = () => {
                   borderRadius: '8px',
                   fontWeight: '800',
                   fontSize: '13px',
-                  border: '1.5px solid #000000',
-                  background: officerSubTab === 'users_enrollment' ? '#000000' : '#FFFFFF',
-                  color: officerSubTab === 'users_enrollment' ? '#FFFFFF' : '#111827',
+                  border: officerSubTab === 'users_enrollment' ? '1.5px solid #C1552C' : '1.5px solid rgba(24, 21, 18, 0.15)',
+                  background: officerSubTab === 'users_enrollment' ? 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)' : '#FFFFFF',
+                  color: officerSubTab === 'users_enrollment' ? '#FFFFFF' : '#181512',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  boxShadow: officerSubTab === 'users_enrollment' ? '0 4px 12px rgba(193, 85, 44, 0.3)' : 'none'
                 }}
               >
                 👥 Users Enrollment ({officerEnrollments.length})
@@ -4646,8 +5225,7 @@ const AdminDashboard = () => {
             )}
           </div>
         )}
-        {/* END OF EXAMS & BLOGS TABS */}
-      </main>
+        {/* END OF EXAMS TABS */}
 
       {/* EDIT / ADD MODAL FOR COURSES & PROGRAMS */}
       {isModalOpen && editingItem && (
@@ -5633,6 +6211,1217 @@ const AdminDashboard = () => {
         </div>
       )}
 
+        {/* TAB 6: DAILY TASKS (CREATOR & SUBMISSIONS REVIEW & LEADERBOARD) */}
+        {activeTab === 'daily_tasks' && (() => {
+          const totalTasks = adminTaskSubmissions.length;
+          const pendingCount = adminTaskSubmissions.filter((s) => s.status === 'PENDING').length;
+          const approvedCount = adminTaskSubmissions.filter((s) => s.status === 'APPROVED').length;
+          const rejectedCount = adminTaskSubmissions.filter((s) => s.status === 'REJECTED').length;
+          const leaderboardList = getSubmissionLeaderboard(adminTaskSubmissions, adminUserDetailsMap);
+
+          const filtered = adminTaskSubmissions.filter((s) => {
+            if (taskSubFilter !== 'ALL' && s.status !== taskSubFilter) return false;
+            if (taskSearchQuery.trim()) {
+              const q = taskSearchQuery.toLowerCase();
+              const nameMatch = (s.user_name || '').toLowerCase().includes(q);
+              const emailMatch = (s.user_email || '').toLowerCase().includes(q);
+              const taskMatch = (s.task_title || '').toLowerCase().includes(q);
+              const idMatch = String(s.task_id).includes(q);
+              return nameMatch || emailMatch || taskMatch || idMatch;
+            }
+            return true;
+          });
+
+          const filteredLeaderboard = leaderboardList.filter((item) => {
+            if (!taskSearchQuery.trim()) return true;
+            const q = taskSearchQuery.toLowerCase();
+            return (
+              (item.name || '').toLowerCase().includes(q) ||
+              (item.email || '').toLowerCase().includes(q) ||
+              (item.district || '').toLowerCase().includes(q)
+            );
+          });
+
+          return (
+            <div>
+              {/* SUB-TABS NAVIGATION: MANAGE TASKS vs SUBMISSIONS REVIEW vs LEADERBOARD */}
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                background: '#FFFFFF',
+                padding: '8px 12px',
+                borderRadius: '16px',
+                border: '1px solid rgba(17, 24, 39, 0.08)',
+                marginBottom: '20px',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setDailyTaskSubTab('manage')}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      border: 'none',
+                      background: dailyTaskSubTab === 'manage' ? '#000000' : '#F3F4F6',
+                      color: dailyTaskSubTab === 'manage' ? '#FFFFFF' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span>⚡ Manage & Add Tasks</span>
+                    <span style={{
+                      background: dailyTaskSubTab === 'manage' ? '#C1552C' : '#E5E7EB',
+                      color: dailyTaskSubTab === 'manage' ? '#FFFFFF' : '#111827',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}>
+                      {adminDailyTasks.length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setDailyTaskSubTab('reviews')}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      border: 'none',
+                      background: dailyTaskSubTab === 'reviews' ? '#000000' : '#F3F4F6',
+                      color: dailyTaskSubTab === 'reviews' ? '#FFFFFF' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span>📋 Candidate Submissions Review</span>
+                    <span style={{
+                      background: dailyTaskSubTab === 'reviews' ? '#C1552C' : '#E5E7EB',
+                      color: dailyTaskSubTab === 'reviews' ? '#FFFFFF' : '#111827',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}>
+                      {adminTaskSubmissions.length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setDailyTaskSubTab('leaderboard')}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      border: 'none',
+                      background: dailyTaskSubTab === 'leaderboard' ? '#000000' : '#F3F4F6',
+                      color: dailyTaskSubTab === 'leaderboard' ? '#FFFFFF' : '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span>🏆 Candidate Leaderboard</span>
+                    <span style={{
+                      background: dailyTaskSubTab === 'leaderboard' ? '#C1552C' : '#E5E7EB',
+                      color: dailyTaskSubTab === 'leaderboard' ? '#FFFFFF' : '#111827',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}>
+                      {leaderboardList.length}
+                    </span>
+                  </button>
+                </div>
+
+                {dailyTaskSubTab === 'manage' && (
+                  <button
+                    onClick={() => handleOpenCreateTaskModal(null)}
+                    style={{
+                      background: 'linear-gradient(135deg, #C1552C 0%, #9B3B18 100%)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '9px 20px',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(193, 85, 44, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>➕</span>
+                    <span>Create New Task</span>
+                  </button>
+                )}
+              </div>
+
+              {/* SUB-TAB 1: MANAGE & ADD TASKS */}
+              {dailyTaskSubTab === 'manage' && (
+                <div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    {adminDailyTasks.map((task) => (
+                      <div
+                        key={task.num}
+                        style={{
+                          background: '#FFFFFF',
+                          borderRadius: '18px',
+                          border: '1px solid rgba(17, 24, 39, 0.08)',
+                          padding: '22px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '900', color: '#C1552C', background: 'rgba(193, 85, 44, 0.1)', padding: '3px 10px', borderRadius: '6px' }}>
+                              TASK #{task.num}
+                            </span>
+                            <span style={{ fontSize: '11px', fontWeight: '800', color: '#059669', background: '#ECFDF5', padding: '3px 10px', borderRadius: '6px' }}>
+                              {task.toolName}
+                            </span>
+                          </div>
+
+                          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                            {task.title}
+                          </h4>
+
+                          <p style={{ fontSize: '12.5px', color: '#4B5563', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+                            <strong>Classwork:</strong> {task.classwork}
+                          </p>
+
+                          <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '14px', background: '#F9FAFB', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.04)' }}>
+                            <div style={{ fontWeight: '700', color: '#374151', marginBottom: '4px' }}>Submission Deliverables:</div>
+                            {Array.isArray(task.finalSubmission) && task.finalSubmission.length > 0 ? (
+                              <ul style={{ margin: 0, paddingLeft: '16px' }}>
+                                {task.finalSubmission.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div>Standard deliverable upload</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', borderTop: '1px solid rgba(17, 24, 39, 0.06)', paddingTop: '12px' }}>
+                          <button
+                            onClick={() => handleOpenCreateTaskModal(task)}
+                            style={{
+                              background: '#F3F4F6',
+                              color: '#111827',
+                              border: '1px solid rgba(17, 24, 39, 0.1)',
+                              padding: '6px 14px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✏️ Edit Task
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTaskAction(task.num)}
+                            style={{
+                              background: '#FFF1F2',
+                              color: '#E11D48',
+                              border: '1px solid #FDA4AF',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: CANDIDATE SUBMISSIONS REVIEW */}
+              {dailyTaskSubTab === 'reviews' && (
+                <div>
+                  {/* STATS OVERVIEW */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '24px'
+                  }}>
+                    <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Total Submissions
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#111827' }}>
+                        {totalTasks}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#D97706', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        ⏳ Pending Review
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#D97706' }}>
+                        {pendingCount}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#059669', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        ✅ Approved Tasks
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#059669' }}>
+                        {approvedCount}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: '#E11D48', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        ❌ Revisions Requested
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#E11D48' }}>
+                        {rejectedCount}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CONTROLS BAR */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    marginBottom: '20px',
+                    border: '1px solid rgba(17, 24, 39, 0.06)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '14px'
+                  }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((filterKey) => (
+                        <button
+                          key={filterKey}
+                          onClick={() => setTaskSubFilter(filterKey)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(17, 24, 39, 0.12)',
+                            background: taskSubFilter === filterKey ? '#000000' : '#FFFFFF',
+                            color: taskSubFilter === filterKey ? '#FFFFFF' : '#374151',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {filterKey === 'ALL' && `All (${totalTasks})`}
+                          {filterKey === 'PENDING' && `⏳ Pending (${pendingCount})`}
+                          {filterKey === 'APPROVED' && `✅ Approved (${approvedCount})`}
+                          {filterKey === 'REJECTED' && `❌ Revisions (${rejectedCount})`}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Search candidate, task or email..."
+                        value={taskSearchQuery}
+                        onChange={(e) => setTaskSearchQuery(e.target.value)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(17, 24, 39, 0.15)',
+                          fontSize: '13px',
+                          width: '260px',
+                          outline: 'none'
+                        }}
+                      />
+                      {taskSearchQuery && (
+                        <button
+                          onClick={() => setTaskSearchQuery('')}
+                          style={{
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(17, 24, 39, 0.15)',
+                            background: '#FEE2E2',
+                            color: '#DC2626',
+                            fontWeight: '700',
+                            fontSize: '12px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <button
+                        onClick={loadAdminTaskSubmissions}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(17, 24, 39, 0.15)',
+                          background: '#F3F4F6',
+                          fontWeight: '700',
+                          fontSize: '12.5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔄 Refresh
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SUBMISSIONS LIST */}
+                  {filtered.length === 0 ? (
+                    <div style={{
+                      background: '#FFFFFF',
+                      borderRadius: '16px',
+                      padding: '48px 24px',
+                      textAlign: 'center',
+                      color: '#6B7280',
+                      border: '1px solid rgba(17, 24, 39, 0.06)'
+                    }}>
+                      <div style={{ fontSize: '36px', marginBottom: '8px' }}>⚡</div>
+                      <h4 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: '#111827' }}>
+                        No Task Submissions Found
+                      </h4>
+                      <p style={{ fontSize: '13px', marginTop: '4px' }}>
+                        {taskSubFilter !== 'ALL' ? `No submissions matching "${taskSubFilter}" filter.` : 'Candidates have not submitted any practical classwork tasks yet.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {filtered.map((sub) => (
+                        <div
+                          key={sub.id || `${sub.user_email}_${sub.task_id}`}
+                          style={{
+                            background: '#FFFFFF',
+                            borderRadius: '16px',
+                            padding: '20px 24px',
+                            border: '1px solid rgba(17, 24, 39, 0.08)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: '800', color: '#C1552C', background: 'rgba(193, 85, 44, 0.1)', padding: '2px 10px', borderRadius: '6px' }}>
+                                  TASK #{sub.task_id}
+                                </span>
+                                <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: '600' }}>
+                                  {sub.category || 'AI Practical Classwork'}
+                                </span>
+                              </div>
+                              <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#111827', margin: '0 0 4px 0' }}>
+                                {sub.task_title}
+                              </h4>
+                              <div style={{ fontSize: '13px', color: '#4B5563', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                                <span>👤 <strong>{sub.user_name || 'Candidate'}</strong> ({sub.user_email})</span>
+                                {sub.user_district && <span>📍 {sub.user_district}</span>}
+                                <span>📅 {new Date(sub.updated_at || sub.created_at).toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            {/* STATUS BADGE */}
+                            <div>
+                              {sub.status === 'APPROVED' && (
+                                <span style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', padding: '4px 14px', borderRadius: '32px', fontSize: '12px', fontWeight: '800' }}>
+                                  ✅ Approved
+                                </span>
+                              )}
+                              {sub.status === 'PENDING' && (
+                                <span style={{ background: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A', padding: '4px 14px', borderRadius: '32px', fontSize: '12px', fontWeight: '800' }}>
+                                  ⏳ Pending Review
+                                </span>
+                              )}
+                              {sub.status === 'REJECTED' && (
+                                <span style={{ background: '#FFF1F2', color: '#E11D48', border: '1.5px solid #FDA4AF', padding: '4px 14px', borderRadius: '32px', fontSize: '12px', fontWeight: '800' }}>
+                                  ❌ Revision Requested
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* EVIDENCE / GOOGLE DRIVE FILE / NOTES */}
+                          <div style={{
+                            background: '#F9FAFB',
+                            borderRadius: '10px',
+                            padding: '12px 16px',
+                            border: '1px solid rgba(17, 24, 39, 0.05)',
+                            fontSize: '13px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}>
+                            {sub.file_url && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: '700', color: '#374151' }}>📁 Attached Document:</span>
+                                <a
+                                  href={sub.file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: 'rgba(37, 99, 235, 0.08)',
+                                    color: '#1D4ED8',
+                                    border: '1px solid rgba(37, 99, 235, 0.25)',
+                                    padding: '5px 12px',
+                                    borderRadius: '6px',
+                                    fontWeight: '800',
+                                    textDecoration: 'none',
+                                    fontSize: '12.5px',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                >
+                                  <span>{sub.file_name || 'View Uploaded Document'}</span>
+                                  {sub.file_size && <span style={{ opacity: 0.75, fontSize: '11px' }}>({sub.file_size})</span>}
+                                  <span>↗</span>
+                                </a>
+                              </div>
+                            )}
+                            {sub.notes && (
+                              <div style={{ color: '#374151', lineHeight: '1.5', background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(17, 24, 39, 0.05)' }}>
+                                💬 <strong>Candidate Execution Notes:</strong> {sub.notes}
+                              </div>
+                            )}
+                            {sub.admin_feedback && (
+                              <div style={{ padding: '8px 12px', background: '#FFF1F2', borderRadius: '6px', color: '#9F1239', border: '1px solid #FECDD3' }}>
+                                <strong>Admin Feedback Sent:</strong> {sub.admin_feedback}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* ACTIONS */}
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => handleOpenRejectModal(sub)}
+                              style={{
+                                background: '#FFF1F2',
+                                color: '#E11D48',
+                                border: '1px solid #FDA4AF',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontWeight: '800',
+                                fontSize: '12.5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ❌ {sub.status === 'REJECTED' ? 'Update Revision Feedback' : 'Reject & Request Revision'}
+                            </button>
+
+                            <button
+                              onClick={() => handleApproveTask(sub)}
+                              disabled={sub.status === 'APPROVED'}
+                              style={{
+                                background: sub.status === 'APPROVED' ? '#E5E7EB' : '#059669',
+                                color: sub.status === 'APPROVED' ? '#9CA3AF' : '#FFFFFF',
+                                border: 'none',
+                                padding: '8px 18px',
+                                borderRadius: '8px',
+                                fontWeight: '800',
+                                fontSize: '12.5px',
+                                cursor: sub.status === 'APPROVED' ? 'default' : 'pointer',
+                                boxShadow: sub.status === 'APPROVED' ? 'none' : '0 4px 12px rgba(5, 150, 105, 0.25)'
+                              }}
+                            >
+                              {sub.status === 'APPROVED' ? '✓ Task Approved' : '✅ Approve & Pass Task'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUB-TAB 3: CANDIDATE LEADERBOARD */}
+              {dailyTaskSubTab === 'leaderboard' && (
+                <div>
+                  {/* TOP CANDIDATES PODIUM / HIGHLIGHT */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '24px'
+                  }}>
+                    {leaderboardList.slice(0, 3).map((top, idx) => {
+                      const badgeColors = [
+                        { medal: '🥇', bg: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', border: '#F59E0B', text: '#92400E', label: '1st Place' },
+                        { medal: '🥈', bg: 'linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)', border: '#9CA3AF', text: '#374151', label: '2nd Place' },
+                        { medal: '🥉', bg: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)', border: '#F97316', text: '#9A3412', label: '3rd Place' },
+                      ][idx] || { medal: `#${idx + 1}`, bg: '#FFFFFF', border: '#E5E7EB', text: '#111827', label: 'Top Candidate' };
+
+                      return (
+                        <div
+                          key={top.email}
+                          style={{
+                            background: badgeColors.bg,
+                            border: `2px solid ${badgeColors.border}`,
+                            borderRadius: '18px',
+                            padding: '20px',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            position: 'relative'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                              <span style={{ fontSize: '28px' }}>{badgeColors.medal}</span>
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: '900',
+                                color: badgeColors.text,
+                                background: 'rgba(255,255,255,0.7)',
+                                padding: '3px 10px',
+                                borderRadius: '9999px',
+                                textTransform: 'uppercase',
+                                border: `1px solid ${badgeColors.border}`
+                              }}>
+                                {badgeColors.label}
+                              </span>
+                            </div>
+
+                            <h4 style={{ fontSize: '18px', fontWeight: '900', color: '#111827', margin: '0 0 4px 0' }}>
+                              {top.name}
+                            </h4>
+                            <div style={{ fontSize: '13px', color: '#C1552C', fontWeight: '800', marginBottom: '8px' }}>
+                              💼 {top.designation || 'Participant'} {top.organization ? `• ${top.organization}` : ''}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#4B5563', marginBottom: '14px', fontWeight: '600' }}>
+                              📍 {top.district || 'Bihar'}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: 'rgba(255,255,255,0.9)',
+                              padding: '10px 14px',
+                              borderRadius: '10px',
+                              marginBottom: '10px',
+                              fontSize: '13px',
+                              fontWeight: '800',
+                              color: '#111827',
+                              border: '1px solid rgba(0,0,0,0.06)'
+                            }}>
+                              <span style={{ color: '#C1552C' }}>⚡ Tasks Uploaded:</span>
+                              <span>{top.total || 0} {top.total === 1 ? 'Task' : 'Tasks'}</span>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                setDailyTaskSubTab('reviews');
+                                setTaskSearchQuery(top.email || top.name);
+                              }}
+                              style={{
+                                width: '100%',
+                                background: '#111827',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                padding: '8px',
+                                borderRadius: '8px',
+                                fontWeight: '800',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px'
+                              }}
+                            >
+                              <span>📋 Review Work</span>
+                              <span>→</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* SEARCH & LEADERBOARD TABLE */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(17, 24, 39, 0.08)',
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.02)'
+                  }}>
+                    {/* TABLE HEADER & SEARCH */}
+                    <div style={{
+                      padding: '16px 20px',
+                      borderBottom: '1px solid rgba(17, 24, 39, 0.06)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      background: '#FAFAFA'
+                    }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#111827' }}>
+                          🏆 All Candidates Performance Rankings
+                        </h4>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#6B7280' }}>
+                          Candidates ranked by total task submissions, designations, and districts
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          placeholder="Search rank list..."
+                          value={taskSearchQuery}
+                          onChange={(e) => setTaskSearchQuery(e.target.value)}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(17, 24, 39, 0.15)',
+                            fontSize: '13px',
+                            width: '220px',
+                            outline: 'none',
+                            background: '#FFFFFF'
+                          }}
+                        />
+                        {taskSearchQuery && (
+                          <button
+                            onClick={() => setTaskSearchQuery('')}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(17, 24, 39, 0.15)',
+                              background: '#FEE2E2',
+                              color: '#DC2626',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {filteredLeaderboard.length === 0 ? (
+                      <div style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
+                        <h4 style={{ margin: 0, color: '#111827', fontWeight: '800' }}>No Candidates Found</h4>
+                        <p style={{ fontSize: '13px', marginTop: '4px' }}>
+                          {taskSearchQuery ? `No candidates matching "${taskSearchQuery}"` : 'No task submissions recorded yet.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                          <thead>
+                            <tr style={{ background: '#F9FAFB', borderBottom: '1px solid rgba(17, 24, 39, 0.08)', color: '#4B5563', fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              <th style={{ padding: '14px 20px', fontWeight: '800', width: '80px', textAlign: 'center' }}>Rank</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '800' }}>Candidate & Designation</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '800' }}>District</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '800', textAlign: 'center' }}>Tasks Uploaded</th>
+                              <th style={{ padding: '14px 20px', fontWeight: '800', textAlign: 'right' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredLeaderboard.map((item) => {
+                              const rankMedal = item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : `#${item.rank}`;
+                              return (
+                                <tr
+                                  key={item.email || item.name}
+                                  style={{
+                                    borderBottom: '1px solid rgba(17, 24, 39, 0.05)',
+                                    background: item.rank === 1 ? 'rgba(245, 158, 11, 0.03)' : '#FFFFFF',
+                                    transition: 'background 0.15s ease'
+                                  }}
+                                >
+                                  <td style={{ padding: '14px 20px', textAlign: 'center', fontWeight: '900', fontSize: '15px', color: item.rank <= 3 ? '#B45309' : '#374151' }}>
+                                    {rankMedal}
+                                  </td>
+                                  <td style={{ padding: '14px 20px' }}>
+                                    <div style={{ fontWeight: '800', fontSize: '14.5px', color: '#111827' }}>{item.name}</div>
+                                    <div style={{ fontSize: '12.5px', color: '#C1552C', fontWeight: '700', marginTop: '2px' }}>
+                                      💼 {item.designation || 'Participant'} {item.organization ? `• ${item.organization}` : ''}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '14px 20px', color: '#4B5563' }}>
+                                    <span style={{ background: '#F3F4F6', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                                      📍 {item.district || 'Bihar'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                                    <span style={{
+                                      background: 'rgba(193, 85, 44, 0.1)',
+                                      color: '#C1552C',
+                                      border: '1px solid rgba(193, 85, 44, 0.25)',
+                                      padding: '4px 12px',
+                                      borderRadius: '9999px',
+                                      fontSize: '12.5px',
+                                      fontWeight: '800'
+                                    }}>
+                                      ⚡ {item.total || 0} {item.total === 1 ? 'Task' : 'Tasks'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                                    <button
+                                      onClick={() => {
+                                        setDailyTaskSubTab('reviews');
+                                        setTaskSearchQuery(item.email || item.name);
+                                      }}
+                                      style={{
+                                        background: '#111827',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        padding: '6px 14px',
+                                        borderRadius: '6px',
+                                        fontWeight: '700',
+                                        fontSize: '12px',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Review Work →
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* TAB 7: BLOGS & EDITORIAL CMS */}
+        {activeTab === 'blogs' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#111827', margin: 0 }}>
+                  📝 Editorial & Blog Posts CMS
+                </h3>
+                <p style={{ fontSize: '13px', color: '#6B7280', margin: '4px 0 0' }}>
+                  Manage bilingual SEO/AEO/GEO articles, publish state, and rich markdown content for biharaimission.org/blog
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleOpenAddBlog}
+                  style={{
+                    background: 'linear-gradient(135deg, #C1552C 0%, #E06738 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(193, 85, 44, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>+ Write New Article</span>
+                </button>
+              </div>
+            </div>
+
+            {blogs.length === 0 ? (
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '60px 20px', textAlign: 'center', border: '2px dashed rgba(17, 24, 39, 0.15)' }}>
+                <div style={{ fontSize: '42px', marginBottom: '12px' }}>📝</div>
+                <h4 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: '0 0 6px' }}>No Blog Posts in Database</h4>
+                <p style={{ fontSize: '13.5px', color: '#6B7280', maxWidth: '520px', margin: '0 auto 20px' }}>
+                  Write dedicated articles covering each page, tool, and feature of the Bihar AI Mission to optimize website SEO, AEO, GEO, and search engine discoverability.
+                </p>
+                <button
+                  onClick={handleOpenAddBlog}
+                  style={{ background: '#C1552C', color: '#FFFFFF', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  + Write First Article Now
+                </button>
+              </div>
+            ) : (
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid rgba(17, 24, 39, 0.08)', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.02)' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#F9FAFB', borderBottom: '1px solid rgba(17, 24, 39, 0.08)', color: '#4B5563', fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <th style={{ padding: '14px 18px', fontWeight: '800' }}>Article</th>
+                        <th style={{ padding: '14px 18px', fontWeight: '800' }}>Category</th>
+                        <th style={{ padding: '14px 18px', fontWeight: '800' }}>Author & Date</th>
+                        <th style={{ padding: '14px 18px', fontWeight: '800', textAlign: 'center' }}>Views</th>
+                        <th style={{ padding: '14px 18px', fontWeight: '800', textAlign: 'center' }}>Status</th>
+                        <th style={{ padding: '14px 18px', fontWeight: '800', textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {blogs.map((b) => (
+                        <tr key={b.id} style={{ borderBottom: '1px solid rgba(17, 24, 39, 0.05)', transition: 'background 0.15s ease' }}>
+                          <td style={{ padding: '14px 18px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              {b.image && (
+                                <img
+                                  src={b.image}
+                                  alt={b.title}
+                                  style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
+                                />
+                              )}
+                              <div>
+                                <strong style={{ color: '#111827', fontSize: '14px', display: 'block' }}>{b.title}</strong>
+                                {b.title_hi && <span style={{ color: '#6B7280', fontSize: '12px' }}>{b.title_hi}</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 18px' }}>
+                            <span style={{ background: 'rgba(226, 139, 92, 0.12)', color: '#C1552C', padding: '3px 8px', borderRadius: '6px', fontWeight: '700', fontSize: '11.5px', border: '1px solid rgba(226, 139, 92, 0.25)' }}>
+                              {b.category}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 18px' }}>
+                            <div style={{ fontWeight: '700', color: '#111827' }}>{b.author}</div>
+                            <div style={{ fontSize: '11.5px', color: '#6B7280' }}>{b.date || 'Recent'} • {b.readTime || '5 min'}</div>
+                          </td>
+                          <td style={{ padding: '14px 18px', textAlign: 'center', fontWeight: '800', color: '#111827' }}>
+                            👁️ {b.views || 0}
+                          </td>
+                          <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleToggleBlogPublish(b.id)}
+                              style={{
+                                background: b.isPublished ? '#ECFDF5' : '#F3F4F6',
+                                color: b.isPublished ? '#059669' : '#6B7280',
+                                border: b.isPublished ? '1px solid #A7F3D0' : '1px solid #D1D5DB',
+                                padding: '4px 10px',
+                                borderRadius: '9999px',
+                                fontWeight: '800',
+                                fontSize: '11.5px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {b.isPublished ? '✓ Published' : 'Draft'}
+                            </button>
+                          </td>
+                          <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px' }}>
+                              <button
+                                onClick={() => handleOpenEditBlog(b)}
+                                style={{ background: '#F3F4F6', border: '1px solid #D1D5DB', padding: '6px 12px', borderRadius: '6px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+                              >
+                                Edit ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBlog(b.id)}
+                                style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#DC2626', padding: '6px 12px', borderRadius: '6px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* CREATE / EDIT DAILY TASK MODAL */}
+      {isTaskModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            maxWidth: '620px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '28px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            color: '#111827'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(17, 24, 39, 0.08)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#C1552C', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>⚡</span>
+                <span>{editingTaskData.num ? `Task #${editingTaskData.num}: Configure Daily Task` : 'Add New Daily Task'}</span>
+              </h3>
+              <button onClick={() => setIsTaskModalOpen(false)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontWeight: '700' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveTaskForm} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Task Number (#)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={editingTaskData.num}
+                    onChange={(e) => setEditingTaskData({ ...editingTaskData, num: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    AI Tool Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. ChatGPT, Perplexity AI, ElevenLabs"
+                    value={editingTaskData.toolName}
+                    onChange={(e) => setEditingTaskData({ ...editingTaskData, toolName: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Task Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Government Officer's AI Assistant"
+                  value={editingTaskData.title}
+                  onChange={(e) => setEditingTaskData({ ...editingTaskData, title: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Classwork Overview Brief
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="e.g. Create a citizen-facing FAQ for a government service."
+                  value={editingTaskData.classwork}
+                  onChange={(e) => setEditingTaskData({ ...editingTaskData, classwork: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Detailed Step-by-Step Instructions
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Step 1: Choose administrative area... Step 2: Formulate prompt... Step 3: Verify citations..."
+                  value={editingTaskData.instructions}
+                  onChange={(e) => setEditingTaskData({ ...editingTaskData, instructions: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Final Submission Deliverables (Enter one per line)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="10 FAQs&#10;1-page Citizen Help Guide&#10;Prompt log document"
+                  value={editingTaskData.finalSubmission}
+                  onChange={(e) => setEditingTaskData({ ...editingTaskData, finalSubmission: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsTaskModalOpen(false)}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    background: '#F3F4F6',
+                    color: '#4B5563',
+                    border: '1px solid rgba(17, 24, 39, 0.1)',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '9px 22px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #C1552C 0%, #9B3B18 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(193, 85, 44, 0.35)'
+                  }}
+                >
+                  💾 Save Task to Supabase
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REJECT & REQUEST REVISION FEEDBACK MODAL */}
+      {rejectModalTask && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            maxWidth: '520px',
+            width: '100%',
+            padding: '28px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            color: '#111827'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.08)', paddingBottom: '10px' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#E11D48', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>❌</span>
+                <span>Request Task Revision (#{rejectModalTask.task_id})</span>
+              </h3>
+              <button onClick={() => setRejectModalTask(null)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontWeight: '700' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleConfirmRejectTask}>
+              <div style={{ fontSize: '13px', color: '#4B5563', marginBottom: '12px' }}>
+                Candidate: <strong>{rejectModalTask.user_name}</strong> ({rejectModalTask.user_email})
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '6px' }}>
+                  Revision Instructions & Reason for Rejection:
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="e.g. Please provide a clear screenshot of step 4 prompt output and ensure the Zapier webhook link is active."
+                  value={rejectFeedbackText}
+                  onChange={(e) => setRejectFeedbackText(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(17, 24, 39, 0.15)',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    lineHeight: '1.5'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setRejectModalTask(null)}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    background: '#F3F4F6',
+                    color: '#4B5563',
+                    border: '1px solid rgba(17, 24, 39, 0.1)',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #F43F5E 0%, #BE123C 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)'
+                  }}
+                >
+                  Send Revision Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* CERTIFICATE PREVIEW MODAL FOR ADMIN */}
       {selectedCertSub && (
         <AdminCertificateModal
@@ -5818,6 +7607,235 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* CREATE / EDIT BLOG ARTICLE MODAL */}
+      {isBlogModalOpen && editingBlog && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '24px',
+            maxWidth: '780px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '28px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            color: '#111827'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(17, 24, 39, 0.08)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#C1552C', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📝</span>
+                <span>{editingBlog.title ? 'Edit Blog Article' : 'Write New Blog Article'}</span>
+              </h3>
+              <button onClick={() => setIsBlogModalOpen(false)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontWeight: '700' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveBlog} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Title Field */}
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Article Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Democratizing AI Across Bihar"
+                  value={editingBlog.title}
+                  onChange={(e) => setEditingBlog({ ...editingBlog, title: e.target.value })}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13.5px', fontWeight: '700', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Slug, Category, Read Time */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    URL Slug
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. democratizing-ai-across-bihar"
+                    value={editingBlog.slug || ''}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, slug: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Category
+                  </label>
+                  <select
+                    value={editingBlog.category || 'Mission'}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, category: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="Mission">Mission</option>
+                    <option value="Tools & Governance">Tools & Governance</option>
+                    <option value="Education">Education</option>
+                    <option value="Startups">Startups</option>
+                    <option value="Policy">Policy</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="About Us">About Us</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Read Time
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="5 min read"
+                    value={editingBlog.readTime || '5 min read'}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, readTime: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* Author & Image URL */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Author Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editingBlog.author || ''}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, author: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Author Role
+                  </label>
+                  <input
+                    type="text"
+                    value={editingBlog.authorRole || ''}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, authorRole: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                    Cover Image URL
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/..."
+                    value={editingBlog.image || ''}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, image: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* SEO, AEO, GEO & Keywords Optimization Section */}
+              <div style={{ background: '#F9FAFB', border: '1px solid rgba(17, 24, 39, 0.08)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#C1552C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🎯</span>
+                  <span>SEO, AEO (Perplexity/ChatGPT) & GEO Optimization</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '11.5px', fontWeight: '700', color: '#4B5563', display: 'block', marginBottom: '4px' }}>
+                      Target Website Page / Feature Focus
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. /learning, /tools, /startups, Daily Tasks"
+                      value={editingBlog.targetPage || ''}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, targetPage: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '12.5px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11.5px', fontWeight: '700', color: '#4B5563', display: 'block', marginBottom: '4px' }}>
+                      Target SEO / AEO Keywords (comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bihar AI Mission, AI Governance, Free AI Course Patna"
+                      value={typeof editingBlog.tags === 'string' ? editingBlog.tags : (Array.isArray(editingBlog.tags) ? editingBlog.tags.join(', ') : '')}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, tags: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '12.5px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Excerpt Field */}
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Summary / Key Takeaways (for SEO Meta & AI snippets) *
+                </label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Short summary for preview card, meta description, and AI search answers..."
+                  value={editingBlog.excerpt || ''}
+                  onChange={(e) => setEditingBlog({ ...editingBlog, excerpt: e.target.value })}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Content Markdown Field */}
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>
+                  Article Content (Markdown format) *
+                </label>
+                <textarea
+                  rows={10}
+                  required
+                  placeholder="Write full article here explaining the page, workflow, features, and civic benefits using markdown (## Heading, * bullet points, etc.)..."
+                  value={editingBlog.content || ''}
+                  onChange={(e) => setEditingBlog({ ...editingBlog, content: e.target.value })}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(17, 24, 39, 0.15)', fontSize: '13px', boxSizing: 'border-box', fontFamily: 'monospace', lineHeight: '1.6' }}
+                />
+              </div>
+
+              {/* Status and Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={editingBlog.isPublished !== false}
+                    onChange={(e) => setEditingBlog({ ...editingBlog, isPublished: e.target.checked })}
+                  />
+                  <span>Publish this article on biharaimission.org/blog</span>
+                </label>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsBlogModalOpen(false)}
+                    style={{ padding: '9px 18px', borderRadius: '8px', background: '#F3F4F6', color: '#4B5563', border: '1px solid rgba(17, 24, 39, 0.1)', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ padding: '9px 24px', borderRadius: '8px', background: 'linear-gradient(135deg, #C1552C 0%, #9B3B18 100%)', color: '#FFFFFF', border: 'none', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(193, 85, 44, 0.35)' }}
+                  >
+                    💾 Save Article to Database
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   );
 };

@@ -1,3 +1,7 @@
+import { createContext, useContext, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
+
 // Legacy in-memory dictionary
 const translations = {
   en: {
@@ -203,10 +207,6 @@ const translations = {
     fCopy: '© 2026 बिहार AI मिशन · बिहार के नागरिकों के लिए समर्पित।'
   }
 };
-
-import { createContext, useContext, useCallback, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import i18n from '../i18n';
 
 // Backward compatibility dictionary for legacy un-migrated components during staged migration
 const legacyTranslations = {

@@ -11,41 +11,46 @@ export default function SmoothScroll() {
     const isIsolated = location.pathname.startsWith('/admin') || location.pathname.startsWith('/experience');
     if (isIsolated) return;
 
-    // Initialize Lenis Smooth Scroll Instance
+    // Initialize Lenis with fast, fluid and natural momentum (zero lag/stickiness)
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Easing curve for fluid momentum
+      duration: 0.85,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       direction: 'vertical',
       gestureDirection: 'vertical',
-      smoothTouch: false, // Keep native touch scroll on mobile devices for fast performance
-      touchMultiplier: 1.8,
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.4,
       infinite: false,
+      autoResize: true,
     });
 
     window.__lenis = lenis;
 
+    let rafId;
     function raf(time) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     }
-
-    const rafId = requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
 
     // Immediate scroll to top on route change
     lenis.scrollTo(0, { immediate: true });
 
-    // Automatically recalculate scroll height whenever dynamic DOM elements expand/collapse
-    const resizeObserver = new ResizeObserver(() => {
-      lenis.resize();
-    });
+    // Debounced resize to prevent layout thrashing
+    let resizeTimer;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        lenis.resize();
+      }, 150);
+    };
 
-    if (document.body) {
-      resizeObserver.observe(document.body);
-    }
+    window.addEventListener('resize', handleResize);
 
     return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(rafId);
-      resizeObserver.disconnect();
       lenis.destroy();
       delete window.__lenis;
     };

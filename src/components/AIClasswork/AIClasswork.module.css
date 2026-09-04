@@ -318,3 +318,186 @@
     justify-content: center;
   }
 }
+
+/* SUBMISSION STATUS & ACTIONS */
+.taskHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.statusPending {
+  background: rgba(232, 178, 61, 0.16);
+  border: 1px solid rgba(232, 178, 61, 0.4);
+  color: #E8B23D;
+}
+
+.statusApproved {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34D399;
+}
+
+.statusRejected {
+  background: rgba(244, 63, 94, 0.18);
+  border: 1.5px solid rgba(244, 63, 94, 0.5);
+  color: #FDA4AF;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.2);
+  animation: pulseRejected 2s infinite ease-in-out;
+}
+
+@keyframes pulseRejected {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.statusNone {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-sand-200, #C2B7A3);
+}
+
+.rejectionFeedbackBox {
+  margin: 14px 0;
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.12) 0%, rgba(225, 29, 72, 0.06) 100%);
+  border: 1.5px solid rgba(244, 63, 94, 0.45);
+  border-left: 5px solid #F43F5E;
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #FFE4E6;
+  font-size: 13.5px;
+}
+
+.submitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.35);
+  transition: all 0.2s ease;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(193, 85, 44, 0.5);
+}
+
+.reSubmitBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #F43F5E 0%, #BE123C 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.45);
+  animation: pulseGlow 2s infinite ease-in-out;
+  transition: all 0.2s ease;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 4px 18px rgba(244, 63, 94, 0.4); }
+  50% { box-shadow: 0 4px 28px rgba(244, 63, 94, 0.7); }
+}
+
+.reSubmitBtn:hover {
+  transform: translateY(-2px);
+}
+
+/* UPLOAD MODAL */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 12, 10, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modalCard {
+  background: linear-gradient(145deg, #1C1814 0%, #15120F 100%);
+  border: 1px solid rgba(226, 139, 92, 0.35);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 580px;
+  padding: 32px 36px;
+  color: #FFFFFF;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.fileDropzone {
+  border: 2px dashed rgba(226, 139, 92, 0.4);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 24px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 14px 0;
+  position: relative;
+}
+
+.fileDropzone:hover {
+  border-color: #E8B23D;
+  background: rgba(232, 178, 61, 0.06);
+}
+
+.fileDropzoneActive {
+  border-color: #E8B23D !important;
+  border-style: dashed !important;
+  background: rgba(232, 178, 61, 0.14) !important;
+  box-shadow: 0 0 25px rgba(232, 178, 61, 0.25), inset 0 0 15px rgba(232, 178, 61, 0.1) !important;
+  transform: scale(1.015);
+}
+
+.inputField {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #FFFFFF;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  margin-top: 6px;
+  transition: border-color 0.2s;
+}
+
+.inputField:focus {
+  border-color: #E28B5C;
+}
+

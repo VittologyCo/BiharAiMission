@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../utils/supabase';
@@ -6,7 +6,7 @@ import { sendRegistrationThankYouEmail } from '../../utils/resendEmail';
 import styles from './RegistrationModal.module.css';
 
 /* ─── Indian States & UTs ─── */
-const INDIAN_STATES = [
+export const INDIAN_STATES = [
   'Bihar',
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Chhattisgarh', 'Goa',
   'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
@@ -19,7 +19,7 @@ const INDIAN_STATES = [
 ];
 
 /* ─── Bihar 38 Districts ─── */
-const BIHAR_DISTRICTS = [
+export const BIHAR_DISTRICTS = [
   'Araria','Arwal','Aurangabad','Banka','Begusarai','Bhagalpur','Bhojpur',
   'Buxar','Darbhanga','East Champaran','Gaya','Gopalganj','Jamui','Jehanabad',
   'Kaimur','Katihar','Khagaria','Kishanganj','Lakhisarai','Madhepura','Madhubani',
@@ -29,7 +29,7 @@ const BIHAR_DISTRICTS = [
 ];
 
 /* ─── Role Types ─── */
-const ROLE_TYPES = [
+export const ROLE_TYPES = [
   { value: 'government_officer', labelEn: 'Government Officer / सरकारी अधिकारी', labelHi: 'सरकारी अधिकारी' },
   { value: 'student', labelEn: 'Student / विद्यार्थी', labelHi: 'विद्यार्थी' },
   { value: 'teacher_professor', labelEn: 'Teacher / Professor', labelHi: 'शिक्षक / प्रोफेसर' },
@@ -41,7 +41,7 @@ const ROLE_TYPES = [
 ];
 
 /* ─── Unified Primary Interest & Focus Options ─── */
-const INTEREST_OPTIONS = [
+export const INTEREST_OPTIONS = [
   { value: 'ai_skills_cert', labelEn: 'Learn AI Skills & Get Certified', labelHi: 'AI कौशल सीखें और प्रमाणपत्र प्राप्त करें' },
   { value: 'ai_basics', labelEn: 'AI Fundamentals & Basics', labelHi: 'AI के बुनियादी सिद्धांत' },
   { value: 'prompt_engineering', labelEn: 'Prompt Engineering & Tools', labelHi: 'प्रॉम्प्ट इंजीनियरिंग और AI टूल्स' },
@@ -89,6 +89,47 @@ export default function RegistrationModal({ isOpen, onClose }) {
     linkedin: '',
     portfolio: ''
   });
+
+  // Email availability check state: null | 'checking' | 'available' | 'taken'
+  const [emailRegStatus, setEmailRegStatus] = useState(null);
+  const regEmailCache = useRef({});
+
+  // Lightweight email availability check — on blur only, cached, client-validated first
+  const checkEmailAvailability = useCallback(async (emailValue) => {
+    const clean = (emailValue || '').toLowerCase().trim();
+    // Client-side format check first — no backend call for invalid emails
+    if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setEmailRegStatus(null);
+      return;
+    }
+    // Check local cache first — zero backend load for repeated checks
+    if (regEmailCache.current[clean] !== undefined) {
+      setEmailRegStatus(regEmailCache.current[clean] ? 'taken' : 'available');
+      return;
+    }
+    setEmailRegStatus('checking');
+    try {
+      // 1. Try secure RPC first (bypasses RLS safely to check existence without exposing data)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('check_user_email_exists', { email_input: clean });
+      if (!rpcErr && typeof rpcData === 'boolean') {
+        regEmailCache.current[clean] = rpcData;
+        setEmailRegStatus(rpcData ? 'taken' : 'available');
+        return;
+      }
+
+      // 2. Direct query fallback
+      const { data, error } = await supabase
+        .from('user_details')
+        .select('id')
+        .eq('email', clean)
+        .maybeSingle();
+      const exists = !error && data && data.id;
+      regEmailCache.current[clean] = exists;
+      setEmailRegStatus(exists ? 'taken' : 'available');
+    } catch {
+      setEmailRegStatus(null);
+    }
+  }, []);
 
   // Prevent body & root scroll when modal is open
   useEffect(() => {
@@ -259,6 +300,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
         full_name: form.full_name.trim(),
         email: form.email.trim().toLowerCase(),
         mobile: form.mobile.trim(),
+        password: form.password || null,
         gender: form.gender || null,
         age: form.age ? parseInt(form.age, 10) : null,
         role_type: form.role_type,
@@ -314,10 +356,13 @@ export default function RegistrationModal({ isOpen, onClose }) {
                                (authErr.message && (authErr.message.includes('already registered') || authErr.message.includes('User already exists')));
             if (isExisting) {
               // Already registered in Supabase Auth, attempt silent login
-              await supabase.auth.signInWithPassword({
+              const { data: signInData } = await supabase.auth.signInWithPassword({
                 email: payload.email,
                 password: form.password
-              }).catch(() => {});
+              }).catch(() => ({ data: null }));
+              if (signInData && signInData.user) {
+                authUser = signInData.user;
+              }
             }
           } else if (authData && authData.user) {
             authUser = authData.user;
@@ -327,7 +372,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
         }
       }
 
-      // 2. Save profile to public.user_details table
+      // 2. Save profile directly to public.user_details table with password
       try {
         const { error: dbError } = await supabase
           .from('user_details')
@@ -343,10 +388,19 @@ export default function RegistrationModal({ isOpen, onClose }) {
         console.warn('Database save exception:', dbEx);
       }
 
-      // 3. Store local profile backup for instant offline/session resilience
+      // 3. Store local profile and active login session
       try {
+        const sessionUser = {
+          id: authUser?.id || 'usr-' + Date.now(),
+          email: payload.email,
+          fullName: payload.full_name,
+          designation: payload.designation || 'Officer / Citizen',
+          mobile: payload.mobile,
+          district: payload.district,
+        };
         localStorage.setItem('bihar_ai_user_registered', 'true');
         localStorage.setItem('bihar_ai_user_profile', JSON.stringify(payload));
+        localStorage.setItem('bihar_ai_user', JSON.stringify(sessionUser));
       } catch (e) {}
 
       // 4. Send official Resend Welcome Confirmation Email
@@ -467,9 +521,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
               <input
                 className={styles.input}
                 type="text"
+                name="reg_user_full_name"
+                id="reg_user_full_name"
                 placeholder={isHi ? 'अपना पूरा नाम दर्ज करें' : 'Enter your full name'}
                 value={form.full_name}
                 onChange={(e) => handleChange('full_name', e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
                 autoFocus
               />
             </div>
@@ -480,20 +539,41 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="email"
+                  name="reg_user_email"
+                  id="reg_user_email"
                   placeholder={isHi ? 'example@email.com' : 'your@email.com'}
                   value={form.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
+                  onChange={(e) => { handleChange('email', e.target.value); setEmailRegStatus(null); }}
+                  onBlur={() => checkEmailAvailability(form.email)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
                 />
+                {emailRegStatus === 'checking' && (
+                  <span className={styles.emailChecking}>⏳ {isHi ? 'जाँच हो रही है…' : 'Checking…'}</span>
+                )}
+                {emailRegStatus === 'available' && (
+                  <span className={styles.emailAvailable}>✅ {isHi ? 'उपलब्ध है' : 'Available — good to go'}</span>
+                )}
+                {emailRegStatus === 'taken' && (
+                  <span className={styles.emailTaken}>❌ {isHi ? 'यह ईमेल पहले से पंजीकृत है — कृपया साइन इन करें' : 'Already registered — please sign in instead'}</span>
+                )}
               </div>
               <div className={styles.fieldGroup}>
                 <label className={styles.label}>{isHi ? 'मोबाइल नंबर' : 'Mobile Number'} <span className={styles.req}>*</span></label>
                 <input
                   className={styles.input}
                   type="tel"
+                  name="reg_user_mobile"
+                  id="reg_user_mobile"
                   placeholder={isHi ? '10 अंकों का मोबाइल नंबर' : '10-digit mobile number'}
                   value={form.mobile}
                   onChange={(e) => handleChange('mobile', e.target.value.replace(/\D/g, '').slice(0, 10))}
                   maxLength={10}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
             </div>
@@ -512,10 +592,16 @@ export default function RegistrationModal({ isOpen, onClose }) {
                         : ''
                     }`}
                     type={showPassword ? 'text' : 'password'}
+                    name="reg_user_password"
+                    id="reg_user_password"
                     placeholder={isHi ? 'मजबूत पासवर्ड बनाएं' : 'Create strong password'}
                     value={form.password}
                     onChange={(e) => handleChange('password', e.target.value)}
                     minLength={6}
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
                   />
                   <button
                     type="button"
@@ -550,9 +636,15 @@ export default function RegistrationModal({ isOpen, onClose }) {
                       : ''
                   }`}
                   type={showPassword ? 'text' : 'password'}
+                  name="reg_user_confirm_password"
+                  id="reg_user_confirm_password"
                   placeholder={isHi ? 'वही पासवर्ड पुनः दर्ज करें' : 'Re-enter password'}
                   value={form.confirm_password}
                   onChange={(e) => handleChange('confirm_password', e.target.value)}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
                 />
               </div>
             </div>
@@ -602,9 +694,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="text"
+                  name="reg_user_designation"
+                  id="reg_user_designation"
                   placeholder={isHi ? 'जैसे: जिलाधिकारी, इंजीनियर' : 'e.g. District Magistrate, Engineer'}
                   value={form.designation}
                   onChange={(e) => handleChange('designation', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
               <div className={styles.fieldGroup}>
@@ -612,9 +709,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="text"
+                  name="reg_user_department"
+                  id="reg_user_department"
                   placeholder={isHi ? 'जैसे: IT विभाग, शिक्षा विभाग' : 'e.g. IT Department, Education'}
                   value={form.department}
                   onChange={(e) => handleChange('department', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
             </div>
@@ -625,9 +727,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="text"
+                  name="reg_user_organization"
+                  id="reg_user_organization"
                   placeholder={isHi ? 'जैसे: बिहार सरकार, IIT Patna' : 'e.g. Govt of Bihar, IIT Patna'}
                   value={form.organization}
                   onChange={(e) => handleChange('organization', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
               <div className={styles.fieldGroup}>
@@ -638,11 +745,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                   <input
                     className={styles.input}
                     type="number"
+                    name="reg_user_experience"
+                    id="reg_user_experience"
                     placeholder={form.experience_unit === 'Months' ? (isHi ? 'जैसे: 6' : 'e.g. 6') : (isHi ? 'जैसे: 3' : 'e.g. 3')}
                     value={form.experience}
                     onChange={(e) => handleChange('experience', e.target.value)}
                     min={0}
                     max={form.experience_unit === 'Months' ? 120 : 50}
+                    autoComplete="off"
                   />
                   <select
                     className={styles.select}
@@ -701,9 +811,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                   <input
                     className={styles.input}
                     type="text"
+                    name="reg_user_district"
+                    id="reg_user_district"
                     placeholder={isHi ? 'अपना जिला दर्ज करें' : 'Enter your District / City'}
                     value={form.district}
                     onChange={(e) => handleChange('district', e.target.value)}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                   />
                 )}
               </div>
@@ -713,9 +828,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="text"
+                  name="reg_user_block_city"
+                  id="reg_user_block_city"
                   placeholder={isHi ? 'जैसे: पटना सदर, दानापुर' : 'e.g. Patna Sadar, Danapur'}
                   value={form.block_city}
                   onChange={(e) => handleChange('block_city', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
             </div>
@@ -755,9 +875,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="text"
+                  name="reg_user_custom_interest"
+                  id="reg_user_custom_interest"
                   placeholder={isHi ? 'जैसे: AI रोबोटिक्स, मशीन लर्निंग रिसर्च, आदि...' : 'e.g. AI Robotics, Machine Learning Research, etc.'}
                   value={form.custom_interest || ''}
                   onChange={(e) => handleChange('custom_interest', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                   autoFocus
                 />
               </div>
@@ -771,6 +896,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 value={form.contribution}
                 onChange={(e) => handleChange('contribution', e.target.value)}
                 rows={2}
+                spellCheck="false"
               />
             </div>
 
@@ -780,9 +906,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="url"
+                  name="reg_user_linkedin"
+                  id="reg_user_linkedin"
                   placeholder="https://linkedin.com/in/your-profile"
                   value={form.linkedin}
                   onChange={(e) => handleChange('linkedin', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
               <div className={styles.fieldGroup}>
@@ -790,9 +921,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
                 <input
                   className={styles.input}
                   type="url"
+                  name="reg_user_portfolio"
+                  id="reg_user_portfolio"
                   placeholder="https://your-portfolio.com"
                   value={form.portfolio}
                   onChange={(e) => handleChange('portfolio', e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
             </div>

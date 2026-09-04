@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import QRCode from 'qrcode';
 import { getCleanCandidateName, getCleanCourseTitle, markCertificateAsDownloaded } from '../../utils/examStorage';
-import Modal from '../Modal/Modal';
-import Button from '../Button/Button';
 
 export default function CertificateModal({ submission, onClose }) {
   const [certImageUrl, setCertImageUrl] = useState(null);
@@ -192,46 +191,223 @@ export default function CertificateModal({ submission, onClose }) {
 
   const displayDesignationText = cleanDesignation ? ` (${cleanDesignation})` : '';
 
-  return (
-    <Modal
-      isOpen={!!submission}
-      onClose={onClose}
-      size="xl"
-      title={`${displayCandidateName}${displayDesignationText}`}
-      subtitle={`ID: ${submission.credentialId} • Score: ${submission.percentage}% (${submission.score}/${submission.total || 30})`}
+  return ReactDOM.createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 10000,
+        background: 'rgba(14, 12, 10, 0.84)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        animation: 'fadeInModal 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxSizing: 'border-box'
+      }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Certificate Image Body */}
-        <div style={{ background: 'var(--color-sand-100, var(--color-sand-100, #F3ECE0))', borderRadius: 'var(--radius-sm, 10px)', border: '1px solid var(--color-line, var(--color-line, #E2D7C3))', padding: '12px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', overflow: 'hidden' }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative',
+          background: 'linear-gradient(145deg, #1C1814 0%, #15120F 100%)',
+          borderRadius: '24px',
+          border: '1px solid rgba(226, 139, 92, 0.35)',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          width: '100%',
+          maxWidth: '960px',
+          maxHeight: '94vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          color: '#FFFFFF',
+          padding: '24px 28px',
+          boxSizing: 'border-box'
+        }}
+      >
+        {/* Top Amber Ambient Glow Line */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '320px',
+          height: '2.5px',
+          background: 'linear-gradient(90deg, transparent, #C1552C 30%, #D99B26 70%, transparent)',
+          borderRadius: '2px'
+        }} />
+
+        {/* Modal Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px', borderBottom: '1px solid rgba(226, 139, 92, 0.2)', paddingBottom: '14px' }}>
+          <div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(16, 185, 129, 0.16)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              color: '#34D399',
+              fontSize: '10.5px',
+              fontWeight: '800',
+              padding: '3px 10px',
+              borderRadius: '9999px',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: '6px'
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+              <span>OFFICIAL VERIFIED CIVIC CREDENTIAL</span>
+            </div>
+
+            <h2 style={{
+              fontFamily: "var(--font-display, 'Fraunces', serif)",
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#FFFFFF',
+              margin: '0 0 4px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }}>
+              <span>{displayCandidateName}</span>
+              {cleanDesignation && (
+                <span style={{
+                  fontSize: '12px',
+                  fontFamily: "var(--font-body, sans-serif)",
+                  fontWeight: '600',
+                  color: 'var(--color-terracotta-400, #E28B5C)',
+                  background: 'rgba(193, 85, 44, 0.15)',
+                  border: '1px solid rgba(226, 139, 92, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '6px'
+                }}>
+                  💼 {cleanDesignation}
+                </span>
+              )}
+            </h2>
+
+            <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontWeight: '700', color: '#E8B23D' }}>ID: {submission.credentialId}</span>
+              <span>•</span>
+              <span>Score: {submission.percentage}% ({submission.score}/{submission.total || 30})</span>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              transition: 'all 0.2s ease',
+              flexShrink: 0
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Certificate Image Frame */}
+        <div style={{
+          background: 'radial-gradient(ellipse at center, #FAF7F2 0%, #EFE8DC 100%)',
+          borderRadius: '16px',
+          border: '1px solid rgba(226, 215, 195, 0.8)',
+          padding: '12px',
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '260px',
+          maxHeight: 'calc(86vh - 190px)',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.35)'
+        }}>
           {loading || !certImageUrl ? (
-            <div style={{ padding: '40px', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', fontWeight: '700' }}>
+            <div style={{ padding: '40px', color: '#181512', fontWeight: '800', fontSize: '15px' }}>
               ⏳ Generating Official Verified High-DPI Certificate...
             </div>
           ) : (
             <img
               src={certImageUrl}
               alt="Official Bihar AI Mission Certificate"
-              style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 200px)', width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: '8px', boxShadow: 'var(--shadow-soft)' }}
+              style={{
+                maxWidth: '100%',
+                maxHeight: 'calc(86vh - 215px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+              }}
             />
           )}
         </div>
 
-        {/* Modal Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <Button variant="secondary" size="md" onClick={onClose}>
-            Close
-          </Button>
+        {/* Modal Action Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '16px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--color-sand-200, #C2B7A3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>🔒</span>
+            <span>Verifiable via QR Code & Credential ID</span>
+          </div>
 
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleDownload}
-            disabled={loading || !certImageUrl}
-          >
-            📥 Download Certificate PNG
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={onClose}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#F3ECE0',
+                padding: '9px 20px',
+                borderRadius: '11px',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Close
+            </button>
+
+            <button
+              onClick={handleDownload}
+              disabled={loading || !certImageUrl}
+              style={{
+                background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                padding: '9px 22px',
+                borderRadius: '11px',
+                fontWeight: '800',
+                fontSize: '13px',
+                cursor: loading || !certImageUrl ? 'not-allowed' : 'pointer',
+                opacity: loading || !certImageUrl ? 0.6 : 1,
+                boxShadow: '0 4px 16px rgba(193, 85, 44, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span>📥</span>
+              <span>Download Certificate PNG</span>
+            </button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>,
+    document.body
   );
 }

@@ -39,10 +39,21 @@
     "start": "react-scripts start",
     "starter": "starter.bat",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "node tests/auth-retry-transient.test.mjs && node tests/idempotent-writes.test.mjs && node tests/rls-identity-forgery.test.mjs && node tests/user-deletion-revocation.test.mjs && node tests/officer-programs-masterclasses-crud.test.mjs",
+    "test:crud": "node tests/officer-programs-masterclasses-crud.test.mjs",
+    "test:auth": "node tests/auth-retry-transient.test.mjs",
+    "test:idempotency": "node tests/idempotent-writes.test.mjs",
+    "test:forgery": "node tests/rls-identity-forgery.test.mjs",
+    "test:deletion": "node tests/user-deletion-revocation.test.mjs",
+    "test:cra": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler dev"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
   },
   "browserslist": {
     "production": [
@@ -59,6 +70,8 @@
   "devDependencies": {
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "busboy": "^1.6.0",
+    "googleapis": "^178.0.0",
     "typescript": "^5.7.3",
     "wrangler": "^4.83.0"
   }

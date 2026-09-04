@@ -19,6 +19,10 @@ export default function MaintenanceBar() {
           {content}
           {content}
           {content}
+          {content}
+          {content}
+          {content}
+          {content}
         </div>
       </div>
     </aside>

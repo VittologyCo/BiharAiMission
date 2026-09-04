@@ -1,11 +1,10 @@
 // Resend Email Utility for Sending Emails via Serverless Function / Direct API
 
 const getDefaultSender = () => {
-  return process.env.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@resend.dev>';
+  return process.env.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@biharaimission.org>';
 };
 
 const sendEmailPayload = async (payload) => {
-  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const finalPayload = {
     ...payload,
@@ -35,13 +34,8 @@ const sendEmailPayload = async (payload) => {
     }
   }
 
-  // 2. In local development without a running serverless backend, simulate success
-  if (isLocal) {
-    console.info(`ℹ️ [Local Dev] Email queued/simulated for ${finalPayload.to}: "${finalPayload.subject}"`);
-    return { success: true, simulated: true };
-  }
-
-  return { success: false, reason: 'Email serverless function unavailable or returned non-200' };
+  // 2. All strategies exhausted
+  return { success: false, reason: 'Email delivery failed — no serverless endpoint responded' };
 };
 
 export const sendContactEmailViaResend = async ({ name, email, description }) => {
@@ -200,3 +194,63 @@ export const sendRegistrationThankYouEmail = async ({
 
   return await sendEmailPayload(payload);
 };
+
+export const sendPasswordResetEmailViaResend = async ({
+  email,
+  resetUrl,
+}) => {
+  const payload = {
+    from: getDefaultSender(),
+    to: [email],
+    subject: '🔐 Reset Your Password — Bihar AI Mission',
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E2D7C3; border-radius: 16px; overflow: hidden; background: #FAF7F2; box-shadow: 0 8px 30px rgba(0,0,0,0.08);">
+        <div style="background: #181512; padding: 32px 24px; text-align: center; color: #FFFFFF;">
+          <div style="display: inline-block; background: rgba(226, 139, 92, 0.15); border: 1px solid rgba(226, 139, 92, 0.3); color: #E28B5C; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 9999px; margin-bottom: 12px;">
+            BIHAR AI MISSION · CIVIC AUTH
+          </div>
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #FFFFFF; font-family: Georgia, serif;">
+            Password Reset Request 🔐
+          </h1>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #C8BFB3;">
+            Bihar AI Mission · Secure Civic Portal
+          </p>
+        </div>
+        <div style="padding: 32px 24px; color: #181512; line-height: 1.7;">
+          <p style="font-size: 15px; color: #3A322A; margin-top: 0;">
+            We received a request to reset the password for your account associated with <strong>${email}</strong>.
+          </p>
+
+          <!-- 5-Minute Timer Expiry Highlight -->
+          <div style="margin: 20px 0 24px; padding: 14px 20px; background: rgba(193, 85, 44, 0.08); border: 1.5px dashed #C1552C; border-radius: 12px; text-align: center;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #C1552C; letter-spacing: 0.08em; margin-bottom: 3px;">
+              ⏳ Security Expiration
+            </div>
+            <div style="font-size: 14.5px; font-weight: 700; color: #181512;">
+              This reset link will expire in <span style="color: #C1552C; font-weight: 800;">5 minutes</span>
+            </div>
+          </div>
+
+          <p style="font-size: 14px; color: #5E554D; text-align: center;">
+            Click the button below to choose a new password:
+          </p>
+          <div style="text-align: center; margin: 24px 0 28px;">
+            <a href="${resetUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #C1552C 0%, #A3411B 100%); color: #FFFFFF; text-decoration: none; padding: 14px 38px; font-size: 15px; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 16px rgba(193, 85, 44, 0.35);">
+              Reset My Password →
+            </a>
+          </div>
+          <p style="font-size: 12.5px; color: #8A7E72; text-align: center;">
+            For security reasons, this link will be expired after <strong>5 minutes</strong>. If you did not request this reset, you can safely ignore this email.
+          </p>
+          <hr style="border: none; border-top: 1px solid #E2D7C3; margin: 24px 0 16px;" />
+          <p style="font-size: 11.5px; color: #A89F91; text-align: center; margin: 0;">
+            Bihar AI Mission · Patna, Bihar, India · <a href="https://biharaimission.org" style="color: #C1552C;">biharaimission.org</a>
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  return await sendEmailPayload(payload);
+};
+

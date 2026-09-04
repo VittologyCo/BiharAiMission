@@ -1,7 +1,8 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './hooks/useLanguage';
 import { AuthProvider } from './hooks/useAuth';
+import { ToastProvider } from './context/ToastContext';
 import Banner from './components/Banner/Banner';
 import Navbar from './components/Navbar/Navbar';
 import MaintenanceBar from './components/MaintenanceBar/MaintenanceBar';
@@ -14,9 +15,12 @@ import BlogPage from './pages/user/BlogPage';
 import StartupsPage from './pages/user/StartupsPage';
 import AboutPage from './pages/user/AboutPage';
 import ResetPasswordPage from './pages/user/ResetPasswordPage';
+import NotFoundPage from './pages/user/NotFoundPage';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import UserProtectedRoute from './components/UserProtectedRoute';
+import BackendStatusBanner from './components/BackendStatusBanner/BackendStatusBanner';
 import UserProfilePage from './pages/user/UserProfilePage';
 import CourseDetailPage from './pages/user/CourseDetailPage';
 import ExamDetailPage from './pages/user/ExamDetailPage';
@@ -27,6 +31,8 @@ import CursorSpotlight from './components/CursorSpotlight';
 import InteractiveBackground from './components/InteractiveBackground';
 import SmoothScroll from './components/SmoothScroll';
 import RegistrationModal from './components/RegistrationModal/RegistrationModal';
+import MouseEffects from './components/MouseEffects/MouseEffects';
+import LiveVisitorCounter from './components/LiveVisitorCounter/LiveVisitorCounter';
 
 // Lazy-load the Experience page (zero bundle cost to main site)
 const ExperiencePage = lazy(() => import('./experience/ExperiencePage.tsx'));
@@ -47,14 +53,17 @@ const AppLayout = ({
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
   const isExperiencePage = location.pathname.startsWith('/experience');
-  const isIsolatedPage = isAdminPage || isExperiencePage;
+  const isResetPasswordPage = location.pathname.startsWith('/reset-password');
+  const isIsolatedPage = isAdminPage || isExperiencePage || isResetPasswordPage;
 
   return (
     <>
       <SmoothScroll />
       {!isIsolatedPage && <InteractiveBackground />}
       {!isIsolatedPage && <CursorSpotlight />}
+      {!isIsolatedPage && <MouseEffects isGlobal={true} color="#C1552C" interactionMode="burst" duration={0.4} effectSize={80} />}
       <ScrollToTop />
+      <BackendStatusBanner />
       {!isIsolatedPage && <Banner />}
       {!isIsolatedPage && <Navbar onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} />}
       {!isIsolatedPage && <MaintenanceBar />}
@@ -69,7 +78,14 @@ const AppLayout = ({
         <Route path="/startups" element={<StartupsPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
         <Route path="/about" element={<AboutPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/profile" element={<UserProfilePage onOpenAuth={onOpenAuth} />} />
+        <Route 
+          path="/profile" 
+          element={
+            <UserProtectedRoute onOpenAuth={onOpenAuth}>
+              <UserProfilePage onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} />
+            </UserProtectedRoute>
+          } 
+        />
         <Route path="/course/:id" element={<LearningPage />} />
         <Route path="/program/:id" element={<LearningPage />} />
         <Route path="/exam/:examId" element={<LearningPage />} />
@@ -114,8 +130,12 @@ const AppLayout = ({
             </ProtectedRoute>
           } 
         />
+
+        {/* Catch-all 404 Not Found Route */}
+        <Route path="*" element={<NotFoundPage onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} />} />
       </Routes>
 
+      {!isIsolatedPage && <LiveVisitorCounter />}
       {!isIsolatedPage && <Footer />}
       {!isIsolatedPage && (
         <>
@@ -139,26 +159,24 @@ const AppLayout = ({
   );
 };
 
-import { ToastProvider } from './context/ToastContext';
-
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authDefaultTab, setAuthDefaultTab] = useState('login');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
-  const handleOpenAuth = (tab = 'login') => {
+  const handleOpenAuth = useCallback((tab = 'login') => {
     setAuthDefaultTab(tab);
     setIsAuthModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenContact = () => {
+  const handleOpenContact = useCallback(() => {
     setIsContactModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenRegistration = () => {
+  const handleOpenRegistration = useCallback(() => {
     setIsRegistrationOpen(true);
-  };
+  }, []);
 
 
   return (

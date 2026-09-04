@@ -36,3 +36,11 @@ yarn-error.log*
 !.dev.vars.example
 !.env.example
 
+.originkit/
+
+# Google Service Account secrets
+secrets/*
+!secrets/.gitkeep
+
+# local development & prototypes
+daily-radar/

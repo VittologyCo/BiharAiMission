@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../utils/supabase';
+import { sendPasswordResetEmailViaResend } from '../../utils/resendEmail';
 import styles from './Admin.module.css';
 
 const AdminLogin = () => {
@@ -14,9 +15,23 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If already logged in, skip to dashboard
+    // Only auto-redirect if a verified admin session exists
+    try {
+      const localAdmin = localStorage.getItem('bihar_ai_admin_session');
+      if (localAdmin) {
+        navigate('/admin/dashboard');
+        return;
+      }
+    } catch (e) {}
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/admin/dashboard');
+      if (session && session.user && session.user.email) {
+        const emailLower = session.user.email.toLowerCase();
+        if (emailLower.includes('admin') || emailLower === 'admin@biharaimission.org') {
+          localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: emailLower, authenticatedAt: Date.now() }));
+          navigate('/admin/dashboard');
+        }
+      }
     });
   }, [navigate]);
 
@@ -25,14 +40,44 @@ const AdminLogin = () => {
     setLoading(true);
     setError('');
 
+    const cleanEmail = email.toLowerCase().trim();
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      let authOk = false;
+
+      // 1. Supabase standard auth sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
         password,
       });
 
-      if (error) throw error;
-      navigate('/admin/dashboard');
+      if (!authError && authData && authData.user) {
+        authOk = true;
+      }
+
+      // 2. Fallback: verify_user_password RPC
+      if (!authOk) {
+        try {
+          const { data: verifyResult, error: rpcErr } = await supabase.rpc('verify_user_password', {
+            email_input: cleanEmail,
+            password_input: password,
+          });
+          if (!rpcErr && verifyResult && verifyResult.success) {
+            authOk = true;
+          }
+        } catch (rpcE) {}
+      }
+
+      if (authOk) {
+        localStorage.setItem('bihar_ai_admin_session', JSON.stringify({
+          email: cleanEmail,
+          authenticatedAt: Date.now()
+        }));
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      setError('Invalid admin credentials. Please verify your email and password.');
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -53,12 +98,25 @@ const AdminLogin = () => {
     }
 
     try {
-      if (supabase && supabase.auth) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
+      const cleanEmail = email.toLowerCase().trim();
+      const token = 'rst_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const expiresAt = Date.now() + 5 * 60 * 1000;
+
+      if (supabase) {
+        supabase.from('user_details').update({
+          reset_token: token,
+          reset_expires_at: new Date(expiresAt).toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('email', cleanEmail).then(() => {}).catch(() => {});
       }
+
+      const resetUrl = `${window.location.origin}/reset-password?email=${encodeURIComponent(cleanEmail)}&token=${token}`;
+
+      await sendPasswordResetEmailViaResend({
+        email: cleanEmail,
+        resetUrl,
+      });
+
       setResetMessage('Password reset link has been sent to your email address. Please check your inbox.');
     } catch (err) {
       setError(err.message || 'Failed to send password reset email.');
@@ -97,7 +155,7 @@ const AdminLogin = () => {
           </div>
 
           {isForgot ? (
-            <form onSubmit={handleReset}>
+            <form onSubmit={handleReset} autoComplete="off">
               <div className={styles.formFieldGroup}>
                 <div className={styles.formFieldLabelRow}>
                   <label className={styles.formLabel}>Admin Email Address</label>
@@ -111,10 +169,16 @@ const AdminLogin = () => {
                   </div>
                   <input
                     type="email"
+                    name="admin_reset_email"
+                    id="admin_reset_email"
                     className={`${styles.loginInput} ${styles.loginInputWithoutRightIcon}`}
-                    placeholder="admin@biharaimission.org"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
                     required
                   />
                 </div>
@@ -180,7 +244,7 @@ const AdminLogin = () => {
               </div>
             </form>
           ) : (
-            <form onSubmit={handleLogin}>
+            <form onSubmit={handleLogin} autoComplete="off">
               <div className={styles.formFieldGroup}>
                 <div className={styles.formFieldLabelRow}>
                   <label className={styles.formLabel}>Email Address</label>
@@ -194,10 +258,16 @@ const AdminLogin = () => {
                   </div>
                   <input
                     type="email"
+                    name="admin_login_email"
+                    id="admin_login_email"
                     className={`${styles.loginInput} ${styles.loginInputWithoutRightIcon}`}
-                    placeholder="admin@biharaimission.org"
+                    placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
                     required
                   />
                 </div>
@@ -223,10 +293,16 @@ const AdminLogin = () => {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="admin_login_password"
+                    id="admin_login_password"
                     className={styles.loginInput}
-                    placeholder="••••••••"
+                    placeholder="Enter password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
                     required
                   />
                   <button

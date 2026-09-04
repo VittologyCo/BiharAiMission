@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './AuthModal.module.css';
 import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../utils/supabase';
 import Modal from '../Modal/Modal';
 import Button from '../Button/Button';
+
+// Session-level cache to avoid re-checking the same email
+const emailCheckCache = {};
 
 export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpenRegistration }) {
   const { user, login, resetPassword } = useAuth();
@@ -13,6 +17,9 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  // Email verification state: null | 'checking' | 'found' | 'not_found'
+  const [emailStatus, setEmailStatus] = useState(null);
+  const checkTimerRef = useRef(null);
 
   // Reset state on open/close
   useEffect(() => {
@@ -24,8 +31,48 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
       setErrorMessage('');
       setSuccessMessage('');
       setSubmitting(false);
+      setEmailStatus(null);
     }
+    return () => { if (checkTimerRef.current) clearTimeout(checkTimerRef.current); };
   }, [isOpen, defaultTab]);
+
+  // Lightweight email check — cached, client-validated, uses secure RPC to respect RLS
+  const checkEmailExists = useCallback(async (emailValue) => {
+    const clean = (emailValue || '').toLowerCase().trim();
+    // Client-side format check first — no backend call for invalid emails
+    if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      setEmailStatus(null);
+      return;
+    }
+    // Check session cache first — zero backend load for repeated checks
+    if (emailCheckCache[clean] !== undefined) {
+      setEmailStatus(emailCheckCache[clean] ? 'found' : 'not_found');
+      return;
+    }
+    setEmailStatus('checking');
+    try {
+      // 1. Try secure RPC first (bypasses RLS safely to check user_details & auth.users)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('check_user_email_exists', { email_input: clean });
+      if (!rpcErr && typeof rpcData === 'boolean') {
+        emailCheckCache[clean] = rpcData;
+        setEmailStatus(rpcData ? 'found' : 'not_found');
+        return;
+      }
+
+      // 2. Direct query fallback
+      const { data, error } = await supabase
+        .from('user_details')
+        .select('id')
+        .eq('email', clean)
+        .maybeSingle();
+
+      const exists = !error && data && data.id;
+      emailCheckCache[clean] = !!exists;
+      setEmailStatus(exists ? 'found' : 'not_found');
+    } catch {
+      setEmailStatus(null);
+    }
+  }, []);
 
   // Close modal when user is authenticated
   useEffect(() => {
@@ -51,7 +98,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
     if (!result.success) {
       const err = result.error || '';
       if (err.toLowerCase().includes('invalid') || err.toLowerCase().includes('credentials') || err.toLowerCase().includes('user not found')) {
-        setErrorMessage('Invalid email or password. If you registered earlier without creating a password, please click "Forgot password?" below to set your password and access your profile.');
+        setErrorMessage('Invalid password please click "Forgot password?" below to set your password and access your profile.');
       } else {
         setErrorMessage(err || 'Unable to sign in. Please try again.');
       }
@@ -104,11 +151,55 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
         </p>
       </div>
 
+      {mode === 'login' && (
+        <div style={{
+          background: 'rgba(193, 85, 44, 0.08)',
+          border: '1px solid rgba(193, 85, 44, 0.28)',
+          borderRadius: '12px',
+          padding: '10px 13px',
+          marginTop: '12px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '9px',
+          fontSize: '12px',
+          lineHeight: '1.45',
+          color: 'var(--color-ink-muted, #5E554D)'
+        }}>
+          <span style={{ fontSize: '15px', flexShrink: 0, marginTop: '1px' }}>💡</span>
+          <div>
+            <strong style={{ color: 'var(--color-charcoal-900, #181512)' }}>First time signing in? </strong>
+            If you previously registered without creating a password, please click{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setMode('forgot');
+                setErrorMessage('');
+                setSuccessMessage('');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'var(--color-terracotta-500, #C1552C)',
+                fontWeight: '800',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontFamily: 'inherit'
+              }}
+            >
+              Forgot password?
+            </button>{' '}
+            to set your password and then sign in.
+          </div>
+        </div>
+      )}
+
       {errorMessage && <div className={styles.errorAlert}>{errorMessage}</div>}
       {successMessage && <div className={styles.successAlert}>{successMessage}</div>}
 
       {mode === 'login' ? (
-        <form onSubmit={handleLoginSubmit} className={styles.form}>
+        <form onSubmit={handleLoginSubmit} className={styles.form} autoComplete="off">
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Email Address</label>
             <div className={styles.inputContainer}>
@@ -120,14 +211,39 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
               </span>
               <input
                 type="email"
+                name="bihar_auth_email_input"
+                id="bihar_auth_email_input"
                 className={styles.input}
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEmail(val);
+                  setErrorMessage('');
+                  setEmailStatus(null);
+                  if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+                  if (val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+                    checkTimerRef.current = setTimeout(() => checkEmailExists(val), 400);
+                  }
+                }}
+                onBlur={() => checkEmailExists(email)}
+                autoComplete="email"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
                 required
                 autoFocus
               />
             </div>
+            {emailStatus === 'checking' && (
+              <span className={styles.emailChecking}>⏳ Verifying…</span>
+            )}
+            {emailStatus === 'found' && (
+              <span className={styles.emailValid}>✅ Registered — good to go</span>
+            )}
+            {emailStatus === 'not_found' && (
+              <span className={styles.emailInvalid}>❌ Email not found — please register first</span>
+            )}
           </div>
 
           <div className={styles.fieldGroup}>
@@ -141,10 +257,16 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
               </span>
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="bihar_auth_password_input"
+                id="bihar_auth_password_input"
                 className={`${styles.input} ${styles.inputWithEye}`}
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
                 required
               />
               <button
@@ -203,7 +325,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
           </p>
         </form>
       ) : (
-        <form onSubmit={handleForgotSubmit} className={styles.form}>
+        <form onSubmit={handleForgotSubmit} className={styles.form} autoComplete="off">
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Registered Email Address</label>
             <div className={styles.inputContainer}>
@@ -215,14 +337,39 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'login', onOpe
               </span>
               <input
                 type="email"
+                name="bihar_forgot_email_input"
+                id="bihar_forgot_email_input"
                 className={styles.input}
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEmail(val);
+                  setErrorMessage('');
+                  setEmailStatus(null);
+                  if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+                  if (val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+                    checkTimerRef.current = setTimeout(() => checkEmailExists(val), 400);
+                  }
+                }}
+                onBlur={() => checkEmailExists(email)}
+                autoComplete="email"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
                 required
                 autoFocus
               />
             </div>
+            {emailStatus === 'checking' && (
+              <span className={styles.emailChecking}>⏳ Verifying…</span>
+            )}
+            {emailStatus === 'found' && (
+              <span className={styles.emailValid}>✅ Registered — ready to reset</span>
+            )}
+            {emailStatus === 'not_found' && (
+              <span className={styles.emailInvalid}>❌ Email not found — please register first</span>
+            )}
           </div>
 
           <Button

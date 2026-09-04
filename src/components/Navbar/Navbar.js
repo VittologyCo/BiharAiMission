@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../context/ToastContext';
@@ -10,9 +10,17 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
   const { user, logout } = useAuth();
   const toast = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const handleLogout = () => {
+    logout();
+    setProfileDropdownOpen(false);
+    setMobileOpen(false);
+    navigate('/');
+  };
 
   const currentLang = i18n.language || 'en';
   const isHi = currentLang === 'hi';
@@ -60,16 +68,26 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
     };
   }, [mobileOpen]);
 
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' || 
+    window.location.port === '3000'
+  );
+
   const handleNavClick = () => {
     setMobileOpen(false);
   };
 
-  const handleLockedSignIn = () => {
-    toast?.info(
-      isHi 
-        ? '🔒 सदस्य पोर्टल साइन-इन जल्द शुरू होगा। कृपया नए सदस्य के रूप में पंजीकरण करें।' 
-        : '🔒 Member Portal Sign-In is launching soon. Please click Register to join.'
-    );
+  const handleSignInClick = () => {
+    if (isLocalhost) {
+      if (onOpenAuth) onOpenAuth('login');
+    } else {
+      toast?.info(
+        isHi 
+          ? '🔒 सदस्य पोर्टल साइन-इन जल्द शुरू होगा। कृपया नए सदस्य के रूप में पंजीकरण करें।' 
+          : '🔒 Member Portal Sign-In is launching soon. Please click Register to join.'
+      );
+    }
   };
 
   const handleLanguageChange = (newLang) => {
@@ -107,7 +125,6 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
             </Link>
             <Link to="/blog" className={isActive('/blog') ? 'act' : ''} onClick={handleNavClick}>
               <span>{t('links.blog', { defaultValue: 'Blog' })}</span>
-              <span className="nav-lock-badge" title="Under Construction">🔒</span>
             </Link>
             <Link to="/startups" className={isActive('/startups') ? 'act' : ''} onClick={handleNavClick}>
               {t('links.startups', { defaultValue: 'Startups' })}
@@ -149,35 +166,23 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                   </div>
                   <div className="user-info">
                     <div className="user-name">{user.fullName}</div>
-                    <div className="user-role">{user.designation}</div>
+                    <div className="user-role">{user.email}</div>
                   </div>
                   <Link
                     to="/profile"
                     onClick={handleNavClick}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      width: '100%',
-                      textAlign: 'center',
-                      background: 'var(--color-terracotta-500, #C1552C)',
-                      color: 'var(--color-sand-50, #FBF8F3)',
-                      padding: '8px 14px',
-                      borderRadius: 'var(--radius-sm, 10px)',
-                      fontSize: '12.5px',
-                      fontWeight: '700',
-                      textDecoration: 'none',
-                      margin: '6px 0',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 4px 12px rgba(193, 85, 44, 0.25)',
-                      transition: 'all 0.2s ease'
-                    }}
+                    className="mobile-dashboard-link"
                   >
-                    {t('auth.dashboard', { defaultValue: '🎓 My Dashboard' })} →
+                    <span>🎓 {isHi ? 'मेरा डैशबोर्ड' : 'Candidate Dashboard'}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '900' }}>→</span>
                   </Link>
-                  <button className="user-logout-btn" onClick={() => { logout(); handleNavClick(); }}>
-                    {t('auth.logout', { defaultValue: 'Logout' })}
+                  <button className="user-logout-btn" onClick={handleLogout}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      <polyline points="16 17 21 12 16 7"></polyline>
+                      <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>{t('auth.logout', { defaultValue: 'Sign Out' })}</span>
                   </button>
                 </div>
               ) : (
@@ -197,13 +202,11 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                     className="mobile-menu-signin-btn" 
                     onClick={() => {
                       handleNavClick();
-                      handleLockedSignIn();
+                      if (onOpenAuth) onOpenAuth('login');
                     }}
-                    title={isHi ? 'साइन-इन जल्द शुरू होगा' : 'Sign-In Coming Soon'}
-                    style={{ opacity: 0.9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                   >
                     <span>{t('auth.signIn', { defaultValue: 'Sign In' })}</span>
-                    <span className="nav-lock-badge" title="Coming Soon" style={{ fontSize: '11px' }}>🔒</span>
                   </button>
                 </div>
               )}
@@ -261,78 +264,56 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                         <UserAvatar user={user} className="dh-avatar-img" />
                       </div>
                       <div className="dh-details">
-                        <div className="dh-name">{user.fullName}</div>
+                        <div className="dh-name-row">
+                          <span className="dh-name">{user.fullName}</span>
+                          <span className="dh-status-dot" title="Active Account" />
+                        </div>
                         <div className="dh-email">{user.email}</div>
                       </div>
                     </div>
 
-                    <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-line, #E2D7C3)', borderBottom: '1px solid var(--color-line, #E2D7C3)', padding: '8px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div className="dropdown-menu-links">
                       <Link
                         to="/profile"
+                        className="dropdown-link-primary"
                         onClick={() => setProfileDropdownOpen(false)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          width: '100%',
-                          background: 'linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-terracotta-600, #A3411B) 100%)',
-                          color: 'var(--color-sand-50, #FBF8F3)',
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-sm, 10px)',
-                          fontSize: '12.5px',
-                          fontWeight: '700',
-                          textDecoration: 'none',
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 4px 12px rgba(193, 85, 44, 0.25)',
-                          boxSizing: 'border-box',
-                          transition: 'all 0.2s ease'
-                        }}
                       >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>🎓</span>
-                          <span>{t('auth.dashboard', { defaultValue: '🎓 My Dashboard' })}</span>
-                        </span>
-                        <span style={{ fontSize: '11px', fontWeight: '900' }}>→</span>
+                        <div className="dropdown-link-left">
+                          <span className="dropdown-link-icon">🎓</span>
+                          <div className="dropdown-link-text">
+                            <span className="dropdown-link-title">{isHi ? 'उम्मीदवार डैशबोर्ड' : 'Candidate Dashboard'}</span>
+                            <span className="dropdown-link-desc">{isHi ? 'प्रमाणपत्र एवं प्रगति' : 'Courses, scores & certs'}</span>
+                          </div>
+                        </div>
+                        <span className="dropdown-link-arrow">→</span>
                       </Link>
 
                       {(user.role === 'admin' || user.email?.includes('admin')) && (
                         <Link
                           to="/admin"
+                          className="dropdown-link-admin"
                           onClick={() => setProfileDropdownOpen(false)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            width: '100%',
-                            background: 'rgba(24, 21, 18, 0.05)',
-                            color: 'var(--color-charcoal-900, #181512)',
-                            padding: '8px 14px',
-                            borderRadius: 'var(--radius-sm, 10px)',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            textDecoration: 'none',
-                            whiteSpace: 'nowrap',
-                            boxSizing: 'border-box',
-                            transition: 'all 0.2s ease'
-                          }}
                         >
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>🛡️</span>
-                            <span>{t('auth.admin', { defaultValue: 'Admin Portal' })}</span>
-                          </span>
-                          <span style={{ fontSize: '11px', fontWeight: '900' }}>→</span>
+                          <div className="dropdown-link-left">
+                            <span className="dropdown-link-icon">🛡️</span>
+                            <div className="dropdown-link-text">
+                              <span className="dropdown-link-title">{isHi ? 'व्यवस्थापक पोर्टल' : 'Admin Portal'}</span>
+                              <span className="dropdown-link-desc">{isHi ? 'सिस्टम प्रबंधन' : 'Mission governance'}</span>
+                            </div>
+                          </div>
+                          <span className="dropdown-link-arrow">→</span>
                         </Link>
                       )}
                     </div>
 
                     <div className="dropdown-footer">
-                      <button className="dropdown-logout-btn" onClick={() => { logout(); setProfileDropdownOpen(false); }}>
+                      <button className="dropdown-logout-btn" onClick={handleLogout}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                           <polyline points="16 17 21 12 16 7"></polyline>
                           <line x1="21" y1="12" x2="9" y2="12"></line>
                         </svg>
-                        <span>{t('auth.logout', { defaultValue: 'Logout' })}</span>
+                        <span>{t('auth.logout', { defaultValue: 'Sign Out' })}</span>
                       </button>
                     </div>
                   </div>
@@ -343,12 +324,10 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                 <button 
                   type="button" 
                   className="nav-signin-btn" 
-                  onClick={handleLockedSignIn}
-                  title={isHi ? 'साइन-इन जल्द शुरू होगा' : 'Sign-In Coming Soon'}
-                  style={{ opacity: 0.9, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                  onClick={() => onOpenAuth && onOpenAuth('login')}
+                  style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                 >
                   <span>{t('auth.signIn', { defaultValue: 'Sign In' })}</span>
-                  <span className="nav-lock-badge" title="Coming Soon" style={{ fontSize: '11px' }}>🔒</span>
                 </button>
                 <button 
                   type="button" 

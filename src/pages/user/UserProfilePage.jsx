@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, getIstTimestamp } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -8,55 +8,29 @@ import { getLiveClassesFromStorage, getProgramsFromStorage, fetchUserMasterclass
 import { getExamSubmissions, fetchExamSubmissionsFromSupabase } from '../../utils/examStorage';
 import CertificateModal from '../../components/CertificateModal/CertificateModal';
 import UserAvatar from '../../components/UserAvatar/UserAvatar';
+import AIClasswork from '../../components/AIClasswork/AIClasswork';
+import { getUserTaskSubmissions } from '../../services/taskService';
 import SEO from '../../components/SEO/SEO';
+import TaskLeaderboard from '../../components/TaskLeaderboard/TaskLeaderboard';
 import './UserProfilePage.responsive.css';
 
-const biharDistricts = [
-  'Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga', 'Purnia', 'Rohtas', 'Nalanda',
-  'Begusarai', 'Saran', 'Bhojpur', 'East Champaran', 'West Champaran', 'Samastipur', 'Katihar',
-  'Vaishali', 'Saharsa', 'Munger', 'Sitamarhi', 'Buxar', 'Siwan', 'Kishanganj', 'Araria',
-  'Gopalganj', 'Jehanabad', 'Arwal', 'Aurangabad', 'Banka', 'Bhabua (Kaimur)', 'Jamui',
-  'Khagaria', 'Lakhisarai', 'Madhepura', 'Madhubani', 'Nawada', 'Sheohar', 'Sheikhpura', 'Supaul'
-];
+import {
+  INDIAN_STATES as indianStates,
+  BIHAR_DISTRICTS as biharDistricts,
+  ROLE_TYPES,
+  INTEREST_OPTIONS
+} from '../../components/RegistrationModal/RegistrationModal';
 
-const indianStates = [
-  'Bihar',
-  'Jharkhand',
-  'Uttar Pradesh',
-  'West Bengal',
-  'Delhi (NCT)',
-  'Maharashtra',
-  'Madhya Pradesh',
-  'Rajasthan',
-  'Gujarat',
-  'Punjab',
-  'Haryana',
-  'Uttarakhand',
-  'Chhattisgarh',
-  'Odisha',
-  'Assam',
-  'Telangana',
-  'Andhra Pradesh',
-  'Karnataka',
-  'Tamil Nadu',
-  'Kerala',
-  'Himachal Pradesh',
-  'Jammu & Kashmir',
-  'Ladakh',
-  'Goa',
-  'Arunachal Pradesh',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Sikkim',
-  'Tripura',
-  'Andaman & Nicobar Islands',
-  'Chandigarh',
-  'Dadra & Nagar Haveli and Daman & Diu',
-  'Lakshadweep',
-  'Puducherry',
-  'Other'
+const MANDATORY_REGISTRATION_FIELDS = [
+  'full_name',
+  'email',
+  'mobile',
+  'gender',
+  'age',
+  'role_type',
+  'state',
+  'district',
+  'block_city'
 ];
 
 const blockSuggestionsMap = {
@@ -74,16 +48,6 @@ const blockSuggestionsMap = {
   'Bhojpur': ['Ara Sadar', 'Jagdispur', 'Piro', 'Bihiya', 'Shahpur', 'Koilwar', 'Udwantnagar', 'Garahani']
 };
 
-const availableInterests = [
-  'AI Governance & Public Policy',
-  'AgriTech AI Solutioning',
-  'MedTech & Maternal Health AI',
-  'EdTech & Vernacular AI',
-  'Smart Municipal & Citizen Services',
-  'Machine Learning & Data Engineering',
-  'Disaster Management & Flood Forecasting'
-];
-
 function parseExperience(exp) {
   if (exp === null || exp === undefined) return { val: '', unit: 'Years' };
   const str = String(exp).trim();
@@ -97,17 +61,29 @@ function parseExperience(exp) {
   return { val: num, unit: 'Years' };
 }
 
-export default function UserProfilePage({ onOpenAuth }) {
-  const { user, logout } = useAuth();
+export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
+  const { user, logout, forcePurgeAndLogout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const { lang } = useLanguage();
   const isHi = lang === 'hi';
+  const hasPromptedAuth = useRef(false);
+
+  const currentUser = user;
+
+  // Auto-prompt login popup once on direct unauthenticated access; allow user to dismiss freely
+  useEffect(() => {
+    if (!user && onOpenAuth && !hasPromptedAuth.current) {
+      hasPromptedAuth.current = true;
+      onOpenAuth('login');
+    }
+  }, [user, onOpenAuth]);
 
   const location = useLocation();
   const [activeTab, setActiveTab] = useState(() => {
-    return (location.state && location.state.activeTab) || 'masterclasses';
+    return (location.state && location.state.activeTab) || 'get_involved';
   });
+  const [lockedModal, setLockedModal] = useState(null);
 
   useEffect(() => {
     if (location.state && location.state.activeTab) {
@@ -151,31 +127,31 @@ export default function UserProfilePage({ onOpenAuth }) {
   const isBiharState = !formData.state || formData.state === 'Bihar';
 
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       setFormData(prev => ({
         ...prev,
-        full_name: user.fullName || prev.full_name,
-        email: user.email || prev.email,
-        mobile: (user.phone && user.phone !== 'N/A') ? user.phone : prev.mobile,
-        designation: (user.designation && user.designation !== 'Member' && user.designation !== 'Officer / Citizen') ? user.designation : prev.designation,
-        district: (user.district && user.district !== 'Bihar') ? user.district : prev.district
+        full_name: currentUser.fullName || prev.full_name,
+        email: currentUser.email || prev.email,
+        mobile: (currentUser.phone && currentUser.phone !== 'N/A') ? currentUser.phone : prev.mobile,
+        designation: (currentUser.designation && currentUser.designation !== 'Member' && currentUser.designation !== 'Officer / Citizen') ? currentUser.designation : prev.designation,
+        district: (currentUser.district && currentUser.district !== 'Bihar') ? currentUser.district : prev.district
       }));
     }
-  }, [user]);
+  }, [currentUser]);
 
   // Check for existing saved submission in Supabase or localStorage
   useEffect(() => {
     async function checkExisting() {
-      if (!user || !user.email) return;
+      if (!currentUser || !currentUser.email) return;
 
       let isSavedLocally = false;
       let localSub = null;
       try {
-        if (localStorage.getItem(`bihar_ai_profile_saved_${user.email.toLowerCase().trim()}`) === 'true') {
+        if (localStorage.getItem(`bihar_ai_profile_saved_${currentUser.email.toLowerCase().trim()}`) === 'true') {
           isSavedLocally = true;
         }
         const localSubs = JSON.parse(localStorage.getItem('bihar_ai_local_submissions') || '[]');
-        localSub = localSubs.find(s => s.email && s.email.toLowerCase() === user.email.toLowerCase());
+        localSub = localSubs.find(s => s.email && s.email.toLowerCase() === currentUser.email.toLowerCase());
         if (localSub && (localSub.is_profile_locked || localSub.is_profile_saved)) {
           isSavedLocally = true;
         }
@@ -183,10 +159,10 @@ export default function UserProfilePage({ onOpenAuth }) {
 
       try {
         if (supabase) {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('user_details')
             .select('*')
-            .eq('email', user.email.trim())
+            .eq('email', currentUser.email.trim())
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -196,6 +172,13 @@ export default function UserProfilePage({ onOpenAuth }) {
               is_profile_locked: data[0].is_profile_locked || isSavedLocally || Boolean(localSub?.is_profile_locked),
               is_profile_saved: data[0].is_profile_saved || isSavedLocally || Boolean(localSub?.is_profile_saved)
             });
+            return;
+          } else if (!error) {
+            // User was deleted by admin from database: trigger instant revocation & logout!
+            console.warn('🚨 Account record missing in user_details — executing instant logout.');
+            if (forcePurgeAndLogout) {
+              forcePurgeAndLogout('Your account has been deleted by an administrator.');
+            }
             return;
           }
         }
@@ -210,18 +193,18 @@ export default function UserProfilePage({ onOpenAuth }) {
       }
     }
     checkExisting();
-  }, [user]);
+  }, [currentUser, forcePurgeAndLogout]);
 
   const [remoteEnrolledClassIds, setRemoteEnrolledClassIds] = useState([]);
   const [remoteEnrollments, setRemoteEnrollments] = useState([]);
   const [remoteOfficerEnrollments, setRemoteOfficerEnrollments] = useState([]);
 
   const loadRemoteEnrollments = async () => {
-    if (!user || !user.email) return;
+    if (!currentUser || !currentUser.email) return;
     try {
       // Fetch remote database enrollments from Supabase masterclass_enrollments & officer_program_enrollments
-      const enrollments = await fetchUserMasterclassEnrollmentsFromSupabase(user.email);
-      const officerEnrollments = await fetchUserOfficerProgramEnrollmentsFromSupabase(user.email);
+      const enrollments = await fetchUserMasterclassEnrollmentsFromSupabase(currentUser.email);
+      const officerEnrollments = await fetchUserOfficerProgramEnrollmentsFromSupabase(currentUser.email);
       
       if (!enrollments || enrollments.length === 0) {
         setRemoteEnrollments([]);
@@ -242,16 +225,100 @@ export default function UserProfilePage({ onOpenAuth }) {
     }
   };
 
+  const [userTaskSubmissions, setUserTaskSubmissions] = useState([]);
+  const [showGupShupModal, setShowGupShupModal] = useState(false);
+
+  const loadTaskSubmissions = async () => {
+    if (!currentUser || !currentUser.email) return;
+    try {
+      const subs = await getUserTaskSubmissions(currentUser.email);
+      setUserTaskSubmissions(subs || []);
+    } catch (e) {
+      console.warn('Error loading task submissions:', e);
+    }
+  };
+
+  // Realtime Supabase Database Sync for Profile, Daily Tasks, and Enrollments
   useEffect(() => {
+    if (!currentUser || !currentUser.email) return;
+    const cleanEmail = currentUser.email.toLowerCase().trim();
+
+    // Initial fetch
     loadRemoteEnrollments();
-    const handleEvents = () => loadRemoteEnrollments();
+    loadTaskSubmissions();
+
+    if (!supabase) return;
+
+    // Realtime channel
+    const realtimeChannel = supabase
+      .channel(`realtime-user-profile-${cleanEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_details',
+          filter: `email=eq.${cleanEmail}`
+        },
+        (payload) => {
+          if (payload.new) {
+            setExistingSubmission(payload.new);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_task_submissions',
+          filter: `user_email=eq.${cleanEmail}`
+        },
+        () => {
+          loadTaskSubmissions();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'masterclass_enrollments',
+          filter: `user_email=eq.${cleanEmail}`
+        },
+        () => {
+          loadRemoteEnrollments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'officer_program_enrollments',
+          filter: `user_email=eq.${cleanEmail}`
+        },
+        () => {
+          loadRemoteEnrollments();
+        }
+      )
+      .subscribe();
+
+    const handleEvents = () => {
+      loadRemoteEnrollments();
+      loadTaskSubmissions();
+    };
     window.addEventListener('bihar_ai_programs_updated', handleEvents);
     window.addEventListener('bihar_ai_progress_updated', handleEvents);
+    window.addEventListener('storage', handleEvents);
+
     return () => {
+      supabase.removeChannel(realtimeChannel);
       window.removeEventListener('bihar_ai_programs_updated', handleEvents);
       window.removeEventListener('bihar_ai_progress_updated', handleEvents);
+      window.removeEventListener('storage', handleEvents);
     };
-  }, [user]);
+  }, [currentUser?.email]);
 
   // Sync existing submission data into formData
   useEffect(() => {
@@ -267,8 +334,9 @@ export default function UserProfilePage({ onOpenAuth }) {
       const parsedExp = parseExperience(existingSubmission.experience);
 
       const subInterests = Array.isArray(existingSubmission.interests) ? existingSubmission.interests : [];
-      const selectedPredefined = subInterests.filter(i => availableInterests.includes(i));
-      const customInterests = subInterests.filter(i => !availableInterests.includes(i));
+      const knownInterestValues = INTEREST_OPTIONS.map((o) => o.value);
+      const selectedPredefined = subInterests.filter((i) => knownInterestValues.includes(i));
+      const customInterests = subInterests.filter((i) => !knownInterestValues.includes(i));
 
       setFormData(prev => ({
         ...prev,
@@ -296,66 +364,17 @@ export default function UserProfilePage({ onOpenAuth }) {
     }
   }, [existingSubmission]);
 
-  // Helper to check if user has explicitly filled and saved their profile details
-  const isProfileSaved = Boolean(
-    (existingSubmission && (existingSubmission.is_profile_locked || existingSubmission.is_profile_saved)) ||
-    (user && user.email && localStorage.getItem(`bihar_ai_profile_saved_${user.email.toLowerCase().trim()}`) === 'true')
-  );
-
-  // Helper to check if a specific field is locked (ONLY locked if profile was explicitly saved by user AND field has non-empty user-input saved value)
+  // Mandatory registration fields are locked (non-editable); Non-mandatory fields are always editable
   const isFieldLocked = (fieldKey) => {
-    if (!existingSubmission || !isProfileSaved) return false;
-    if (fieldKey === 'email') return true;
-
-    const val = existingSubmission[fieldKey];
-    if (val === null || val === undefined) return false;
-    const strVal = String(val).trim();
-    if (!strVal || strVal === 'N/A') return false;
-
-    // Filter out auto-sync default placeholders
-    if (fieldKey === 'role_type' && strVal === 'Registered User') return false;
-    if (fieldKey === 'designation' && (strVal === 'Member' || strVal === 'Officer / Citizen')) return false;
-    if (fieldKey === 'district' && strVal === 'Bihar') return false;
-    if (fieldKey === 'state' && strVal === 'Bihar') return false;
-
-    if (Array.isArray(val)) {
-      return val.length > 0;
-    }
-
-    // Check if user explicitly saved this field
-    try {
-      if (user && user.email) {
-        const savedFieldsStr = localStorage.getItem(`bihar_ai_user_saved_fields_${user.email.toLowerCase().trim()}`);
-        if (savedFieldsStr) {
-          const savedFields = JSON.parse(savedFieldsStr);
-          if (Array.isArray(savedFields)) {
-            return savedFields.includes(fieldKey);
-          }
-        }
-      }
-    } catch (e) {}
-
-    // State field is ALWAYS unlocked unless explicitly saved by user in user_saved_fields
-    if (fieldKey === 'state') return false;
-
-    return Boolean(strVal);
+    return MANDATORY_REGISTRATION_FIELDS.includes(fieldKey);
   };
 
-  // Section level locking helpers
-  const isPersonalSectionLocked = isFieldLocked('full_name') && isFieldLocked('mobile') && isFieldLocked('gender') && isFieldLocked('age');
-  const isProfSectionLocked = isFieldLocked('role_type') && isFieldLocked('designation') && isFieldLocked('department') && isFieldLocked('organization') && isFieldLocked('experience');
-  const isLocSectionLocked = isFieldLocked('district') && isFieldLocked('block_city') && isFieldLocked('state');
-  const isIntentSectionLocked = isFieldLocked('interests') && isFieldLocked('intent');
-  const isLinksSectionLocked = isFieldLocked('contribution') && isFieldLocked('linkedin') && isFieldLocked('portfolio');
-
-  const allFieldsLocked = Boolean(
-    isProfileSaved &&
-    isPersonalSectionLocked &&
-    isProfSectionLocked &&
-    isLocSectionLocked &&
-    isIntentSectionLocked &&
-    isLinksSectionLocked
-  );
+  const isPersonalSectionLocked = true; // All mandatory registration fields
+  const isProfSectionLocked = false;   // Editable professional details
+  const isLocSectionLocked = true;    // Mandatory location from registration
+  const isIntentSectionLocked = false; // Editable focus & interest
+  const isLinksSectionLocked = false;  // Editable portfolio / links
+  const allFieldsLocked = false;       // Non-mandatory fields are always editable
 
   // Fetch user exam submissions / certificates dynamically from Supabase database
   const [userSubmissions, setUserSubmissions] = useState([]);
@@ -399,72 +418,212 @@ export default function UserProfilePage({ onOpenAuth }) {
     };
   }, [activeCertSubmission, existingSubmission?.designation, user?.designation]);
 
-  // If user is not logged in, prompt to log in
+  // If user is not logged in, show luxury gate or allow instant dev-mode preview
+  const isLocalhost = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' || 
+    window.location.port === '3000'
+  );
+
   if (!user) {
     return (
-      <div style={{
-        minHeight: '75vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '60px 20px',
-        background: 'linear-gradient(180deg, #EFEAE5 0%, var(--color-sand-50, #FBF8F3) 100%)',
-      }}>
-        <div style={{
-          background: '#FFFFFF',
-          border: '1px solid rgba(17, 24, 39, 0.06)',
-          borderRadius: '32px',
-          maxWidth: '480px',
-          width: '100%',
-          padding: '40px 32px',
-          textAlign: 'center',
-          boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.12)',
-        }}>
+      <div className="profilePage" style={{ background: 'transparent', minHeight: '80vh', paddingBottom: '80px', color: 'inherit', fontFamily: "'Manrope', sans-serif" }}>
+        <SEO
+          title="Candidate Dashboard | Bihar AI Mission"
+          description="Sign in to access your Bihar AI Mission learning dashboard, enrolled masterclasses, and verified digital certificates."
+          canonical="https://biharaimission.org/profile"
+        />
+
+        {/* Top Breadcrumb */}
+        <div style={{ maxWidth: '1200px', margin: '24px auto 0 auto', padding: '0 20px' }}>
+          <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-sand-200, #C2B7A3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <Link to="/" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+              <span style={{ opacity: 0.6 }}>/</span>
+              <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700' }}>{isHi ? 'सदस्य डैशबोर्ड' : 'Candidate Dashboard'}</span>
+            </div>
+            <Link
+              to="/"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                color: '#FFFFFF',
+                padding: '6px 16px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                textDecoration: 'none',
+                fontSize: '12.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ← {isHi ? 'मुख्य पृष्ठ' : 'Home'}
+            </Link>
+          </div>
+        </div>
+
+        {/* Dark Luxury Gateway Hero */}
+        <div style={{ maxWidth: '1200px', margin: '28px auto 48px auto', padding: '0 20px' }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            background: 'rgba(193, 85, 44, 0.12)',
-            border: '1px solid rgba(226, 139, 92, 0.3)',
-            borderRadius: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 18px auto',
-            color: 'var(--color-terracotta-500, #C1552C)',
+            position: 'relative',
+            background: 'linear-gradient(145deg, #181512 0%, #201C18 55%, #15120F 100%)',
+            borderRadius: '24px',
+            padding: '48px 36px',
+            color: '#FFFFFF',
+            border: '1px solid rgba(226, 139, 92, 0.28)',
+            boxShadow: '0 20px 45px -15px rgba(24, 21, 18, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            textAlign: 'center',
+            overflow: 'hidden'
           }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div style={{ fontSize: '11px', fontWeight: '800', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
-            BIHAR AI MISSION LEARNING HUB
-          </div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', margin: '0 0 10px 0' }}>
-            {isHi ? 'लॉगिन आवश्यक है 🔒' : 'Login Required 🔒'}
-          </h2>
-          <p style={{ fontSize: '14px', color: '#9CA3AF', lineHeight: '1.55', margin: '0 0 24px 0' }}>
-            {isHi
-              ? 'अपने डैशबोर्ड, एनरोल किए गए मास्टरक्लास और प्रमाणपत्रों तक पहुंचने के लिए कृपया लॉगिन करें।'
-              : 'Please log in to view your learning dashboard, joined masterclasses, and earned certificates.'}
-          </p>
-          <button
-            onClick={() => onOpenAuth && onOpenAuth('login')}
-            style={{
-              width: '100%',
-              height: '42px',
-              background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-              color: '#FFFFFF',
-              fontSize: '14px',
+            {/* Top Amber Ambient Glow */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '320px',
+              height: '3px',
+              background: 'linear-gradient(90deg, transparent, #C1552C, #D99B26, transparent)',
+              borderRadius: '2px'
+            }} />
+
+            {/* Lock Icon */}
+            <div style={{
+              width: '64px',
+              height: '64px',
+              background: 'linear-gradient(135deg, rgba(193, 85, 44, 0.25) 0%, rgba(217, 155, 38, 0.18) 100%)',
+              border: '1px solid rgba(226, 139, 92, 0.4)',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 18px auto',
+              color: '#E28B5C',
+              boxShadow: '0 8px 24px rgba(193, 85, 44, 0.25)'
+            }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+
+            {/* Civic Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(193, 85, 44, 0.22)',
+              border: '1px solid rgba(226, 139, 92, 0.4)',
+              borderRadius: '9999px',
+              padding: '4px 14px',
+              fontSize: '11px',
+              fontWeight: '800',
+              color: 'var(--color-sand-50, #FBF8F3)',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              marginBottom: '16px'
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+              BIHAR AI CIVIC ECOSYSTEM · CANDIDATE PORTAL
+            </div>
+
+            {/* Heading */}
+            <h1 style={{
+              fontFamily: "var(--font-display, 'Fraunces', serif)",
+              fontSize: 'clamp(1.75rem, 3.2vw, 2.35rem)',
               fontWeight: '700',
-              border: 'none',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(24, 21, 18, 0.25)',
-            }}
-          >
-            {isHi ? 'लॉग इन करें →' : 'Log In to Access Dashboard →'}
-          </button>
+              margin: '0 0 14px 0',
+              letterSpacing: '-0.02em',
+              color: '#FFFFFF'
+            }}>
+              {isHi ? (
+                <>कैंडिडेट पोर्टल <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontStyle: 'italic' }}>साइन-इन आवश्यक</span></>
+              ) : (
+                <>Member Access <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontStyle: 'italic' }}>Required</span></>
+              )}
+            </h1>
+
+            <p style={{
+              fontSize: '15px',
+              color: 'var(--color-sand-100, #F3ECE0)',
+              lineHeight: '1.6',
+              maxWidth: '560px',
+              margin: '0 auto 28px auto',
+              opacity: 0.9
+            }}>
+              {isHi
+                ? 'अपने व्यक्तिगत शिक्षण डैशबोर्ड, पंजीकृत मास्टरक्लास, टेस्ट स्कोर और सत्यापित डिजिटल प्रमाणपत्रों तक पहुंचने के लिए साइन इन करें।'
+                : 'Sign in with your registered account to access your AI learning workspace, course progress, exam attempts, and digital credentials.'}
+            </p>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => onOpenAuth && onOpenAuth('login')}
+                style={{
+                  height: '46px',
+                  padding: '0 28px',
+                  background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                  color: '#FFFFFF',
+                  fontSize: '14.5px',
+                  fontWeight: '700',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 24px rgba(193, 85, 44, 0.4)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>{isHi ? 'साइन इन करें' : 'Sign In to Account'}</span>
+                <span style={{ fontSize: '12px' }}>→</span>
+              </button>
+
+              <button
+                onClick={() => onOpenRegistration && onOpenRegistration()}
+                style={{
+                  height: '46px',
+                  padding: '0 24px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>✨ {isHi ? 'नया सदस्य पंजीकरण' : 'Register New Account'}</span>
+              </button>
+
+              <Link
+                to="/"
+                style={{
+                  height: '46px',
+                  padding: '0 20px',
+                  background: 'transparent',
+                  color: 'var(--color-sand-200, #C2B7A3)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  border: 'none',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                ← {isHi ? 'होम पर लौटें' : 'Back to Home'}
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -732,27 +891,27 @@ export default function UserProfilePage({ onOpenAuth }) {
   const blockOptions = blockSuggestionsMap[formData.district] || [];
 
   return (
-    <div className="profilePage" style={{ background: '#F4F8FA', minHeight: '100vh', paddingBottom: '60px', color: '#111827', fontFamily: "'Manrope', sans-serif" }}>
+    <div className="profilePage" style={{ background: 'transparent', minHeight: 'auto', paddingBottom: '80px', color: 'inherit', fontFamily: "'Manrope', sans-serif" }}>
       <SEO
         title="Candidate Dashboard & Credentials | Bihar AI Mission"
         description="View enrolled AI Masterclasses, track exam attempts, update user profile, and access verifiable Bihar AI Mission digital certificates."
         canonical="https://biharaimission.org/profile"
       />
-      <div style={{ maxWidth: '1140px', margin: '32px auto', padding: '0 20px' }}>
-        <div className="profileBreadcrumb" style={{ maxWidth: '1140px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13.5px', color: '#9CA3AF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <Link to="/" style={{ color: '#000000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
-            <span>/</span>
-            <Link to="/learning" style={{ color: '#000000', textDecoration: 'none', fontWeight: '600' }}>Learning Hub</Link>
-            <span>/</span>
-            <span style={{ color: '#111827', fontWeight: '700' }}>{isHi ? 'मेरा लर्निंग डैशबोर्ड' : 'My Learning Dashboard'}</span>
+      <div style={{ maxWidth: '1200px', margin: '24px auto 0 auto', padding: '0 20px' }}>
+        <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-sand-200, #C2B7A3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Link to="/" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+            <span style={{ opacity: 0.6 }}>/</span>
+            <Link to="/learning" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Learning Hub</Link>
+            <span style={{ opacity: 0.6 }}>/</span>
+            <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700' }}>{isHi ? 'मेरा लर्निंग डैशबोर्ड' : 'My Learning Dashboard'}</span>
           </div>
           <button
             onClick={() => navigate(-1)}
             style={{
-              background: '#EFEAE5',
-              border: '1px solid rgba(17, 24, 39, 0.08)',
-              color: '#1a1a1a',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              color: '#FFFFFF',
               padding: '6px 16px',
               borderRadius: '8px',
               fontWeight: '700',
@@ -760,7 +919,8 @@ export default function UserProfilePage({ onOpenAuth }) {
               fontSize: '12.5px',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              transition: 'all 0.2s ease'
             }}
           >
             ← Back
@@ -768,177 +928,635 @@ export default function UserProfilePage({ onOpenAuth }) {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1140px', margin: '32px auto', padding: '0 20px' }}>
+      <div style={{ maxWidth: '1200px', margin: '24px auto 48px auto', padding: '0 20px' }}>
 
-        {/* PROFILE HEADER HERO CARD */}
+        {/* PROFILE HEADER HERO CARD (Machined Double-Bezel Dark Charcoal & Amber) */}
         <div style={{
-          background: 'linear-gradient(135deg, #000000 0%, #111827 100%)',
-          borderRadius: '32px',
-          padding: '32px 36px',
+          position: 'relative',
+          background: 'linear-gradient(145deg, #181512 0%, #201C18 55%, #15120F 100%)',
+          borderRadius: '24px',
+          padding: '36px 40px',
           color: '#FFFFFF',
-          boxShadow: '0 12px 35px rgba(24, 21, 18, 0.25)',
-          marginBottom: '32px',
+          border: '1px solid rgba(226, 139, 92, 0.3)',
+          boxShadow: '0 24px 50px -15px rgba(24, 21, 18, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          marginBottom: '28px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '24px'
+          gap: '24px',
+          overflow: 'hidden'
         }} className="profileHero">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          {/* Top Amber Ambient Glow Accent */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '320px',
+            height: '3px',
+            background: 'linear-gradient(90deg, transparent, #C1552C 30%, #D99B26 70%, transparent)',
+            borderRadius: '2px'
+          }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
+            {/* Dual-Ring Gradient Avatar */}
             <div className="profileHeroAvatar" style={{
-              width: '72px',
-              height: '72px',
+              width: '84px',
+              height: '84px',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #000000 0%, var(--color-charcoal-900, #181512) 100%)',
+              background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
               color: '#FFFFFF',
-              fontSize: '26px',
+              fontSize: '32px',
               fontWeight: '900',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '3px solid rgba(255, 255, 255, 0.3)',
-              boxShadow: '0 4px 16px rgba(193, 85, 44, 0.35)',
-              overflow: 'hidden'
+              border: '3.5px solid rgba(255, 255, 255, 0.22)',
+              boxShadow: '0 10px 28px rgba(193, 85, 44, 0.45), 0 0 0 2px rgba(226, 139, 92, 0.3)',
+              overflow: 'hidden',
+              flexShrink: 0
             }}>
-              <UserAvatar user={user} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <UserAvatar user={currentUser} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
-            <div>
+
+            <div style={{ minWidth: 0, flex: 1 }}>
+              {/* Member Status Badge */}
               <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
                 background: 'rgba(193, 85, 44, 0.18)',
-                border: '1px solid rgba(226, 139, 92, 0.35)',
+                border: '1px solid rgba(226, 139, 92, 0.45)',
                 color: 'var(--color-sand-50, #FBF8F3)',
-                fontSize: '11.5px',
+                fontSize: '11px',
                 fontWeight: '800',
-                padding: '3px 12px',
-                borderRadius: '32px',
-                display: 'inline-block',
-                marginBottom: '8px'
+                padding: '4px 14px',
+                borderRadius: '9999px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                marginBottom: '10px'
               }}>
-                BIHAR AI MISSION MEMBER
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
+                <span>BIHAR AI MISSION MEMBER</span>
               </div>
-              <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0 0 6px 0' }}>
-                {user.fullName}
+
+              {/* User Name */}
+              <h1 style={{
+                fontFamily: "var(--font-display, 'Fraunces', serif)",
+                fontSize: 'clamp(1.65rem, 3vw, 2.25rem)',
+                fontWeight: '700',
+                margin: '0 0 10px 0',
+                letterSpacing: '-0.025em',
+                color: '#FFFFFF',
+                lineHeight: 1.15
+              }}>
+                {currentUser?.fullName || currentUser?.full_name || 'Civic Member'}
               </h1>
-              <div style={{ fontSize: '14px', color: '#9CA3AF', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                {user.designation && <span>💼 {user.designation}</span>}
-                {user.district && <span>📍 {user.district}</span>}
-                <span>✉️ {user.email}</span>
+
+              {/* Meta Chips */}
+              <div style={{
+                fontSize: '13.5px',
+                color: 'var(--color-sand-100, #F3ECE0)',
+                display: 'flex',
+                gap: '10px',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+              }}>
+                {currentUser?.designation && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.07)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', fontWeight: '600' }}>
+                    💼 {currentUser.designation}
+                  </span>
+                )}
+                {currentUser?.district && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.07)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', fontWeight: '600' }}>
+                    📍 {currentUser.district}, Bihar
+                  </span>
+                )}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--color-sand-200, #C2B7A3)' }}>
+                  ✉ {currentUser?.email}
+                </span>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={() => { logout(); navigate('/'); }}
-            style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1.5px solid #EF4444',
-              color: '#F87171',
-              padding: '10px 20px',
-              borderRadius: '10px',
-              fontWeight: '700',
-              fontSize: '13.5px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            Sign Out
-          </button>
+          {/* Quick Hero Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                logout();
+                navigate('/');
+              }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#FCA5A5',
+                borderRadius: '12px',
+                padding: '11px 20px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                backdropFilter: 'blur(10px)',
+                flexShrink: 0
+              }}
+              className="heroLogoutBtn"
+            >
+              <span>🚪</span>
+              <span>{isHi ? 'साइन आउट' : 'Sign Out'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* QUICK STATS CARDS */}
+        {/* ADMIN TASK REVISION REQUIRED BANNER */}
+        {userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.18) 0%, rgba(225, 29, 72, 0.12) 100%)',
+            border: '1.5px solid rgba(244, 63, 94, 0.65)',
+            borderRadius: '18px',
+            padding: '20px 26px',
+            marginBottom: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+            boxShadow: '0 12px 32px rgba(244, 63, 94, 0.3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontSize: '32px' }}>⚠️</span>
+              <div>
+                <div style={{ color: '#FDA4AF', fontWeight: '800', fontSize: '15.5px', marginBottom: '3px' }}>
+                  Action Required: {userTaskSubmissions.filter((s) => s.status === 'REJECTED').length} Daily Task(s) Need Revision!
+                </div>
+                <div style={{ color: 'var(--color-sand-100, #F3ECE0)', fontSize: '13.5px' }}>
+                  Admin reviewer requested updates on:{' '}
+                  <strong>
+                    {userTaskSubmissions
+                      .filter((s) => s.status === 'REJECTED')
+                      .map((t) => `Task #${t.task_id}`)
+                      .join(', ')}
+                  </strong>
+                  . Please review the feedback comments and re-upload your work.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('daily_tasks')}
+              style={{
+                background: 'linear-gradient(135deg, #F43F5E 0%, #BE123C 100%)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '11px 24px',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(244, 63, 94, 0.45)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Fix & Re-upload Tasks →
+            </button>
+          </div>
+        )}
+
+        {/* QUICK STATS BENTO CARDS (Interactive Machined Double-Bezel Tiles) */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '18px',
           marginBottom: '32px'
         }} className="profileStats">
-          <div style={{ background: '#FFFFFF', padding: '20px 24px', borderRadius: '32px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: '12px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Joined Masterclasses
+          {/* Card 1: Masterclasses */}
+          <div
+            onClick={() => setActiveTab('masterclasses')}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: activeTab === 'masterclasses' ? '1.5px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
+              boxShadow: activeTab === 'masterclasses' ? '0 16px 40px -10px rgba(193, 85, 44, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
+                Joined Masterclasses
+              </div>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                {joinedMasterclasses.length}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700', marginTop: '6px' }}>
+                {joinedMasterclasses.length > 0 ? `${joinedMasterclasses.length} Active Cohorts` : 'Explore Lectures →'}
+              </div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#000000' }}>
-              {joinedMasterclasses.length}
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(193, 85, 44, 0.18)', border: '1px solid rgba(226, 139, 92, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              🎓
             </div>
           </div>
 
-          <div style={{ background: '#FFFFFF', padding: '20px 24px', borderRadius: '32px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: '12px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Officer Programs
+          {/* Card 2: Officer Programs */}
+          <div
+            onClick={() => setActiveTab('programs')}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: activeTab === 'programs' ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
+              boxShadow: activeTab === 'programs' ? '0 16px 40px -10px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
+                Officer Programs
+              </div>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                {joinedOfficerPrograms.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#34D399', fontWeight: '700', marginTop: '6px' }}>
+                Executive AI Training →
+              </div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#059669' }}>
-              {joinedOfficerPrograms.length}
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.18)', border: '1px solid rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              🏛️
             </div>
           </div>
 
-          <div style={{ background: '#FFFFFF', padding: '20px 24px', borderRadius: '32px', border: '1px solid rgba(17, 24, 39, 0.06)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-            <div style={{ fontSize: '12px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Certificates Earned
+          {/* Card 3: Certificates Earned */}
+          <div
+            onClick={() => {
+              if (userSubmissions.filter(s => s.isPassed).length > 0) {
+                const passSub = userSubmissions.find(s => s.isPassed);
+                if (passSub) setActiveCertSubmission(passSub);
+              } else {
+                setActiveTab('masterclasses');
+              }
+            }}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: '1px solid rgba(232, 178, 61, 0.35)',
+              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
+                Certificates Earned
+              </div>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                {userSubmissions.filter(s => s.isPassed).length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#FCD34D', fontWeight: '700', marginTop: '6px' }}>
+                {userSubmissions.filter(s => s.isPassed).length > 0 ? '📜 Click to View / Download' : 'Pass exams to earn'}
+              </div>
             </div>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#000000' }}>
-              {userSubmissions.filter(s => s.isPassed).length}
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(232, 178, 61, 0.18)', border: '1px solid rgba(232, 178, 61, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              📜
+            </div>
+          </div>
+
+          {/* Card 4: Daily Tasks Progress */}
+          <div
+            onClick={() => setActiveTab('daily_tasks')}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: activeTab === 'daily_tasks' ? '1.5px solid rgba(217, 155, 38, 0.6)' : userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0 ? '1.5px solid rgba(244, 63, 94, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
+              boxShadow: activeTab === 'daily_tasks' ? '0 16px 40px -10px rgba(217, 155, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
+                Daily Tasks
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <span style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                  {userTaskSubmissions.filter((s) => s.status === 'APPROVED').length}
+                </span>
+                <span style={{ fontSize: '16px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '800' }}>
+                  / 18
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0 ? '#E8B23D' : 'var(--color-sand-200, #C2B7A3)', fontWeight: '700', marginTop: '6px' }}>
+                {userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0
+                  ? `⏳ ${userTaskSubmissions.filter((s) => s.status === 'PENDING').length} Under Review`
+                  : userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0
+                  ? `⚠️ ${userTaskSubmissions.filter((s) => s.status === 'REJECTED').length} Needs Revision`
+                  : `18 Practical Tasks →`}
+              </div>
+            </div>
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(217, 155, 38, 0.18)', border: '1px solid rgba(217, 155, 38, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              ⚡
             </div>
           </div>
         </div>
 
-        {/* DASHBOARD TABS NAVIGATION */}
+        {/* DASHBOARD TABS NAVIGATION DOCK (Machined Segmented Rail - Full-Width Balanced Grid) */}
         <div style={{
           display: 'flex',
-          gap: '12px',
-          borderBottom: '2px solid rgba(17, 24, 39, 0.06)',
-          marginBottom: '28px',
-          flexWrap: 'wrap'
+          gap: '8px',
+          background: 'rgba(20, 17, 14, 0.92)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          padding: '7px 8px',
+          borderRadius: '16px',
+          border: '1px solid rgba(226, 139, 92, 0.25)',
+          boxShadow: '0 14px 34px -10px rgba(0, 0, 0, 0.45)',
+          marginBottom: '32px',
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          alignItems: 'center',
+          width: '100%',
+          boxSizing: 'border-box'
         }} className="profileTabs">
+          {/* 1. PROFILE DETAILS (UNLOCKED) */}
           <button
-            onClick={() => setActiveTab('masterclasses')}
-            style={{
-              padding: '12px 24px',
-              fontSize: '15px',
-              fontWeight: '800',
-              border: 'none',
-              background: 'transparent',
-              color: activeTab === 'masterclasses' ? '#000000' : '#9CA3AF',
-              borderBottom: activeTab === 'masterclasses' ? '3px solid #000000' : '3px solid transparent',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            🎓 Joined Masterclasses ({joinedMasterclasses.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab('programs')}
-            style={{
-              padding: '12px 24px',
-              fontSize: '15px',
-              fontWeight: '800',
-              border: 'none',
-              background: 'transparent',
-              color: activeTab === 'programs' ? '#000000' : '#9CA3AF',
-              borderBottom: activeTab === 'programs' ? '3px solid #000000' : '3px solid transparent',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            🏛️ Enrolled Programs ({joinedOfficerPrograms.length})
-          </button>
-
-
-
-          <button
+            type="button"
             onClick={() => setActiveTab('get_involved')}
             style={{
-              padding: '12px 24px',
-              fontSize: '15px',
-              fontWeight: '800',
-              border: 'none',
-              background: 'transparent',
-              color: activeTab === 'get_involved' ? '#000000' : '#9CA3AF',
-              borderBottom: activeTab === 'get_involved' ? '3px solid #000000' : '3px solid transparent',
+              flex: '1 1 0%',
+              minWidth: '135px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: activeTab === 'get_involved' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: activeTab === 'get_involved' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
+              color: '#FFFFFF',
+              boxShadow: activeTab === 'get_involved' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
             }}
           >
-            👤 Profile Details
+            <span>👤</span>
+            <span>{isHi ? 'प्रोफाइल विवरण' : 'Profile Details'}</span>
+          </button>
+
+          {/* 2. LEADERBOARD (UNLOCKED) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('leaderboard')}
+            style={{
+              flex: '1 1 0%',
+              minWidth: '135px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: activeTab === 'leaderboard' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: activeTab === 'leaderboard' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
+              color: '#FFFFFF',
+              boxShadow: activeTab === 'leaderboard' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>🏆</span>
+            <span>{isHi ? 'लीडरबोर्ड' : 'Leaderboard'}</span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+          </button>
+
+          {/* 3. DAILY TASKS (UNLOCKED) */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('daily_tasks')}
+            style={{
+              flex: '1 1 0%',
+              minWidth: '145px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: activeTab === 'daily_tasks' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: activeTab === 'daily_tasks' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
+              color: '#FFFFFF',
+              boxShadow: activeTab === 'daily_tasks' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span>⚡</span>
+            <span>{isHi ? 'दैनिक कार्य' : 'Daily Tasks'}</span>
+            <span style={{
+              background: activeTab === 'daily_tasks' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(232, 178, 61, 0.22)',
+              color: activeTab === 'daily_tasks' ? '#FFFFFF' : '#E8B23D',
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              fontSize: '10.5px',
+              fontWeight: '800'
+            }}>
+              18 Tasks
+            </span>
+          </button>
+
+          {/* 4. MASTERCLASSES (LOCKED) */}
+          <button
+            type="button"
+            onClick={() => setLockedModal({
+              title: isHi ? 'मास्टरक्लासेज' : 'Joined Masterclasses',
+              icon: '🎓',
+              subtitle: 'Live Certification Masterclasses',
+              message: 'Masterclasses enrollment portal is currently locked for upcoming batch registration. Stay tuned for dates!'
+            })}
+            style={{
+              flex: '1 1 0%',
+              minWidth: '135px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: 'rgba(32, 28, 24, 0.65)',
+              color: '#E2D7C3',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
+              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
+            }}
+            title="Joined Masterclasses (Locked)"
+          >
+            <span>🎓</span>
+            <span>{isHi ? 'मास्टरक्लासेज' : 'Masterclasses'}</span>
+            <span style={{
+              background: 'rgba(239, 68, 68, 0.18)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              padding: '2px 6px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1
+            }}>
+              🔒
+            </span>
+          </button>
+
+          {/* 5. OFFICER PROGRAMS (LOCKED) */}
+          <button
+            type="button"
+            onClick={() => setLockedModal({
+              title: isHi ? 'अधिकारी कार्यक्रम' : 'Enrolled Programs',
+              icon: '🏛️',
+              subtitle: 'Executive AI Programs for Officers',
+              message: 'Officer Programs are currently locked for upcoming cohort onboarding. Stay tuned for government circulars!'
+            })}
+            style={{
+              flex: '1 1 0%',
+              minWidth: '145px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: 'rgba(32, 28, 24, 0.65)',
+              color: '#E2D7C3',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
+              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
+            }}
+            title="Enrolled Programs (Locked)"
+          >
+            <span>🏛️</span>
+            <span>{isHi ? 'कार्यक्रम' : 'Officer Programs'}</span>
+            <span style={{
+              background: 'rgba(239, 68, 68, 0.18)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              padding: '2px 6px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1
+            }}>
+              🔒
+            </span>
+          </button>
+
+          {/* 6. GUP-SHUP (LOCKED) */}
+          <button
+            type="button"
+            onClick={() => setShowGupShupModal(true)}
+            style={{
+              flex: '1 1 0%',
+              minWidth: '130px',
+              padding: '10px 12px',
+              fontSize: '12.8px',
+              fontWeight: '700',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '11px',
+              background: 'rgba(32, 28, 24, 0.65)',
+              color: '#E2D7C3',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
+              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
+            }}
+            title="Gup-Shup (Locked - Coming Soon)"
+          >
+            <span>💬</span>
+            <span>Gup-Shup</span>
+            <span style={{
+              background: 'rgba(239, 68, 68, 0.18)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              padding: '2px 6px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1
+            }}>
+              🔒
+            </span>
           </button>
         </div>
 
@@ -947,18 +1565,20 @@ export default function UserProfilePage({ onOpenAuth }) {
           <div>
             {joinedMasterclasses.length === 0 ? (
               <div style={{
-                background: '#FFFFFF',
-                borderRadius: '32px',
+                background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.85) 0%, rgba(20, 17, 15, 0.92) 100%)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '24px',
                 padding: '48px 32px',
                 textAlign: 'center',
-                border: '1px solid rgba(17, 24, 39, 0.06)',
+                border: '1px solid rgba(226, 139, 92, 0.22)',
+                boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)'
               }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎓</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                   No Enrolled Masterclasses Yet
                 </h3>
-                <p style={{ fontSize: '14px', color: '#9CA3AF', margin: '0 0 20px 0' }}>
-                  Explore live masterclasses offered by Bihar AI Mission.
+                <p style={{ fontSize: '14px', color: 'var(--color-sand-200, #C2B7A3)', margin: '0 0 20px 0' }}>
+                  Explore live bilingual masterclasses offered by Bihar AI Mission.
                 </p>
                 <Link
                   to="/learning"
@@ -966,20 +1586,21 @@ export default function UserProfilePage({ onOpenAuth }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: '#000000',
+                    background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
                     color: '#FFFFFF',
-                    padding: '10px 20px',
-                    borderRadius: '10px',
+                    padding: '10px 22px',
+                    borderRadius: '12px',
                     fontWeight: '700',
                     fontSize: '14px',
                     textDecoration: 'none',
+                    boxShadow: '0 4px 16px rgba(193, 85, 44, 0.35)'
                   }}
                 >
                   Explore Masterclasses →
                 </Link>
               </div>
             ) : (
-              <div className="mcGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
+              <div className="mcGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                 {joinedMasterclasses.map((cls) => {
                   const rawSub = userSubmissions.find(s => 
                     String(s.examId) === String(cls.id) || 
@@ -994,10 +1615,8 @@ export default function UserProfilePage({ onOpenAuth }) {
                   const sub = baseSub ? {
                     ...baseSub,
                     examId: cls.id,
-                    masterclassId: cls.id,
-                    courseName: cls.title,
-                    masterclassTitle: cls.title,
-                    examTitle: cls.title,
+                    candidateName: currentUser.fullName,
+                    candidateEmail: currentUser.email,
                     course_name: cls.title
                   } : null;
 
@@ -1006,29 +1625,30 @@ export default function UserProfilePage({ onOpenAuth }) {
 
                   return (
                     <div key={cls.id} style={{
-                      background: '#FFFFFF',
-                      borderRadius: '32px',
-                      border: '1px solid rgba(17, 24, 39, 0.06)',
+                      background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
+                      borderRadius: '20px',
+                      border: '1px solid rgba(226, 139, 92, 0.25)',
                       padding: '24px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                      boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)',
+                      color: '#FFFFFF'
                     }}>
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-500, #C1552C)', background: 'rgba(193, 85, 44, 0.12)', border: '1px solid rgba(226, 139, 92, 0.25)', padding: '2px 10px', borderRadius: '12px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-400, #E28B5C)', background: 'rgba(193, 85, 44, 0.16)', border: '1px solid rgba(226, 139, 92, 0.35)', padding: '3px 10px', borderRadius: '8px' }}>
                             {cls.category || 'Masterclass'}
                           </span>
-                          <span style={{ fontSize: '12px', color: '#059669', fontWeight: '700' }}>✓ Enrolled</span>
+                          <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>✓ Enrolled</span>
                         </div>
-                        <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: '1.4' }}>
                           {cls.title}
                         </h3>
-                        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontWeight: '600', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '600', marginBottom: '12px' }}>
                           📅 Joined Date: <strong>{getJoinedDate(cls.id)}</strong>
                         </div>
-                        <p style={{ fontSize: '13px', color: '#9CA3AF', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                        <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                           {cls.description ? cls.description.slice(0, 100) + '…' : ''}
                         </p>
                       </div>
@@ -1041,12 +1661,12 @@ export default function UserProfilePage({ onOpenAuth }) {
                             background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                             color: '#FFFFFF',
                             padding: '11px 14px',
-                            borderRadius: '8px',
+                            borderRadius: '10px',
                             fontWeight: '800',
                             fontSize: '13px',
                             border: 'none',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.35)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1055,40 +1675,24 @@ export default function UserProfilePage({ onOpenAuth }) {
                         >
                           📜 View & Download Certificate
                         </button>
-                      ) : hasPassed && !isApproved ? (
-                        <div
-                          style={{
-                            width: '100%',
-                            background: '#FEF3C7',
-                            color: '#B45309',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            fontWeight: '700',
-                            fontSize: '12px',
-                            border: '1.5px solid #F59E0B',
-                            textAlign: 'center'
-                          }}
-                        >
-                          ⏳ Passed ({sub?.score || 23}/30) — Certificate Pending Admin Generation
-                        </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                          {getSessionEndedStatus(cls).isExpired ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {cls.isExamExpired ? (
                             <div
                               style={{
                                 width: '100%',
-                                background: '#FFE4E6',
-                                color: '#BE123C',
+                                background: 'rgba(244, 63, 94, 0.15)',
+                                color: '#FDA4AF',
                                 padding: '10px 12px',
                                 borderRadius: '8px',
-                                fontWeight: '700',
+                                fontWeight: '800',
                                 fontSize: '12px',
-                                border: '1.5px solid #F43F5E',
+                                border: '1.5px solid rgba(244, 63, 94, 0.4)',
                                 textAlign: 'center',
                                 boxSizing: 'border-box'
                               }}
                             >
-                              🔒 Recorded Video & Exam Expired (24h Window Closed)
+                              🔒 Recorded Video & Exam Expired
                             </div>
                           ) : (
                             <>
@@ -1099,10 +1703,11 @@ export default function UserProfilePage({ onOpenAuth }) {
                                   rel="noreferrer"
                                   style={{
                                     width: '100%',
-                                    background: 'linear-gradient(135deg, #000000 0%, var(--color-charcoal-900, #181512) 100%)',
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    border: '1px solid rgba(255, 255, 255, 0.16)',
                                     color: '#FFFFFF',
                                     padding: '10px 12px',
-                                    borderRadius: '8px',
+                                    borderRadius: '10px',
                                     fontWeight: '800',
                                     fontSize: '12.5px',
                                     textDecoration: 'none',
@@ -1121,10 +1726,10 @@ export default function UserProfilePage({ onOpenAuth }) {
                                 onClick={() => navigate(`/exam/${cls.id}`)}
                                 style={{
                                   width: '100%',
-                                  background: (cls.recordingUrl || cls.recordedUrl) ? '#111827' : '#000000',
+                                  background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
                                   color: '#FFFFFF',
                                   padding: '11px 14px',
-                                  borderRadius: '8px',
+                                  borderRadius: '10px',
                                   fontWeight: '800',
                                   fontSize: '13px',
                                   border: 'none',
@@ -1132,7 +1737,8 @@ export default function UserProfilePage({ onOpenAuth }) {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  gap: '6px'
+                                  gap: '6px',
+                                  boxShadow: '0 4px 16px rgba(193, 85, 44, 0.35)'
                                 }}
                               >
                                 📝 Take Certification Exam →
@@ -1154,17 +1760,19 @@ export default function UserProfilePage({ onOpenAuth }) {
           <div>
             {joinedOfficerPrograms.length === 0 ? (
               <div style={{
-                background: '#FFFFFF',
-                borderRadius: '32px',
+                background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.85) 0%, rgba(20, 17, 15, 0.92) 100%)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '24px',
                 padding: '48px 32px',
                 textAlign: 'center',
-                border: '1px solid rgba(17, 24, 39, 0.06)',
+                border: '1px solid rgba(226, 139, 92, 0.22)',
+                boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)'
               }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏛️</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                   No Enrolled Officer Programs Yet
                 </h3>
-                <p style={{ fontSize: '14px', color: '#9CA3AF', margin: '0 0 20px 0' }}>
+                <p style={{ fontSize: '14px', color: 'var(--color-sand-200, #C2B7A3)', margin: '0 0 20px 0' }}>
                   You have not enrolled in any specialized officer programs yet.
                 </p>
                 <Link
@@ -1173,45 +1781,47 @@ export default function UserProfilePage({ onOpenAuth }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: '#059669',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                     color: '#FFFFFF',
-                    padding: '10px 20px',
-                    borderRadius: '10px',
+                    padding: '10px 22px',
+                    borderRadius: '12px',
                     fontWeight: '700',
                     fontSize: '14px',
                     textDecoration: 'none',
+                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)'
                   }}
                 >
                   Explore Programs & Enroll →
                 </Link>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                 {joinedOfficerPrograms.map((prog) => (
                   <div key={prog.id} style={{
-                    background: '#FFFFFF',
-                    borderRadius: '32px',
-                    border: '1px solid rgba(17, 24, 39, 0.06)',
+                    background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(226, 139, 92, 0.25)',
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                    boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)',
+                    color: '#FFFFFF'
                   }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#059669', background: 'rgba(5, 150, 105, 0.1)', padding: '2px 10px', borderRadius: '12px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#10B981', background: 'rgba(16, 185, 129, 0.16)', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '3px 10px', borderRadius: '8px' }}>
                           SPECIALIZED PROGRAM
                         </span>
-                        <span style={{ fontSize: '12px', color: '#059669', fontWeight: '700' }}>✓ Enrolled</span>
+                        <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>✓ Enrolled</span>
                       </div>
-                      <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>
+                      <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: '1.4' }}>
                         {prog.title}
                       </h3>
-                      <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontWeight: '600', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '600', marginBottom: '12px' }}>
                         📅 Joined Date: <strong>{getJoinedDate(prog.id)}</strong>
                       </div>
-                      <p style={{ fontSize: '13px', color: '#9CA3AF', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                      <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                         {prog.desc}
                       </p>
                     </div>
@@ -1219,14 +1829,15 @@ export default function UserProfilePage({ onOpenAuth }) {
                       onClick={() => navigate(`/exam/${prog.id || 'ai-fundamentals'}`)}
                       style={{
                         width: '100%',
-                        background: '#059669',
+                        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                         color: '#FFFFFF',
-                        padding: '10px',
-                        borderRadius: '8px',
-                        fontWeight: '700',
+                        padding: '11px 14px',
+                        borderRadius: '10px',
+                        fontWeight: '800',
                         fontSize: '13px',
                         border: 'none',
                         cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)'
                       }}
                     >
                       View Certificate →
@@ -1238,122 +1849,58 @@ export default function UserProfilePage({ onOpenAuth }) {
           </div>
         )}
 
-
+        {/* TAB 3: DAILY TASKS & PRACTICAL CLASSWORK */}
+        {activeTab === 'daily_tasks' && (
+          <div className="profileClassworkWrapper" style={{ marginBottom: '32px' }}>
+            <AIClasswork user={currentUser} onSubmissionUpdated={setUserTaskSubmissions} />
+          </div>
+        )}
 
         {/* TAB 4: PROFILE DETAILS FORM */}
         {activeTab === 'get_involved' && (() => {
           return (
             <div style={{
-              background: '#FFFFFF',
-              borderRadius: '32px',
-              border: '1px solid rgba(17, 24, 39, 0.06)',
-              padding: '32px 36px',
-              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.05)'
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
+              borderRadius: '24px',
+              border: '1px solid rgba(226, 139, 92, 0.25)',
+              padding: '36px 40px',
+              boxShadow: '0 20px 45px -15px rgba(0, 0, 0, 0.5)',
+              color: '#FFFFFF'
             }} className="profileForm">
-              <div style={{ marginBottom: '24px', borderBottom: '1px solid #EFEAE5', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ marginBottom: '24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '800', color: '#000000', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-400, #E28B5C)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
                     BIHAR AI MISSION
                   </div>
-                  <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#111827', margin: 0 }}>
+                  <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', margin: 0, fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                     Profile Details
                   </h2>
                 </div>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {allFieldsLocked ? (
-                      <div style={{
-                        background: '#F0FDF4',
-                        border: '1.5px solid #86EFAC',
-                        color: '#15803D',
-                        padding: '6px 14px',
-                        borderRadius: '32px',
-                        fontSize: '12.5px',
-                        fontWeight: '800',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <span>🔒</span>
-                        <span>All Profile Details Saved & Locked</span>
-                      </div>
-                    ) : isProfileSaved ? (
-                      <div style={{
-                        background: '#F0FDF4',
-                        border: '1.5px solid #86EFAC',
-                        color: '#15803D',
-                        padding: '6px 14px',
-                        borderRadius: '32px',
-                        fontSize: '12.5px',
-                        fontWeight: '800',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <span>🔒</span>
-                        <span>Profile Details Saved</span>
-                      </div>
-                    ) : (
-                      <div style={{
-                        background: 'var(--color-sand-50, #FBF8F3)',
-                        border: '1.5px solid var(--color-sand-100, #F3ECE0)',
-                        color: 'var(--color-charcoal-900, #181512)',
-                        padding: '6px 14px',
-                        borderRadius: '32px',
-                        fontSize: '12.5px',
-                        fontWeight: '800',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <span>✏️</span>
-                        <span>Fill & Save Profile Details</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              </div>
 
-              {!isProfileSaved ? (
-                <div style={{
-                  background: 'var(--color-sand-50, #FBF8F3)',
-                  border: '1.5px solid var(--color-sand-100, #F3ECE0)',
-                  borderRadius: '32px',
-                  padding: '14px 20px',
-                  marginBottom: '24px',
-                  color: 'var(--color-charcoal-900, #181512)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  fontSize: '13.5px'
-                }}>
-                  <span style={{ fontSize: '20px' }}>ℹ️</span>
-                  <div>
-                    <strong>Fill & Save Profile Notice:</strong> Please fill your details below and click <strong>"Save Profile Details"</strong>. Unsaved fields are editable so you can complete your profile.
-                  </div>
+              <div style={{
+                background: 'rgba(24, 21, 18, 0.65)',
+                border: '1px solid rgba(226, 139, 92, 0.25)',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                marginBottom: '24px',
+                color: 'var(--color-sand-100, #F3ECE0)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '13.5px'
+              }}>
+                <span style={{ fontSize: '22px' }}>🔒</span>
+                <div>
+                  <strong style={{ color: '#FFFFFF' }}>Registration Integrity Notice:</strong> Mandatory identity inputs (Full Name, Email, Mobile, Gender, Age, Category, State, District, and Block) were verified during registration and are permanently locked. You can edit and update your <strong>designation, organization, experience, AI interests, and professional links</strong> anytime.
                 </div>
-              ) : (
-                <div style={{
-                  background: '#F0FDF4',
-                  border: '1.5px solid #86EFAC',
-                  borderRadius: '32px',
-                  padding: '14px 20px',
-                  marginBottom: '24px',
-                  color: '#166534',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  fontWeight: '700',
-                  fontSize: '13.5px'
-                }}>
-                  <span>🔒</span>
-                  <span>Profile Details Verified & Saved</span>
-                </div>
-              )}
+              </div>
 
               {formSuccess && (
                 <div style={{
-                  background: '#F0FDF4',
-                  border: '1px solid #86EFAC',
-                  color: '#166534',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid #10B981',
+                  color: '#6EE7B7',
                   padding: '14px 18px',
                   borderRadius: '12px',
                   fontSize: '14px',
@@ -1366,9 +1913,9 @@ export default function UserProfilePage({ onOpenAuth }) {
 
               {formError && (
                 <div style={{
-                  background: '#FEF2F2',
-                  border: '1px solid #FCA5A5',
-                  color: '#991B1B',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid #EF4444',
+                  color: '#FCA5A5',
                   padding: '14px 18px',
                   borderRadius: '12px',
                   fontSize: '14px',
@@ -1381,512 +1928,469 @@ export default function UserProfilePage({ onOpenAuth }) {
 
               <form onSubmit={handleProfileFormSubmit}>
 
-                {/* PERSONAL INFORMATION */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.06)', paddingBottom: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#000000', margin: 0 }}>
-                    Personal Information
-                  </h3>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: isPersonalSectionLocked ? '#9CA3AF' : '#000000' }}>
-                    {isPersonalSectionLocked ? '🔒 Locked' : '✏️ Editable'}
-                  </span>
-                </div>
-
-                <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      readOnly={isFieldLocked('full_name')}
-                      placeholder="e.g. Praveer Kishore"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('full_name') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('full_name') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('full_name') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
+                {/* 1. MANDATORY REGISTRATION DETAILS (LOCKED) */}
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '16px',
+                  padding: '20px 22px',
+                  marginBottom: '28px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px' }}>🔒</span>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                        Mandatory Registration Details
+                      </h3>
+                    </div>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      color: '#9CA3AF',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      padding: '4px 10px',
+                      borderRadius: '20px'
+                    }}>
+                      🔒 Non-Editable (Verified)
+                    </span>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      readOnly
-                      placeholder="e.g. user@example.com"
-                      value={formData.email}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: '1.5px solid rgba(17, 24, 39, 0.06)', background: '#EFEAE5', fontSize: '13.5px', color: '#9CA3AF'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Mobile
-                    </label>
-                    <input
-                      type="tel"
-                      readOnly={isFieldLocked('mobile')}
-                      placeholder="e.g. 9876543210"
-                      value={formData.mobile === 'N/A' ? '' : formData.mobile}
-                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('mobile') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('mobile') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('mobile') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Gender
-                    </label>
-                    <select
-                      disabled={isFieldLocked('gender')}
-                      value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('gender') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('gender') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('gender') ? '#9CA3AF' : '#111827'
-                      }}
-                    >
-                      <option value="">-- Select Gender --</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Age
-                    </label>
-                    <input
-                      type="number"
-                      readOnly={isFieldLocked('age')}
-                      placeholder="e.g. 24"
-                      value={formData.age || ''}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('age') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('age') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('age') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* PROFESSIONAL DETAILS */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.06)', paddingBottom: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#000000', margin: 0 }}>
-                    💼 Professional Details
-                  </h3>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: isProfSectionLocked ? '#9CA3AF' : '#000000' }}>
-                    {isProfSectionLocked ? '🔒 Locked' : '✏️ Editable'}
-                  </span>
-                </div>
-
-                <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Role Type
-                    </label>
-                    <select
-                      disabled={isFieldLocked('role_type')}
-                      value={formData.role_type}
-                      onChange={(e) => setFormData({ ...formData, role_type: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('role_type') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('role_type') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('role_type') ? '#9CA3AF' : '#111827'
-                      }}
-                    >
-                      <option value="">-- Select Role Type --</option>
-                      <option value="Student">Student</option>
-                      <option value="Government Officer">Government Officer</option>
-                      <option value="AI Researcher / Engineer">AI Researcher / Engineer</option>
-                      <option value="Citizen / Professional">Citizen / Professional</option>
-                      <option value="Academician">Academician</option>
-                      <option value="Entrepreneur">Entrepreneur</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Designation
-                    </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('designation')}
-                      placeholder="e.g. Software Engineer / Student / Officer"
-                      value={formData.designation}
-                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('designation') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('designation') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('designation') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Department
-                    </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('department')}
-                      placeholder="e.g. Computer Science / Information Technology"
-                      value={formData.department}
-                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('department') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('department') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('department') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Organization
-                    </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('organization')}
-                      placeholder="e.g. Bihar AI Mission / University / Company"
-                      value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('organization') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('organization') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('organization') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Experience
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Full Name *
+                      </label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        readOnly={isFieldLocked('experience')}
-                        placeholder="e.g. 2"
-                        value={formData.experience_val || ''}
-                        onChange={(e) => setFormData({ ...formData, experience_val: e.target.value })}
+                        type="text"
+                        required
+                        readOnly
+                        placeholder="e.g. Full Name"
+                        value={formData.full_name}
+                        autoComplete="off"
                         style={{
-                          flex: 1, height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: isFieldLocked('experience') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                          background: isFieldLocked('experience') ? '#EFEAE5' : '#FFFFFF',
-                          fontSize: '13.5px', color: isFieldLocked('experience') ? '#9CA3AF' : '#111827'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
                         }}
                       />
-                      <select
-                        disabled={isFieldLocked('experience')}
-                        value={formData.experience_unit || 'Years'}
-                        onChange={(e) => setFormData({ ...formData, experience_unit: e.target.value })}
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        readOnly
+                        placeholder="e.g. user@example.com"
+                        value={formData.email}
                         style={{
-                          width: '105px', height: '42px', padding: '0 10px', borderRadius: '8px',
-                          border: isFieldLocked('experience') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                          background: isFieldLocked('experience') ? '#EFEAE5' : '#FFFFFF',
-                          fontSize: '13.5px', color: isFieldLocked('experience') ? '#9CA3AF' : '#111827', fontWeight: '600'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
                         }}
-                      >
-                        <option value="Years">Years</option>
-                        <option value="Months">Months</option>
-                      </select>
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Mobile Number *
+                      </label>
+                      <input
+                        type="tel"
+                        readOnly
+                        placeholder="e.g. 9876543210"
+                        value={formData.mobile === 'N/A' ? '' : formData.mobile}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Gender *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.gender || 'Not Specified'}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Age *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.age ? `${formData.age} Years` : 'Not Specified'}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Role / Category *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={
+                          ROLE_TYPES.find(r => r.value === formData.role_type)?.labelEn ||
+                          formData.role_type ||
+                          'Registered Member'
+                        }
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        State *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.state || 'Bihar'}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        District *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.district || 'Not Specified'}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                        Block / Sub-Division / City *
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.block_city || 'Not Specified'}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* LOCATION SECTION */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.06)', paddingBottom: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#000000', margin: 0 }}>
-                    📍 Location Details
-                  </h3>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: isLocSectionLocked ? '#9CA3AF' : '#000000' }}>
-                    {isLocSectionLocked ? '🔒 Locked' : '✏️ Editable'}
-                  </span>
-                </div>
-
-                <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      State
-                    </label>
-                    <select
-                      disabled={isFieldLocked('state')}
-                      value={formData.state}
-                      onChange={(e) => {
-                        const newSt = e.target.value;
-                        setFormData(prev => ({
-                          ...prev,
-                          state: newSt,
-                          district: (newSt !== 'Bihar' && prev.district && biharDistricts.includes(prev.district)) ? '' : prev.district
-                        }));
-                      }}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('state') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('state') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('state') ? '#9CA3AF' : '#111827'
-                      }}
-                    >
-                      <option value="">-- Select State --</option>
-                      {indianStates.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                {/* 2. NON-MANDATORY & EDITABLE PROFILE DETAILS */}
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  border: '1px solid rgba(226, 139, 92, 0.3)',
+                  borderRadius: '16px',
+                  padding: '20px 22px',
+                  marginBottom: '28px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px' }}>✏️</span>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                        Professional & Profile Details
+                      </h3>
+                    </div>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '800',
+                      color: '#34D399',
+                      background: 'rgba(52, 211, 153, 0.12)',
+                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                      padding: '4px 10px',
+                      borderRadius: '20px'
+                    }}>
+                      ✏️ Editable Anytime
+                    </span>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      District
-                    </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('district')}
-                      placeholder="e.g. Patna, Gaya, Nawada, Ranchi, Lucknow"
-                      value={formData.district}
-                      onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('district') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('district') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('district') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
+                  <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        Designation / Job Title
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Senior Software Engineer / Officer / Student"
+                        value={formData.designation}
+                        onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Block / City / Village
-                    </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('block_city')}
-                      placeholder="e.g. Danapur, Sadar, Warisaliganj, Village Name"
-                      value={formData.block_city}
-                      onChange={(e) => setFormData(prev => ({ ...prev, block_city: e.target.value }))}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('block_city') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('block_city') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('block_city') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        Department / Wing
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Information Technology / Education / Health"
+                        value={formData.department}
+                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
 
-                {/* AREAS OF INTEREST & STATEMENT OF INTENT */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.06)', paddingBottom: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#000000', margin: 0 }}>
-                    💡 Areas of Interest & Statement of Intent
-                  </h3>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: isIntentSectionLocked ? '#9CA3AF' : '#000000' }}>
-                    {isIntentSectionLocked ? '🔒 Locked' : '✏️ Editable'}
-                  </span>
-                </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        Organization / College / Company
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Government of Bihar / IIT Patna / Tech Corp"
+                        value={formData.organization}
+                        onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
-                    Areas of Interest
-                  </label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    {availableInterests.map((interest) => {
-                      const isSelected = formData.interests.includes(interest);
-                      const isLocked = isFieldLocked('interests');
-                      return (
-                        <button
-                          type="button"
-                          key={interest}
-                          disabled={isLocked}
-                          onClick={() => handleInterestToggle(interest)}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        Experience
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="e.g. 3"
+                          value={formData.experience_val || ''}
+                          onChange={(e) => setFormData({ ...formData, experience_val: e.target.value })}
                           style={{
-                            padding: '6px 14px',
-                            borderRadius: '32px',
-                            fontSize: '12.5px',
-                            fontWeight: '700',
-                            border: isSelected ? '1.5px solid #000000' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                            background: isSelected ? '#EFEAE5' : '#FFFFFF',
-                            color: isSelected ? 'var(--color-charcoal-900, #181512)' : '#6B7280',
-                            cursor: isLocked ? 'not-allowed' : 'pointer',
-                            opacity: isLocked && !isSelected ? 0.6 : 1,
-                            transition: 'all 0.2s ease'
+                            flex: 1, height: '42px', padding: '0 14px', borderRadius: '8px',
+                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            fontSize: '13.5px', color: '#FFFFFF'
+                          }}
+                        />
+                        <select
+                          value={formData.experience_unit || 'Years'}
+                          onChange={(e) => setFormData({ ...formData, experience_unit: e.target.value })}
+                          style={{
+                            width: '110px', height: '42px', padding: '0 10px', borderRadius: '8px',
+                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                            background: '#201C18',
+                            fontSize: '13.5px', color: '#FFFFFF', fontWeight: '600'
                           }}
                         >
-                          {isSelected ? '✓ ' : '+ '}{interest}
-                        </button>
-                      );
-                    })}
+                          <option value="Years">Years</option>
+                          <option value="Months">Months</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
-                  <div style={{ marginTop: '12px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: formData.interests.length > 0 ? '#9CA3AF' : '#6B7280', marginBottom: '6px' }}>
-                      Other / Custom Interest(s) {formData.interests.length > 0 ? '(Disabled - Predefined Interest Selected Above)' : '(Optional)'}
+                  {/* PRIMARY AI FOCUS & INTERESTS */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '8px' }}>
+                      Primary AI Interest & Focus (Select your focus area)
                     </label>
-                    <input
-                      type="text"
-                      readOnly={isFieldLocked('interests') || formData.interests.length > 0}
-                      disabled={isFieldLocked('interests') || formData.interests.length > 0}
-                      placeholder={
-                        formData.interests.length > 0
-                          ? "Disabled because you selected interest option(s) above. Uncheck pills to type custom interests."
-                          : "e.g. Robotics, Computer Vision, Generative Models, NLP (type custom interest here)"
-                      }
-                      value={formData.interests.length > 0 ? '' : (formData.custom_interest || '')}
-                      onChange={(e) => setFormData(prev => ({ ...prev, custom_interest: e.target.value }))}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: (isFieldLocked('interests') || formData.interests.length > 0) ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: (isFieldLocked('interests') || formData.interests.length > 0) ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: (isFieldLocked('interests') || formData.interests.length > 0) ? '#9CA3AF' : '#111827',
-                        cursor: (isFieldLocked('interests') || formData.interests.length > 0) ? 'not-allowed' : 'text'
-                      }}
-                    />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {INTEREST_OPTIONS.map((item) => {
+                        const isSelected = formData.interests && formData.interests.includes(item.value);
+                        return (
+                          <button
+                            type="button"
+                            key={item.value}
+                            onClick={() => handleInterestToggle(item.value)}
+                            style={{
+                              padding: '7px 14px',
+                              borderRadius: '24px',
+                              fontSize: '12.5px',
+                              fontWeight: '700',
+                              border: isSelected ? '1.5px solid #C1552C' : '1px solid rgba(255, 255, 255, 0.15)',
+                              background: isSelected ? 'rgba(193, 85, 44, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                              color: isSelected ? '#FFFFFF' : 'var(--color-sand-200, #C2B7A3)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <span>{isSelected ? '✓' : '+'}</span>
+                            <span>{isHi ? item.labelHi : item.labelEn}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--color-sand-300, #9CA3AF)', marginBottom: '6px' }}>
+                        ✍️ Custom / Additional Interest (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Computer Vision, Autonomous Drones, Local LLMs..."
+                        value={formData.custom_interest || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, custom_interest: e.target.value }))}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Statement of Intent
-                  </label>
-                  <textarea
-                    rows="3"
-                    readOnly={isFieldLocked('intent')}
-                    placeholder="Describe your background, goals, or interest for participating in Bihar AI Mission initiatives..."
-                    value={formData.intent}
-                    onChange={(e) => setFormData({ ...formData, intent: e.target.value })}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: '8px',
-                      border: isFieldLocked('intent') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                      background: isFieldLocked('intent') ? '#EFEAE5' : '#FFFFFF',
-                      fontSize: '13.5px', fontFamily: 'inherit', color: isFieldLocked('intent') ? '#9CA3AF' : '#111827'
-                    }}
-                  />
-                </div>
-
-                {/* CONTRIBUTION & PROFESSIONAL LINKS */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(17, 24, 39, 0.06)', paddingBottom: '8px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#000000', margin: 0 }}>
-                    🔗 Contribution & Professional Links
-                  </h3>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: isLinksSectionLocked ? '#9CA3AF' : '#000000' }}>
-                    {isLinksSectionLocked ? '🔒 Locked' : '✏️ Editable'}
-                  </span>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                    Proposed Contribution
-                  </label>
-                  <textarea
-                    rows="2"
-                    readOnly={isFieldLocked('contribution')}
-                    placeholder="How can you contribute to Bihar AI Mission? (e.g. AI research, mentoring students, civic tool development, volunteering...)"
-                    value={formData.contribution}
-                    onChange={(e) => setFormData({ ...formData, contribution: e.target.value })}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: '8px',
-                      border: isFieldLocked('contribution') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                      background: isFieldLocked('contribution') ? '#EFEAE5' : '#FFFFFF',
-                      fontSize: '13.5px', fontFamily: 'inherit', color: isFieldLocked('contribution') ? '#9CA3AF' : '#111827'
-                    }}
-                  />
-                </div>
-
-                <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      LinkedIn Profile URL
+                  {/* CONTRIBUTION / STATEMENT OF INTENT */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      How do you wish to contribute to Bihar AI Mission?
                     </label>
-                    <input
-                      type="url"
-                      readOnly={isFieldLocked('linkedin')}
-                      placeholder="e.g. https://www.linkedin.com/in/username"
-                      value={formData.linkedin}
-                      onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                    <textarea
+                      rows="2"
+                      placeholder="e.g. AI research, mentoring candidates, civic innovation, local language LLM development, hackathon mentoring..."
+                      value={formData.contribution || ''}
+                      onChange={(e) => setFormData({ ...formData, contribution: e.target.value })}
                       style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('linkedin') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('linkedin') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('linkedin') ? '#9CA3AF' : '#111827'
+                        width: '100%', padding: '10px 14px', borderRadius: '8px',
+                        border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        fontSize: '13.5px', fontFamily: 'inherit', color: '#FFFFFF'
                       }}
                     />
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                      Portfolio / GitHub / Website URL
-                    </label>
-                    <input
-                      type="url"
-                      readOnly={isFieldLocked('portfolio')}
-                      placeholder="e.g. https://github.com/username or portfolio link"
-                      value={formData.portfolio}
-                      onChange={(e) => setFormData({ ...formData, portfolio: e.target.value })}
-                      style={{
-                        width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                        border: isFieldLocked('portfolio') ? '1.5px solid rgba(17, 24, 39, 0.06)' : '1.5px solid rgba(17, 24, 39, 0.08)',
-                        background: isFieldLocked('portfolio') ? '#EFEAE5' : '#FFFFFF',
-                        fontSize: '13.5px', color: isFieldLocked('portfolio') ? '#9CA3AF' : '#111827'
-                      }}
-                    />
+                  {/* SOCIAL & PORTFOLIO LINKS */}
+                  <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        LinkedIn Profile URL
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://linkedin.com/in/username"
+                        value={formData.linkedin || ''}
+                        onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                        Portfolio / GitHub / Website URL
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://github.com/username or https://yourportfolio.com"
+                        value={formData.portfolio || ''}
+                        onChange={(e) => setFormData({ ...formData, portfolio: e.target.value })}
+                        style={{
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
+                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          fontSize: '13.5px', color: '#FFFFFF'
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={formSubmitting || allFieldsLocked}
+                  disabled={formSubmitting}
                   style={{
                     width: '100%',
-                    height: '46px',
-                    background: allFieldsLocked
-                      ? '#9CA3AF'
-                      : 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                    height: '48px',
+                    background: formSubmitting
+                      ? 'rgba(193, 85, 44, 0.5)'
+                      : 'linear-gradient(135deg, #C1552C 0%, #E28B5C 100%)',
                     color: '#FFFFFF',
                     fontSize: '15px',
                     fontWeight: '800',
                     border: 'none',
-                    borderRadius: '10px',
-                    cursor: allFieldsLocked ? 'not-allowed' : 'pointer',
-                    boxShadow: allFieldsLocked ? 'none' : '0 4px 14px rgba(24, 21, 18, 0.25)',
+                    borderRadius: '12px',
+                    cursor: formSubmitting ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 8px 24px rgba(193, 85, 44, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  {allFieldsLocked
-                    ? '🔒 All Profile Information Saved & Locked'
-                    : formSubmitting
-                    ? 'Saving Profile Details…'
-                    : '💾 Save Profile Details →'}
+                  <span>💾</span>
+                  <span>{formSubmitting ? 'Saving to Database…' : 'Save & Update Profile Details'}</span>
                 </button>
               </form>
+
+              {/* REAL-TIME CANDIDATES TASK LEADERBOARD (JUST AFTER PROFILE DETAILS) */}
+              <TaskLeaderboard isHi={isHi} />
             </div>
           );
         })()}
+
+        {/* TAB 5: DEDICATED REAL-TIME LEADERBOARD */}
+        {activeTab === 'leaderboard' && (
+          <TaskLeaderboard isHi={isHi} />
+        )}
 
       </div>
 
@@ -1895,6 +2399,331 @@ export default function UserProfilePage({ onOpenAuth }) {
           submission={modalSubmission}
           onClose={() => setActiveCertSubmission(null)}
         />
+      )}
+
+      {/* GUP-SHUP AI WHATSAPP CHAT COMING SOON MODAL */}
+      {showGupShupModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: 'rgba(10, 8, 7, 0.82)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setShowGupShupModal(false)}
+        >
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #1E1B18 0%, #14110E 100%)',
+              border: '1.5px solid rgba(226, 139, 92, 0.35)',
+              borderRadius: '24px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '32px 28px',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(193, 85, 44, 0.2)',
+              position: 'relative',
+              color: '#FFFFFF'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setShowGupShupModal(false)}
+              style={{
+                position: 'absolute',
+                top: '18px',
+                right: '18px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#9CA3AF',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '15px',
+                fontWeight: '700',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#9CA3AF';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+            >
+              ✕
+            </button>
+
+            {/* HEADER */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+              <div
+                style={{
+                  width: '54px',
+                  height: '54px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '26px',
+                  boxShadow: '0 8px 24px rgba(37, 211, 102, 0.35)',
+                  flexShrink: 0
+                }}
+              >
+                💬
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ fontSize: '21px', fontWeight: '800', margin: 0, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+                    Gup-Shup
+                  </h3>
+                  <span
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#FCA5A5',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}
+                  >
+                    🔒 Locked
+                  </span>
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#C2B7A3' }}>
+                  Community Chit-Chat World — Department Groups, @Mentions & Achievements
+                </p>
+              </div>
+            </div>
+
+            {/* WHATSAPP CHAT PREVIEW MOCKUP BUBBLE */}
+            <div
+              style={{
+                background: 'rgba(11, 20, 26, 0.85)',
+                border: '1px solid rgba(37, 211, 102, 0.25)',
+                borderRadius: '18px',
+                padding: '16px',
+                marginBottom: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}
+            >
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    flexShrink: 0
+                  }}
+                >
+                  🤖
+                </div>
+                <div
+                  style={{
+                    background: '#202C33',
+                    padding: '10px 14px',
+                    borderRadius: '0 14px 14px 14px',
+                    fontSize: '13px',
+                    color: '#E9EDEF',
+                    lineHeight: '1.5',
+                    maxWidth: '85%'
+                  }}
+                >
+                  <p style={{ margin: '0 0 6px 0', fontWeight: '700', color: '#25D366' }}>
+                    Gup-Shup Community Bot
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    Namaste! 🙏 <strong>Gup-Shup</strong> is an interactive community world. You will be able to join <strong>Department-Wise Groups</strong>, chat statewide in the <strong>Overall Group</strong>, tag peers with <strong>@mentions</strong>, and share <strong>Achievement Photos & Certificates</strong>!
+                  </p>
+                  <span style={{ fontSize: '10px', color: '#8696A0', display: 'block', textAlign: 'right', marginTop: '6px' }}>
+                    Just now · 🔒 End-to-End Civic Network
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* UPCOMING HIGHLIGHTS */}
+            <div style={{ marginBottom: '22px' }}>
+              <p style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#E28B5C', margin: '0 0 10px 0' }}>
+                ✨ Features in Next Rollout:
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                {[
+                  '🏛️ Department & Overall Groups',
+                  '🏷️ WhatsApp-Style @Mentions',
+                  '📸 Post Achievement Images',
+                  '🎉 Live Reactions & Peer Chat'
+                ].map((feat, fIdx) => (
+                  <div
+                    key={fIdx}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      padding: '8px 12px',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: '#F3ECE0'
+                    }}
+                  >
+                    {feat}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* STATUS BADGE & CLOSE BUTTON */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowGupShupModal(false)}
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  fontWeight: '800',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 18px rgba(193, 85, 44, 0.4)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 6px 22px rgba(193, 85, 44, 0.55)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(193, 85, 44, 0.4)';
+                }}
+              >
+                🚀 Coming Soon — Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GENERIC LOCKED FEATURE MODAL (FOR MASTERCLASSES & PROGRAMS) */}
+      {lockedModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: 'rgba(10, 8, 7, 0.82)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setLockedModal(null)}
+        >
+          <div
+            style={{
+              background: 'linear-gradient(160deg, #1E1B18 0%, #14110E 100%)',
+              border: '1.5px solid rgba(226, 139, 92, 0.35)',
+              borderRadius: '24px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '30px 26px',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(193, 85, 44, 0.2)',
+              position: 'relative',
+              color: '#FFFFFF',
+              textAlign: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setLockedModal(null)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#9CA3AF',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '15px',
+                fontWeight: '700'
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ fontSize: '46px', marginBottom: '12px' }}>
+              {lockedModal.icon || '🔒'}
+            </div>
+
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#FCA5A5', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: '800', marginBottom: '12px' }}>
+              🔒 Feature Locked
+            </div>
+
+            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 6px 0' }}>
+              {lockedModal.title}
+            </h3>
+
+            {lockedModal.subtitle && (
+              <p style={{ fontSize: '13px', color: '#E28B5C', margin: '0 0 14px 0', fontWeight: '600' }}>
+                {lockedModal.subtitle}
+              </p>
+            )}
+
+            <p style={{ fontSize: '13.5px', color: '#C2B7A3', lineHeight: '1.55', margin: '0 0 24px 0' }}>
+              {lockedModal.message}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setLockedModal(null)}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                border: 'none',
+                color: '#FFFFFF',
+                padding: '12px 20px',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(193, 85, 44, 0.4)'
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

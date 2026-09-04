@@ -1,0 +1,231 @@
+/* section-24-hero-buttons.css — Hero Action Buttons
+   Matches CTA section pill button system with shimmer, lift & glow hover */
+
+/* ═══ BUTTON GROUP LAYOUT ═══ */
+.hero-buttons-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  z-index: 20;
+}
+
+/* ═══ SHARED ICON STYLING ═══ */
+.hero-btn-icon {
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+.hero-btn-icon-accent {
+  color: #E28B5C;
+  flex-shrink: 0;
+}
+
+/* ═══ SHARED LABEL STYLE ═══ */
+.hero-btn-label {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-weight: 700;
+  font-size: 0.938rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BUTTON 1: PRIMARY — MULTI-STOP TERRACOTTA GRADIENT PILL
+   Matches .primaryBtn from CTA.module.css exactly
+   ══════════════════════════════════════════════════════════════════════ */
+.hero-primary-btn {
+  background: linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%);
+  color: #FFFFFF;
+  padding: 13px 26px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    0 6px 20px -3px rgba(193, 85, 44, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.hero-primary-btn:hover {
+  transform: translateY(-2.5px) scale(1.02);
+  background: linear-gradient(135deg, #DE6739 0%, #C45125 60%, #A83E16 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 12px 30px -4px rgba(193, 85, 44, 0.58);
+}
+
+.hero-primary-btn:active {
+  transform: translateY(0.5px) scale(0.975);
+}
+
+/* ── Shimmer sweep on hover ── */
+.hero-btn-shimmer {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 0.6s ease;
+}
+
+.hero-primary-btn:hover .hero-btn-shimmer {
+  left: 150%;
+}
+
+/* ── Circled arrow badge ── */
+.hero-action-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.22s ease;
+  flex-shrink: 0;
+}
+
+.hero-primary-btn:hover .hero-action-badge {
+  transform: translateX(3px) scale(1.08);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BUTTON 2: SECONDARY — FROSTED DARK GLASS PILL
+   Matches .secondaryBtn from CTA.module.css, adapted for dark bg
+   ══════════════════════════════════════════════════════════════════════ */
+.hero-secondary-btn {
+  background: rgba(30, 25, 22, 0.92);
+  color: #FFFFFF;
+  padding: 13px 26px;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.hero-secondary-btn:hover {
+  background: rgba(42, 35, 30, 0.98);
+  border-color: #E28B5C;
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    0 0 24px rgba(226, 139, 92, 0.35),
+    0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.hero-secondary-btn:active {
+  transform: translateY(0.5px) scale(0.975);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BUTTON 3: TERTIARY — CREAM/WHITE PILL WITH ORANGE DOT
+   Premium light pill style matching the user's screenshot
+   ══════════════════════════════════════════════════════════════════════ */
+.hero-tertiary-btn {
+  background: rgba(251, 248, 243, 0.92);
+  color: #181512;
+  padding: 13px 26px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 215, 195, 0.6);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    0 4px 14px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+/* Orange beacon dot */
+.hero-tertiary-btn::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #E28B5C;
+  box-shadow: 0 0 6px rgba(226, 139, 92, 0.6);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hero-tertiary-btn:hover {
+  background: #FFFFFF;
+  border-color: rgba(193, 85, 44, 0.5);
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 1),
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 0 16px rgba(193, 85, 44, 0.12);
+}
+
+.hero-tertiary-btn:hover::after {
+  transform: scale(1.3);
+  box-shadow: 0 0 10px rgba(226, 139, 92, 0.8);
+}
+
+.hero-tertiary-btn:active {
+  transform: translateY(0.5px) scale(0.975);
+}
+
+.hero-tertiary-btn .hero-btn-label {
+  color: #181512;
+  font-weight: 600;
+}
+
+.hero-mission-arrow {
+  font-size: 1.1rem;
+  color: #181512;
+  transition: transform 0.22s ease;
+}
+
+.hero-tertiary-btn:hover .hero-mission-arrow {
+  transform: translateX(3px);
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  .hero-buttons-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .hero-primary-btn,
+  .hero-secondary-btn,
+  .hero-tertiary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

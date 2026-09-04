@@ -141,7 +141,7 @@ export default function ContactUsModal({ isOpen, onClose }) {
       </p>
 
       {/* Contact Form */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} autoComplete="off">
         {/* Field 1: Full Name */}
         <div>
           <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', marginBottom: '6px' }}>
@@ -149,9 +149,14 @@ export default function ContactUsModal({ isOpen, onClose }) {
           </label>
           <input
             type="text"
+            name="contact_user_name"
+            id="contact_user_name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={isHi ? 'उदा. श्री प्रवीण कुमार' : 'e.g. Shri Praveen Kumar'}
+            placeholder={isHi ? 'उदा. अपना पूरा नाम दर्ज करें' : 'e.g. Enter your full name'}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
             style={{
               width: '100%',
               padding: '12px 16px',
@@ -174,9 +179,15 @@ export default function ContactUsModal({ isOpen, onClose }) {
           </label>
           <input
             type="email"
+            name="contact_user_email"
+            id="contact_user_email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder={isHi ? 'उदा. officer@bihar.gov.in' : 'e.g. officer@bihar.gov.in'}
+            placeholder={isHi ? 'उदा. your@email.com' : 'e.g. your@email.com'}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck="false"
             style={{
               width: '100%',
               padding: '12px 16px',

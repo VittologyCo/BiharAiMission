@@ -1,5 +1,6 @@
 // Storage utility for Exam Submissions and Certificate Verifications
 import { supabase } from './supabase';
+import { withAuthRetry } from './withAuthRetry';
 const STORAGE_KEY = 'bihar_ai_exam_submissions';
 const SIGNATORIES_KEY = 'bihar_ai_cert_signatories';
 
@@ -309,8 +310,12 @@ export const fetchExamSubmissionsFromSupabase = async () => {
   try {
     if (supabase) {
       const [mcRes, offRes] = await Promise.all([
-        supabase.from('masterclass_exam_submissions').select('*').order('submitted_at', { ascending: false }),
-        supabase.from('officer_program_exam_submissions').select('*').order('submitted_at', { ascending: false })
+        withAuthRetry(() =>
+          supabase.from('masterclass_exam_submissions').select('*').order('submitted_at', { ascending: false })
+        ).catch(() => ({ data: [] })),
+        withAuthRetry(() =>
+          supabase.from('officer_program_exam_submissions').select('*').order('submitted_at', { ascending: false })
+        ).catch(() => ({ data: [] }))
       ]);
 
       const allRows = [
@@ -395,8 +400,14 @@ export const saveExamSubmission = async (submission) => {
 
   const attemptsCount = submission.attemptsCount || submission.attempts || (previousAttempts + 1);
 
+  // Deterministic identifier for attempt/submission (prevents duplicate rows on retries)
+  const deterministicId = submission.credentialId || submission.id || 
+    `exam_${emailKey.replace(/[^a-z0-9]/g, '_')}_${classKey.replace(/[^a-z0-9]/g, '_')}_att${attemptsCount}`;
+
   const enrichedSubmission = {
     ...submission,
+    id: deterministicId,
+    credentialId: deterministicId,
     examTitle: resolvedTitle,
     masterclassTitle: resolvedTitle,
     dateFolder,
@@ -404,7 +415,7 @@ export const saveExamSubmission = async (submission) => {
     status: submission.status || (submission.isViolated ? 'VIOLATED' : submission.isPassed ? 'PASSED' : submission.percentage > 0 ? 'FAILED' : 'IN_PROGRESS')
   };
 
-  const existingIdx = current.findIndex((s) => s.credentialId === enrichedSubmission.credentialId);
+  const existingIdx = current.findIndex((s) => s.credentialId === deterministicId || s.id === deterministicId);
   let updated;
   if (existingIdx >= 0) {
     current[existingIdx] = enrichedSubmission;
@@ -414,12 +425,12 @@ export const saveExamSubmission = async (submission) => {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
-  // Sync to Supabase tables
+  // Sync to Supabase tables with idempotency protection
   try {
     if (supabase) {
       const basePayload = {
-        id: enrichedSubmission.credentialId || enrichedSubmission.id || 'cert_' + Date.now(),
-        credential_id: enrichedSubmission.credentialId || enrichedSubmission.id || 'cert_' + Date.now(),
+        id: deterministicId,
+        credential_id: deterministicId,
         candidate_name: enrichedSubmission.candidateName || 'Candidate',
         candidate_email: enrichedSubmission.candidateEmail || '',
         candidate_designation: enrichedSubmission.candidateDesignation || 'Government Officer',
@@ -450,9 +461,15 @@ export const saveExamSubmission = async (submission) => {
       const isOfficerProg = String(enrichedSubmission.examId || enrichedSubmission.masterclassId || '').startsWith('prog-');
 
       if (isOfficerProg) {
-        await supabase.from('officer_program_exam_submissions').upsert([offPayload]);
+        await withAuthRetry(
+          () => supabase.from('officer_program_exam_submissions').upsert([offPayload], { onConflict: 'id' }),
+          { isWrite: true, idempotent: true }
+        );
       } else {
-        await supabase.from('masterclass_exam_submissions').upsert([mcPayload]);
+        await withAuthRetry(
+          () => supabase.from('masterclass_exam_submissions').upsert([mcPayload], { onConflict: 'id' }),
+          { isWrite: true, idempotent: true }
+        );
       }
     }
   } catch (err) {

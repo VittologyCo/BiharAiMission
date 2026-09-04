@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { supabase } from './supabase.js';
+import { withAuthRetry } from './withAuthRetry.js';
 
 export const getTagColorClass = (tagLabel = '') => {
   const label = tagLabel.toUpperCase().trim();
@@ -416,7 +417,7 @@ export const getProgramsFromStorage = () => {
     const raw = localStorage.getItem(STORAGE_PROGRAMS);
     if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn('LocalStorage error reading programs:', e);
@@ -439,48 +440,50 @@ export const fetchProgramsFromSupabase = async () => {
         error = officerRes.error;
       }
 
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const formatted = data.map(p => {
-          const defaultMatch = defaultPrograms.find(dp => dp.id === p.id);
-          const customMods = (Array.isArray(p.custom_modules) && p.custom_modules.length > 0)
-            ? p.custom_modules
-            : (defaultMatch ? defaultMatch.customModules : []);
-          return {
-            id: p.id,
-            type: p.type || 'program',
-            tags: p.tags && p.tags.length > 0 ? p.tags : (defaultMatch ? defaultMatch.tags : []),
-            tagLabel: p.tag_label || (defaultMatch ? defaultMatch.tagLabel : 'WORKSHOP'),
-            title: p.title || p.course_name || (defaultMatch ? defaultMatch.title : ''),
-            titleHi: p.title_hi || p.title || p.course_name || (defaultMatch ? defaultMatch.titleHi : ''),
-            desc: p.desc_text || p.description || (defaultMatch ? defaultMatch.desc : ''),
-            descHi: p.desc_hi || p.desc_text || p.description || (defaultMatch ? defaultMatch.descHi : ''),
-            footer: p.footer && p.footer.length > 0 ? p.footer : (defaultMatch ? defaultMatch.footer : ['Duration: 1-Day Workshop', 'For: Bihar Officers & Staff', 'Mode: In-Person / Online']),
-            bullets: p.bullets || [],
-            bulletsHi: p.bullets_hi || [],
-            isComingSoon: p.is_coming_soon === true,
-            curtainBadge: p.curtain_badge || 'COMING SOON',
-            curtainBadgeHi: p.curtain_badge_hi || 'जल्द आ रहा है',
-            curtainSub: p.curtain_sub || 'Special workshop for Bihar Govt Officers.',
-            curtainSubHi: p.curtain_sub_hi || 'बिहार सरकार के अधिकारियों के लिए विशेष कार्यशाला।',
-            curtainTag: p.curtain_tag || 'Registration Opens Soon',
-            curtainTagHi: p.curtain_tag_hi || 'पंजीकरण जल्द शुरू',
-            overviewText: p.overview_text || (defaultMatch ? defaultMatch.overviewText : ''),
-            modulesCountText: p.modules_count_text || (defaultMatch ? defaultMatch.modulesCountText : '05 Comprehensive Modules'),
-            durationText: p.duration_text || (defaultMatch ? defaultMatch.durationText : '6 Hrs Self-Paced Learning'),
-            accessText: p.access_text || (defaultMatch ? defaultMatch.accessText : '100% Free Forever Access'),
-            mediumText: p.medium_text || (defaultMatch ? defaultMatch.mediumText : 'EN + हिं Bilingual Medium'),
-            customModules: customMods
-          };
-        });
-        saveProgramsToStorage(formatted);
-        return formatted;
-      } else if (!error && Array.isArray(data) && data.length === 0) {
-        // If DB table is empty, auto-seed default programs to Supabase!
-        for (const prog of defaultPrograms) {
-          await saveProgramToSupabase(prog);
+      if (!error && Array.isArray(data)) {
+        // Filter specifically for programs (exclude courses stored in same table)
+        const progData = data.filter((p) => p.type === 'program' || (!p.type && (String(p.id).startsWith('prog') || !String(p.id).startsWith('course'))));
+
+        if (progData.length > 0) {
+          const formatted = progData.map(p => {
+            const defaultMatch = defaultPrograms.find(dp => dp.id === p.id);
+            const customMods = (Array.isArray(p.custom_modules) && p.custom_modules.length > 0)
+              ? p.custom_modules
+              : (defaultMatch ? defaultMatch.customModules : []);
+            return {
+              id: p.id,
+              type: 'program',
+              tags: p.tags && p.tags.length > 0 ? p.tags : (defaultMatch ? defaultMatch.tags : []),
+              tagLabel: p.tag_label || (defaultMatch ? defaultMatch.tagLabel : 'WORKSHOP'),
+              title: p.title || p.course_name || (defaultMatch ? defaultMatch.title : ''),
+              titleHi: p.title_hi || p.title || p.course_name || (defaultMatch ? defaultMatch.titleHi : ''),
+              desc: p.desc_text || p.description || (defaultMatch ? defaultMatch.desc : ''),
+              descHi: p.desc_hi || p.desc_text || p.description || (defaultMatch ? defaultMatch.descHi : ''),
+              footer: p.footer && p.footer.length > 0 ? p.footer : (defaultMatch ? defaultMatch.footer : ['Duration: 1-Day Workshop', 'For: Bihar Officers & Staff', 'Mode: In-Person / Online']),
+              bullets: p.bullets || [],
+              bulletsHi: p.bullets_hi || [],
+              isComingSoon: p.is_coming_soon === true,
+              curtainBadge: p.curtain_badge || 'COMING SOON',
+              curtainBadgeHi: p.curtain_badge_hi || 'जल्द आ रहा है',
+              curtainSub: p.curtain_sub || 'Special workshop for Bihar Govt Officers.',
+              curtainSubHi: p.curtain_sub_hi || 'बिहार सरकार के अधिकारियों के लिए विशेष कार्यशाला।',
+              curtainTag: p.curtain_tag || 'Registration Opens Soon',
+              curtainTagHi: p.curtain_tag_hi || 'पंजीकरण जल्द शुरू',
+              overviewText: p.overview_text || (defaultMatch ? defaultMatch.overviewText : ''),
+              modulesCountText: p.modules_count_text || (defaultMatch ? defaultMatch.modulesCountText : '05 Comprehensive Modules'),
+              durationText: p.duration_text || (defaultMatch ? defaultMatch.durationText : '6 Hrs Self-Paced Learning'),
+              accessText: p.access_text || (defaultMatch ? defaultMatch.accessText : '100% Free Forever Access'),
+              mediumText: p.medium_text || (defaultMatch ? defaultMatch.mediumText : 'EN + हिं Bilingual Medium'),
+              customModules: customMods
+            };
+          });
+          saveProgramsToStorage(formatted);
+          return formatted;
+        } else if (data.length === 0 || progData.length === 0) {
+          // If programs were deleted by admin, preserve the empty state — do NOT resurrect defaults!
+          saveProgramsToStorage([]);
+          return [];
         }
-        saveProgramsToStorage(defaultPrograms);
-        return defaultPrograms;
       }
     }
   } catch (err) {
@@ -500,15 +503,15 @@ export const saveProgramsToStorage = (programs) => {
 
 export const saveProgramToSupabase = async (progItem) => {
   try {
-    if (supabase) {
+    if (supabase && progItem) {
       const payload = {
-        id: progItem.id,
+        id: String(progItem.id),
         title: progItem.title,
         course_name: progItem.title,
         title_hi: progItem.titleHi || progItem.title,
         desc_text: progItem.desc || progItem.description || '',
         description: progItem.desc || progItem.description || '',
-        type: progItem.type || 'program',
+        type: 'program',
         tag_label: progItem.tagLabel || 'WORKSHOP',
         tags: progItem.tags || [],
         footer: progItem.footer || [],
@@ -529,10 +532,18 @@ export const saveProgramToSupabase = async (progItem) => {
         custom_modules: progItem.customModules || []
       };
 
-      await supabase.from('officer_programs').upsert(payload);
+      const res1 = await supabase.from('officer_programs').upsert(payload, { onConflict: 'id' });
+
+      if (res1.error) {
+        console.warn('officer_programs upsert error:', res1.error);
+        return { success: false, error: res1.error };
+      }
+      return { success: true };
     }
+    return { success: true };
   } catch (err) {
     console.warn('Supabase save program error:', err);
+    return { success: false, error: err };
   }
 };
 
@@ -543,7 +554,7 @@ export const saveProgramModulesToSupabase = async (programId, modules) => {
       await supabase.from('officer_programs').update(payload).eq('id', programId);
     }
     const localProgs = getProgramsFromStorage();
-    const idx = localProgs.findIndex((p) => p.id === programId);
+    const idx = localProgs.findIndex((p) => String(p.id) === String(programId));
     if (idx !== -1) {
       localProgs[idx].customModules = modules;
       localProgs[idx].custom_modules = modules;
@@ -560,11 +571,36 @@ export const saveProgramModulesToSupabase = async (programId, modules) => {
 
 export const deleteProgramFromSupabase = async (id) => {
   try {
-    if (supabase) {
-      await supabase.from('officer_programs').delete().eq('id', id);
+    if (supabase && id) {
+      const cleanId = String(id).trim();
+
+      // 1. Try dedicated secure RPC if available
+      try {
+        await supabase.rpc('delete_officer_program_by_admin', { program_id_input: cleanId });
+      } catch (rpcErr) {}
+
+      // 2. Direct parallel deletes across officer_programs and officer_program_questions
+      const [res1, res2] = await Promise.allSettled([
+        supabase.from('officer_programs').delete().eq('id', cleanId),
+        supabase.from('officer_program_questions').delete().eq('program_id', cleanId)
+      ]);
+
+      try {
+        localStorage.removeItem(`bihar_ai_questions_${cleanId}`);
+      } catch (e) {}
+
+      const err1 = res1.status === 'fulfilled' ? res1.value?.error : res1.reason;
+      const err2 = res2.status === 'fulfilled' ? res2.value?.error : res2.reason;
+      if (err1 && err2) {
+        console.warn('Delete program error:', err1 || err2);
+        return { success: false, error: err1 || err2 };
+      }
+      return { success: true };
     }
+    return { success: true };
   } catch (err) {
     console.warn('Supabase delete program error:', err);
+    return { success: false, error: err };
   }
 };
 
@@ -575,31 +611,37 @@ export const fetchCoursesFromSupabase = async () => {
         .from('officer_programs')
         .select('*')
         .order('created_at', { ascending: true });
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const formatted = data.map(c => ({
-          id: c.id,
-          type: 'course',
-          title: c.title || c.course_name,
-          titleHi: c.title_hi || c.title,
-          category: c.category || c.tag_label || 'Foundational',
-          duration: c.duration || c.course_duration || '6 Hours',
-          level: c.level || 'Beginner',
-          badge: c.badge || '',
-          modulesCount: c.modules_count || 6,
-          description: c.description || c.desc_text || '',
-          descHi: c.desc_hi || c.description || '',
-          bullets: c.bullets || [],
-          bulletsHi: c.bullets_hi || [],
-          overviewText: c.overview_text || '',
-          modulesCountText: c.modules_count_text || '06 Comprehensive Modules',
-          durationText: c.duration_text || '6 Hrs Self-Paced Learning',
-          accessText: c.access_text || '100% Free Forever Access',
-          mediumText: c.medium_text || 'EN + हिं Bilingual Medium',
-          customModules: c.custom_modules || [],
-          curriculum: c.curriculum || []
-        }));
-        saveCoursesToStorage(formatted);
-        return formatted;
+      if (!error && Array.isArray(data)) {
+        const courseData = data.filter((c) => c.type === 'course' || (!c.type && String(c.id).startsWith('course')));
+        if (courseData.length > 0) {
+          const formatted = courseData.map(c => ({
+            id: c.id,
+            type: 'course',
+            title: c.title || c.course_name,
+            titleHi: c.title_hi || c.title,
+            category: c.category || c.tag_label || 'Foundational',
+            duration: c.duration || c.course_duration || '6 Hours',
+            level: c.level || 'Beginner',
+            badge: c.badge || '',
+            modulesCount: c.modules_count || 6,
+            description: c.description || c.desc_text || '',
+            descHi: c.desc_hi || c.description || '',
+            bullets: c.bullets || [],
+            bulletsHi: c.bullets_hi || [],
+            overviewText: c.overview_text || '',
+            modulesCountText: c.modules_count_text || '06 Comprehensive Modules',
+            durationText: c.duration_text || '6 Hrs Self-Paced Learning',
+            accessText: c.access_text || '100% Free Forever Access',
+            mediumText: c.medium_text || 'EN + हिं Bilingual Medium',
+            customModules: c.custom_modules || [],
+            curriculum: c.curriculum || []
+          }));
+          saveCoursesToStorage(formatted);
+          return formatted;
+        } else if (data.length === 0 || courseData.length === 0) {
+          saveCoursesToStorage([]);
+          return [];
+        }
       }
     }
   } catch (err) {
@@ -610,33 +652,63 @@ export const fetchCoursesFromSupabase = async () => {
 
 export const saveCourseToSupabase = async (courseItem) => {
   try {
-    if (supabase) {
-      await supabase.from('officer_programs').upsert({
-        id: courseItem.id,
+    if (supabase && courseItem) {
+      const res = await supabase.from('officer_programs').upsert({
+        id: String(courseItem.id),
         title: courseItem.title,
         course_name: courseItem.title,
         desc_text: courseItem.description || courseItem.desc || '',
         description: courseItem.description || courseItem.desc || '',
         duration: courseItem.duration || '6 Hours',
+        type: 'course',
         tag_label: courseItem.category || 'FOUNDATIONAL',
         tags: courseItem.tags || [],
         bullets: courseItem.bullets || [],
         bullets_hi: courseItem.bulletsHi || [],
         custom_modules: courseItem.customModules || courseItem.curriculum || []
-      });
+      }, { onConflict: 'id' });
+      if (res.error) return { success: false, error: res.error };
+      return { success: true };
     }
+    return { success: true };
   } catch (err) {
     console.warn('Supabase save course error:', err);
+    return { success: false, error: err };
   }
 };
 
 export const deleteCourseFromSupabase = async (id) => {
   try {
-    if (supabase) {
-      await supabase.from('officer_programs').delete().eq('id', id);
+    if (supabase && id) {
+      const cleanId = String(id).trim();
+
+      // 1. Try dedicated secure RPC if available
+      try {
+        await supabase.rpc('delete_officer_program_by_admin', { program_id_input: cleanId });
+      } catch (rpcErr) {}
+
+      // 2. Direct parallel deletes across officer_programs and officer_program_questions
+      const [res1, res2] = await Promise.allSettled([
+        supabase.from('officer_programs').delete().eq('id', cleanId),
+        supabase.from('officer_program_questions').delete().eq('program_id', cleanId)
+      ]);
+
+      try {
+        localStorage.removeItem(`bihar_ai_questions_${cleanId}`);
+      } catch (e) {}
+
+      const err1 = res1.status === 'fulfilled' ? res1.value?.error : res1.reason;
+      const err2 = res2.status === 'fulfilled' ? res2.value?.error : res2.reason;
+      if (err1 && err2) {
+        console.warn('Delete course error:', err1 || err2);
+        return { success: false, error: err1 || err2 };
+      }
+      return { success: true };
     }
+    return { success: true };
   } catch (err) {
     console.warn('Supabase delete course error:', err);
+    return { success: false, error: err };
   }
 };
 
@@ -827,7 +899,6 @@ export const saveLiveClassToSupabase = async (liveItem) => {
       created_at: liveItem.createdAt || new Date().toISOString()
     };
 
-    let saveSuccess = false;
     let lastError = null;
 
     const upsertToTable = async (tableName) => {
@@ -873,12 +944,35 @@ export const saveLiveClassToSupabase = async (liveItem) => {
 export const deleteLiveClassFromSupabase = async (id) => {
   try {
     if (supabase && id) {
-      await supabase.from('masterclasses').delete().eq('id', String(id));
-      await supabase.from('masterclass_questions').delete().eq('class_id', String(id));
-      try { localStorage.removeItem(`bihar_ai_questions_${id}`); } catch (e) {}
+      const cleanId = String(id).trim();
+
+      // 1. Try dedicated secure RPC if available
+      try {
+        await supabase.rpc('delete_masterclass_by_admin', { class_id_input: cleanId });
+      } catch (rpcErr) {}
+
+      // 2. Direct parallel deletes across masterclasses and masterclass_questions
+      const [res1, res2] = await Promise.allSettled([
+        supabase.from('masterclasses').delete().eq('id', cleanId),
+        supabase.from('masterclass_questions').delete().eq('class_id', cleanId)
+      ]);
+
+      try {
+        localStorage.removeItem(`bihar_ai_questions_${cleanId}`);
+      } catch (e) {}
+
+      const err1 = res1.status === 'fulfilled' ? res1.value?.error : res1.reason;
+      const err2 = res2.status === 'fulfilled' ? res2.value?.error : res2.reason;
+      if (err1 && err2) {
+        console.warn('Delete live class error:', err1 || err2);
+        return { success: false, error: err1 || err2 };
+      }
+      return { success: true };
     }
+    return { success: true };
   } catch (err) {
     console.warn('Supabase delete live class error:', err);
+    return { success: false, error: err };
   }
 };
 
@@ -1612,10 +1706,12 @@ export const fetchUserMasterclassEnrollmentsFromSupabase = async (userEmailOrId)
   const cleanKey = String(userEmailOrId).toLowerCase().trim();
   try {
     if (supabase) {
-      const { data, error } = await supabase
-        .from('masterclass_enrollments')
-        .select('*')
-        .or(`user_email.eq.${cleanKey},user_id.eq.${cleanKey}`);
+      const { data, error } = await withAuthRetry(() =>
+        supabase
+          .from('masterclass_enrollments')
+          .select('*')
+          .or(`user_email.eq.${cleanKey},user_id.eq.${cleanKey}`)
+      ).catch(() => ({ data: null, error: null }));
 
       if (!error && data && data.length > 0) {
         data.forEach((enr) => {
@@ -1665,8 +1761,14 @@ export const saveOfficerProgramEnrollmentToSupabase = async (user, item) => {
     };
 
     try {
-      await supabase.from('officer_program_enrollments').upsert([payload], { onConflict: 'id' });
-      await supabase.from('masterclass_enrollments').upsert([{ ...payload, class_id: progId, class_title: progTitle }], { onConflict: 'id' });
+      await withAuthRetry(
+        () => supabase.from('officer_program_enrollments').upsert([payload], { onConflict: 'id' }),
+        { isWrite: true, idempotent: true }
+      );
+      await withAuthRetry(
+        () => supabase.from('masterclass_enrollments').upsert([{ ...payload, class_id: progId, class_title: progTitle }], { onConflict: 'id' }),
+        { isWrite: true, idempotent: true }
+      );
     } catch (e) {
       console.warn('Officer program enrollment save exception:', e);
     }
@@ -1679,10 +1781,12 @@ export const fetchUserOfficerProgramEnrollmentsFromSupabase = async (userEmailOr
   const cleanKey = String(userEmailOrId).toLowerCase().trim();
   try {
     if (supabase) {
-      const { data, error } = await supabase
-        .from('officer_program_enrollments')
-        .select('*')
-        .or(`user_email.eq.${cleanKey},user_id.eq.${cleanKey}`);
+      const { data, error } = await withAuthRetry(() =>
+        supabase
+          .from('officer_program_enrollments')
+          .select('*')
+          .or(`user_email.eq.${cleanKey},user_id.eq.${cleanKey}`)
+      ).catch(() => ({ data: null, error: null }));
 
       if (!error && data && data.length > 0) {
         data.forEach((enr) => {
@@ -1745,17 +1849,24 @@ export const setUserModuleComplete = async (userEmailOrId, courseId, moduleIndex
   try {
     if (supabase) {
       const progressId = `prog_${cleanUser}_${cleanCourse}`.replace(/[^a-z0-9_]/g, '_');
-      await supabase.from('user_course_progress').upsert([
-        {
-          id: progressId,
-          user_email: cleanUser,
-          course_id: cleanCourse,
-          completed_modules: completedModules,
-          progress_percent: progressPercent,
-          is_completed: isCompleted,
-          updated_at: data.updatedAt
-        }
-      ], { onConflict: 'id', ignoreDuplicates: false });
+      await withAuthRetry(
+        () =>
+          supabase.from('user_course_progress').upsert(
+            [
+              {
+                id: progressId,
+                user_email: cleanUser,
+                course_id: cleanCourse,
+                completed_modules: completedModules,
+                progress_percent: progressPercent,
+                is_completed: isCompleted,
+                updated_at: data.updatedAt,
+              },
+            ],
+            { onConflict: 'id', ignoreDuplicates: false }
+          ),
+        { isWrite: true, idempotent: true }
+      );
     }
   } catch (e) {
     // Non-fatal: local progress is already saved

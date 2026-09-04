@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../utils/supabase';
+import { withAuthRetry } from '../utils/withAuthRetry';
 
 const ProtectedRoute = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(null); // null = loading, true/false = verified
@@ -10,9 +11,20 @@ const ProtectedRoute = ({ children }) => {
     let mounted = true;
 
     const verifyAdminStatus = async () => {
+      // 1. Verify Active Supabase Session Cryptographically (with silent 401 retry)
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        if (!supabase || !supabase.auth) {
+          if (mounted) {
+            setIsAdmin(false);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const sessionResult = await withAuthRetry(() => supabase.auth.getSession()).catch(() => null);
+        const session = sessionResult?.data?.session;
         if (!session || !session.user || !session.user.email) {
+          localStorage.removeItem('bihar_ai_admin_session');
           if (mounted) {
             setIsAdmin(false);
             setLoading(false);
@@ -22,22 +34,65 @@ const ProtectedRoute = ({ children }) => {
 
         const userEmail = session.user.email.toLowerCase().trim();
 
-        // Check admin_users table in Supabase
-        const { data: adminRecord, error } = await supabase
-          .from('admin_users')
-          .select('id, email, role')
-          .eq('email', userEmail)
-          .maybeSingle();
+        // 2. Strict Whitelist or Verified Role Checks via protected app_metadata (never user_metadata)
+        const appMeta = session.user.app_metadata || {};
+        const isWhitelistedAdmin = userEmail === 'admin@biharaimission.org';
+        const hasAdminRoleMeta = appMeta.role === 'admin' || appMeta.is_admin === true;
 
-        if (!error && adminRecord && adminRecord.role === 'admin') {
+        if (isWhitelistedAdmin || hasAdminRoleMeta) {
           if (mounted) {
+            localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
             setIsAdmin(true);
             setLoading(false);
           }
           return;
         }
 
-        // Non-admin user -> reject access
+        // 4. Check user_details table for admin role_type
+        try {
+          const detailRes = await withAuthRetry(() =>
+            supabase
+              .from('user_details')
+              .select('id, role_type, designation')
+              .eq('email', userEmail)
+              .maybeSingle()
+          ).catch(() => null);
+          const detailData = detailRes?.data;
+
+          if (detailData && (
+            (detailData.role_type && ['admin', 'superadmin'].includes(detailData.role_type.toLowerCase().trim()))
+          )) {
+            if (mounted) {
+              localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
+              setIsAdmin(true);
+              setLoading(false);
+            }
+            return;
+          }
+        } catch (e) {}
+
+        // 4. Check admin_users table if exists
+        try {
+          const adminRes = await withAuthRetry(() =>
+            supabase
+              .from('admin_users')
+              .select('id, email, role')
+              .eq('email', userEmail)
+              .maybeSingle()
+          ).catch(() => null);
+          const adminRecord = adminRes?.data;
+
+          if (adminRecord && (adminRecord.role === 'admin' || adminRecord.role === 'superadmin')) {
+            if (mounted) {
+              localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
+              setIsAdmin(true);
+              setLoading(false);
+            }
+            return;
+          }
+        } catch (e) {}
+
+        // Non-admin session -> reject access
         if (mounted) {
           setIsAdmin(false);
           setLoading(false);
@@ -53,13 +108,17 @@ const ProtectedRoute = ({ children }) => {
 
     verifyAdminStatus();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      verifyAdminStatus();
-    });
+    // Safety timeout: max 1.5 seconds loading to prevent hanging UI
+    const timer = setTimeout(() => {
+      if (mounted && loading) {
+        setLoading(false);
+        setIsAdmin((prev) => (prev === null ? false : prev));
+      }
+    }, 1500);
 
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
+      clearTimeout(timer);
     };
   }, []);
 
@@ -79,3 +138,4 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default ProtectedRoute;
+

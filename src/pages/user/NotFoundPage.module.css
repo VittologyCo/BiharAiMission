@@ -1,0 +1,208 @@
+.pageWrapper {
+  min-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif);
+}
+
+.bgOrb1 {
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(193, 85, 44, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(50px);
+}
+
+.bgOrb2 {
+  position: absolute;
+  bottom: 15%;
+  right: 15%;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(217, 155, 38, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(60px);
+}
+
+.card {
+  position: relative;
+  background: rgba(24, 21, 18, 0.94);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(226, 215, 195, 0.15);
+  border-radius: 28px;
+  max-width: 640px;
+  width: 100%;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 28px 70px -20px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  z-index: 2;
+}
+
+.accentBar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #C1552C, #D99B26, transparent);
+  border-radius: 2px;
+}
+
+.errorCode {
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: clamp(4.5rem, 10vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #FAF7F2 30%, #E28B5C 70%, #C1552C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.04em;
+  text-shadow: 0 12px 36px rgba(193, 85, 44, 0.2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(193, 85, 44, 0.12);
+  border: 1px solid rgba(193, 85, 44, 0.3);
+  color: #E28B5C;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 700;
+  color: #FAF7F2;
+  margin: 0 0 14px 0;
+  line-height: 1.25;
+}
+
+.subtitle {
+  font-size: 14.5px;
+  color: #C8BFB3;
+  line-height: 1.65;
+  margin: 0 auto 28px auto;
+  max-width: 480px;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, #C1552C 0%, #A0401B 100%);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(193, 85, 44, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(193, 85, 44, 0.45);
+}
+
+.secondaryBtn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FAF7F2;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(226, 139, 92, 0.35);
+  color: #E28B5C;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 24px 0 20px 0;
+}
+
+.quickLinksTitle {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #8A7E72;
+  margin-bottom: 12px;
+}
+
+.quickLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+}
+
+.quickLink {
+  font-size: 13px;
+  color: #A89F91;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.quickLink:hover {
+  color: #E28B5C;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 36px 20px;
+    border-radius: 22px;
+  }
+  
+  .buttonGroup {
+    flex-direction: column;
+  }
+  
+  .primaryBtn, .secondaryBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

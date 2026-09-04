@@ -8,6 +8,61 @@
   font-size: 13.5px;
 }
 
+/* Embedded Classwork margin reset */
+.profileClassworkWrapper [class*="classworkContainer"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Bento Stat Cards Hover Physics */
+.bentoStatCard {
+  position: relative;
+  overflow: hidden;
+}
+
+.bentoStatCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  transition: 0.5s;
+  pointer-events: none;
+}
+
+.bentoStatCard:hover::before {
+  left: 100%;
+}
+
+.bentoStatCard:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(226, 139, 92, 0.55) !important;
+  box-shadow: 0 20px 42px -10px rgba(193, 85, 44, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.bentoStatCard:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* Hero Action Buttons Hover */
+.heroActionBtn:hover {
+  background: rgba(226, 139, 92, 0.22) !important;
+  border-color: rgba(226, 139, 92, 0.55) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.25) !important;
+}
+
+.heroLogoutBtn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+}
+
 /* Tab navigation bar */
 .profileTabs {
   overflow-x: auto;
@@ -16,6 +71,16 @@
 }
 .profileTabs::-webkit-scrollbar {
   display: none;
+}
+
+.profileTabs button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+}
+
+.profileTabs button {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* ===================== TABLET (≤1024px) ===================== */
@@ -80,18 +145,19 @@
 
   /* Tab bar — horizontal scroll */
   .profileTabs {
-    gap: 4px !important;
+    gap: 6px !important;
     flex-wrap: nowrap !important;
-    padding-bottom: 6px !important;
+    padding: 6px !important;
     margin-bottom: 20px !important;
+    overflow-x: auto !important;
   }
   .profileTabs button {
-    padding: 10px 14px !important;
-    font-size: 12.5px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
     min-height: auto !important;
-    border-radius: 0 !important;
+    border-radius: 10px !important;
   }
 
   /* Masterclass grid */

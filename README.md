@@ -1,126 +1,155 @@
 # 🌟 Bihar AI Mission (बिहार AI मिशन)
 
-> **Official Civic AI & Digital Literacy Initiative for Bihar**  
+> **Official Civic AI & Digital Literacy Platform for Bihar**  
 > Empowering citizens, government officers, students, researchers, and startups with cutting-edge AI literacy, practical governance tools, structured prompt libraries, and verified certifications.
 
-🌐 **Live Website:** [biharaimission.org](https://biharaimission.org)
+🌐 **Production Website:** [https://biharaimission.org](https://biharaimission.org)  
+📦 **Production Repository:** [batohitravel-cyber/bihar-ai-mission](https://github.com/batohitravel-cyber/bihar-ai-mission)
 
 ---
 
-## 🏛️ About the Mission
+## 🏛️ Platform Overview
 
-**Bihar AI Mission** is a civic-tech initiative committed to accelerating artificial intelligence adoption across Bihar’s governance, academic, and startup ecosystems. The platform provides structured training modules, hands-on administrative AI exercises, official certificate verification, and AI workflow tools tailored for public administration.
-
----
-
-## 🚀 Key Features
-
-* **⚡ AI Practical Classwork & Tool Hub:** 18 hands-on governance exercises covering ChatGPT, Copilot, Gemini, Perplexity, Canva, Zapier, ElevenLabs, and official prompt libraries.
-* **📜 Certificate Verification System:** QR-code verifiable credential issuance and public verification registry with cryptographic verification.
-* **🌐 Bilingual Support (English & Hindi):** Native Hindi and English localized content for inclusive state-wide accessibility.
-* **🛡️ Enterprise Admin Dashboard:** Comprehensive admin console for candidate registrations, attendance logs, exam evaluation, live class management, and automated certificate generation.
-* **🎨 Modern Spatial UI & Performance:** Glassmorphism, smooth kinetic scrolling (Lenis), GSAP micro-animations, interactive 3D elements, and responsive layout across all mobile and desktop devices.
-* **🔒 Locked Feature Protection:** Clean coming-soon curtains for modules undergoing curricular updates.
+**Bihar AI Mission** is a production-grade civic-tech platform providing:
+1. **Interactive AI Governance Classwork:** 18 hands-on administrative workflows covering ChatGPT, Copilot, Gemini, Perplexity, Canva, Zapier, ElevenLabs, and official prompt libraries.
+2. **Student & Candidate Portal:** Real-time task submission, course tracking, masterclasses, automated certificate generation, and exam assessments.
+3. **Verified Certificate System:** Cryptographically verifiable QR-code certificates with public registry lookup.
+4. **Enterprise Admin Console:** Real-time synchronized dashboard with live attendance, visitor analytics, student management, blog publishing, course creation, and data export.
+5. **Real-time Cloud Database:** Supabase PostgreSQL with strict Row Level Security (RLS), real-time subscriptions, and audit logs.
+6. **Edge Serverless Backend:** Cloudflare Worker (`worker.js`) handling Resend transactional emails, Google Drive service-account uploads, Cloudflare R2 storage, and diagnostic endpoints.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Architecture
 
-| Layer | Technology |
+| Layer | Technology & Provider |
 | :--- | :--- |
-| **Frontend Framework** | React 19 (SPA), React Router v7 |
-| **Styling & Design** | Modern Vanilla CSS, Tailwind CSS, Custom Glassmorphism Theme |
-| **Animations & 3D** | GSAP, Framer Motion, Three.js / React Three Fiber, Spline, Lenis Scroll |
-| **Backend & Database** | Supabase (PostgreSQL, Row Level Security, Realtime API) |
-| **Email & Notifications** | Resend API |
-| **Hosting & CDN** | Hostinger (Apache/LiteSpeed), Cloudflare (DNS, Global CDN, SSL) |
+| **Frontend SPA** | React 19, React Router v7, Vite/Webpack (Optimized Bundle) |
+| **Styling & Theme** | Vanilla CSS, OriginKit Luxury Glassmorphism, Responsive CSS Grid |
+| **Kinetic Motion** | GSAP, Framer Motion, Lenis Smooth Scroll, Spline 3D |
+| **Database & Realtime** | Supabase (PostgreSQL with RLS & Realtime Replication) |
+| **Transactional Email** | Resend API (`onboarding@biharaimission.org`) via Cloudflare Worker |
+| **File Storage** | Google Drive API (Service Account) / Supabase Storage / Cloudflare R2 |
+| **Edge Hosting & DNS** | Cloudflare Workers + Static Assets, Global CDN, SSL |
 
 ---
 
-## 📁 Project Structure
+## 🚀 Going Live at biharaimission.org
 
-```text
-Bihar_Ai_Mission/
-├── public/                     # Static assets, icons, logos, manifest
-│   ├── .htaccess               # Apache/LiteSpeed rewrite & SPA routing
-│   ├── index.html              # HTML5 entry template
-│   └── sitemap.xml             # Search engine sitemap
-├── src/
-│   ├── components/             # Reusable UI components
-│   │   ├── AIClasswork/        # 18 Practical assignments & doc export
-│   │   ├── AICommandsHub/      # Slash commands & prompt shortcuts
-│   │   ├── AIWorkTool/         # Governance AI tools directory
-│   │   ├── AuthModal/          # Authentication & Google Login modal
-│   │   ├── Banner/             # Top announcement bar
-│   │   ├── LockedCurtain/      # Locked module curtain screen
-│   │   ├── Navbar/             # Main responsive navigation
-│   │   └── RegistrationModal/  # Multi-step candidate registration
-│   ├── context/                # Global contexts (Toast, Theme, etc.)
-│   ├── data/                   # Assignment data, question banks
-│   ├── hooks/                  # Custom React hooks (useAuth, useLanguage)
-│   ├── pages/
-│   │   ├── admin/              # Admin Login & Admin Dashboard
-│   │   └── user/               # Home, Tools, Policy, Profile, etc.
-│   ├── theme/                  # Luxury civic design system & palette
-│   ├── utils/                  # Supabase client, exam storage, SEO helpers
-│   ├── App.js                  # Main Application router & layout
-│   └── index.js                # React root entry
-├── package.json
-└── README.md
-```
+### Architecture: Cloudflare Worker + Static Assets
+
+The production deployment at `biharaimission.org` is served by Cloudflare Workers with Static Assets (`wrangler.jsonc` + `worker.js`), ensuring sub-millisecond edge delivery worldwide with integrated serverless endpoints:
+
+* `GET  /` & client routes ➔ React SPA with security headers & caching
+* `POST /api/send-email` ➔ Serverless Resend API email proxy
+* `POST /api/upload-drive` ➔ Google Drive Service Account upload
+* `POST /api/upload` ➔ Universal file upload endpoint
+* `GET  /api/health` ➔ Real-time infrastructure health check
+* `GET  /api/config` ➔ Public environment configuration
 
 ---
 
-## ⚙️ Getting Started (Local Development)
+### Step 1: Install & Build
 
-### 1. Prerequisites
-* [Node.js](https://nodejs.org/) (v18 or higher recommended)
-* `npm` or `yarn`
-
-### 2. Installation
-Clone the repository and install dependencies:
 ```bash
+# Clone the production repository
 git clone https://github.com/batohitravel-cyber/bihar-ai-mission.git
 cd bihar-ai-mission
+
+# Install dependencies
 npm install
+
+# Build optimized production bundle
+npm run build
 ```
 
-### 3. Environment Configuration
-Create a `.env` file in the root directory:
-```env
-REACT_APP_SUPABASE_URL=your_supabase_project_url
-REACT_APP_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
-REACT_APP_RESEND_API_KEY=your_resend_api_key
-REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
-```
-
-### 4. Run Development Server
-```bash
-npm start
-```
-Open [http://localhost:3000](http://localhost:3000) to view the application in your browser.
+The build compiles into the `build/` folder.
 
 ---
 
-## 🏗️ Production Build & Deployment
+### Step 2: Environment Configuration
 
-### Build for Production
-```bash
-npm run build
+Create or verify `.env` in the root directory:
+
+```env
+# Supabase Database & Auth (Real-time synced)
+REACT_APP_SUPABASE_URL=https://xvmznsqgqlrjcwtyfnwc.supabase.co
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_C234meTGCdmmVHbyEFuJyg_dtW_2SrL
+
+# Resend Transactional Email API
+RESEND_API_KEY=your_resend_api_key
+REACT_APP_RESEND_FROM_EMAIL=Bihar AI Mission <onboarding@biharaimission.org>
+
+# Google OAuth
+REACT_APP_GOOGLE_CLIENT_ID=940188247500-012ore51vpirncj1bvl31dtau38s8o5u.apps.googleusercontent.com
 ```
-This compiles and bundles all React components, assets, and styles into the optimized `build/` folder.
 
-### Deployment on Hostinger & Cloudflare
-1. **Hostinger GIT Auto-Deployment:**
-   * Set repository: `https://github.com/batohitravel-cyber/bihar-ai-mission.git`
-   * Branch: `main` (or `master`)
-   * Target directory: `public_html`
-2. **Cloudflare Cache:**
-   * After each deployment, go to **Cloudflare Dashboard ➔ Caching ➔ Configuration ➔ Purge Everything**.
+---
+
+### Step 3: Cloudflare Deployment
+
+Deploy the project directly to Cloudflare using Wrangler:
+
+```bash
+# 1. Log in to Cloudflare (one-time)
+npx wrangler login
+
+# 2. Deploy Worker and static build assets
+npx wrangler deploy
+```
+
+#### Optional: Configure Cloudflare Worker Secrets (Google Drive)
+If utilizing Google Drive storage directly from the Worker:
+
+```bash
+npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
+# Enter: bihar-ai-drive-uploader@biharaimission.iam.gserviceaccount.com
+
+npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+# Paste the RSA private key from your service account
+
+npx wrangler secret put GOOGLE_DRIVE_FOLDER_ID
+# Enter: 1zCbPMQEsjri9S-3U9vd6EjAWwT7RRHlL
+```
+
+---
+
+### Step 4: Alternative Hostinger / Apache Deployment
+
+If serving via Apache / LiteSpeed (e.g. Hostinger):
+1. The `public/.htaccess` file contains rewrite rules routing all requests to `index.html` for client-side routing.
+2. Ensure `build/` files are placed inside `public_html/`.
+3. In Cloudflare DNS, set the `A` record for `biharaimission.org` to the hosting server IP and set proxy status to **Proxied (Orange Cloud)**.
+
+---
+
+## 🗄️ Database & Migration Scripts
+
+The Supabase PostgreSQL database includes comprehensive migrations in `database/migrations/`:
+
+| File | Purpose |
+| :--- | :--- |
+| `010_delete_user_rpc.sql` | Secure RPC for administrative user profile deletion |
+| `011_reset_password_rpc.sql` | Rate-limited password recovery RPC |
+| `012_harden_enrollments_exams_rls.sql` | RLS security policies for exam submissions & enrollment tables |
+| `013_complete_user_purge_rpc.sql` | Cascading user deletion and storage cleanup RPC |
+| `014_programs_masterclasses_crud_hardening.sql` | Admin authorization gates for programs & masterclasses |
+| `015_check_user_email_rpc.sql` | Candidate email lookup RPC for registration |
+
+---
+
+## 🛡️ Security & Integrity Checklist
+
+Before going live:
+- [x] **Production Bundle:** `npm run build` exits with code 0 without syntax errors.
+- [x] **CORS & Headers:** Cloudflare `worker.js` enforces strict security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`).
+- [x] **Database Security:** Supabase Row Level Security (RLS) is active on all tables.
+- [x] **Secret Isolation:** Service account keys and `.env` files are excluded from git via `.gitignore`.
+- [x] **API Health:** Verified via `/api/health` endpoint.
 
 ---
 
 ## 📄 License & Ownership
 
 © 2026 **Bihar AI Mission**. All rights reserved.  
-Official civic initiative for digital advancement and responsible AI adoption.
+Official civic initiative for state-wide AI literacy, digital advancement, and responsible AI governance.

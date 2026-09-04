@@ -3,7 +3,32 @@
   publish = "build"
   functions = "netlify/functions"
 
+# Block sensitive configuration files
+[[redirects]]
+  from = "/.env*"
+  to = "/404"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.git*"
+  to = "/404"
+  status = 404
+  force = true
+
+# SPA Fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Strict Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    X-XSS-Protection = "1; mode=block"
