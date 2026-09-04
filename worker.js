@@ -69,10 +69,24 @@ export default {
     if (url.pathname === '/api/config') {
       return new Response(
         JSON.stringify({
-          supabaseUrl: env?.REACT_APP_SUPABASE_URL || env?.SUPABASE_URL || '',
-          supabaseAnonKey: env?.REACT_APP_SUPABASE_PUBLISHABLE_KEY || env?.SUPABASE_ANON_KEY || '',
-          googleClientId: env?.REACT_APP_GOOGLE_CLIENT_ID || '',
-          resendFromEmail: env?.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@biharaimission.org>',
+          supabaseUrl:
+            env?.REACT_APP_SUPABASE_URL ||
+            env?.SUPABASE_URL ||
+            '',
+          supabaseAnonKey:
+            env?.REACT_APP_SUPABASE_PUBLISHABLE_KEY ||
+            env?.REACT_APP_SUPABASE_PUI ||
+            env?.SUPABASE_ANON_KEY ||
+            '',
+          googleClientId:
+            env?.REACT_APP_GOOGLE_CLIENT_ID ||
+            env?.REACT_APP_GOOGLE_CLIEN ||
+            '',
+          resendFromEmail:
+            env?.REACT_APP_RESEND_FROM_EMAIL ||
+            env?.REACT_APP_RESEND_FROM ||
+            env?.RESEND_FROM_EMAIL ||
+            'Bihar AI Mission <onboarding@biharaimission.org>',
           domain: 'biharaimission.org',
         }),
         {
@@ -107,7 +121,8 @@ export default {
 
           const apiKey =
             env?.RESEND_API_KEY ||
-            env?.REACT_APP_RESEND_API_KEY;
+            env?.REACT_APP_RESEND_API_KEY ||
+            env?.REACT_APP_RESEND_API_KI;
 
           if (!apiKey) {
             return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured in Cloudflare Worker environment' }), {
@@ -123,6 +138,7 @@ export default {
             from ||
             env?.RESEND_FROM_EMAIL ||
             env?.REACT_APP_RESEND_FROM_EMAIL ||
+            env?.REACT_APP_RESEND_FROM ||
             'Bihar AI Mission <onboarding@biharaimission.org>';
 
           const resendRes = await fetch('https://api.resend.com/emails', {
