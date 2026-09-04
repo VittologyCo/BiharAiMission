@@ -642,21 +642,18 @@ body:hover #cursor-spotlight { opacity: 1; }
 }
 
 .profile-name {
-  font-size: 12px !important;
+  font-size: 12.5px !important;
   font-weight: 700 !important;
   color: var(--color-ink, #181512) !important;
   line-height: 1.2 !important;
   white-space: nowrap !important;
+  max-width: 130px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .profile-email-sub {
-  font-size: 10px !important;
-  color: var(--color-ink-muted, #5E554D) !important;
-  line-height: 1.1 !important;
-  white-space: nowrap !important;
-  max-width: 140px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  display: none !important; /* Conceal email in topbar pill for a compact, clean look — visible inside dropdown card */
 }
 
 .profile-chevron {
@@ -668,11 +665,24 @@ body:hover #cursor-spotlight { opacity: 1; }
 /* ====================================================================
    LUXURY CIVIC PROFILE DROPDOWN CARD & USER PROFILE BADGE
    ==================================================================== */
+.profile-dropdown-backdrop {
+  display: none;
+}
+
+.mobile-sheet-handle {
+  display: none;
+}
+
+.dropdown-close-btn {
+  display: none;
+}
+
 .profile-dropdown-card {
   position: absolute !important;
-  top: calc(100% + 12px) !important;
+  top: calc(100% + 10px) !important;
   right: 0 !important;
-  width: 276px !important;
+  width: 280px !important;
+  max-width: calc(100vw - 24px) !important;
   background: var(--color-sand-50, #FAF7F2) !important;
   background: linear-gradient(180deg, #FAF7F2 0%, #F5EFE6 100%) !important;
   border: 1px solid var(--color-line, #E2D7C3) !important;
@@ -4961,16 +4971,116 @@ h2.sh {
   .nav-profile-badge .profile-text {
     display: none !important;
   }
+  .nav-profile-badge .profile-chevron {
+    display: none !important;
+  }
   .nav-profile-badge {
-    padding: 3px 6px !important;
-    gap: 4px !important;
-    border-radius: 20px !important;
+    padding: 3px 5px !important;
+    gap: 0 !important;
+    border-radius: 50% !important;
     flex-shrink: 0 !important;
   }
   .profile-avatar {
-    width: 26px !important;
-    height: 26px !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+  }
+
+  /* PROFILE DROPDOWN: LUXURY MOBILE BOTTOM SHEET MODAL (≤768px) */
+  .profile-dropdown-backdrop {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(15, 12, 10, 0.45) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    z-index: 10000 !important;
+    animation: fadeInDown 0.15s ease-out !important;
+  }
+
+  .profile-dropdown-card {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: none !important;
+    padding: 14px 18px max(24px, env(safe-area-inset-bottom, 20px)) 18px !important;
+    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28) !important;
+    z-index: 10001 !important;
+    animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .mobile-sheet-handle {
+    display: block !important;
+    width: 38px !important;
+    height: 4px !important;
+    border-radius: 9999px !important;
+    background: rgba(24, 21, 18, 0.2) !important;
+    margin: 0 auto 12px auto !important;
+  }
+
+  .dropdown-close-btn {
+    display: flex !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(24, 21, 18, 0.1) !important;
+    background: rgba(24, 21, 18, 0.05) !important;
+    color: var(--color-ink-muted, #5E554D) !important;
+    font-size: 13px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .dropdown-close-btn:hover {
+    background: rgba(24, 21, 18, 0.12) !important;
+    color: var(--color-charcoal-900, #181512) !important;
+  }
+
+  .dh-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 17px !important;
+  }
+
+  .dh-name {
+    font-size: 15px !important;
+  }
+
+  .dh-email {
+    font-size: 11.5px !important;
+  }
+
+  .dropdown-link-primary,
+  .dropdown-link-admin {
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .dropdown-link-title {
+    font-size: 13.5px !important;
+  }
+
+  .dropdown-link-desc {
     font-size: 10.5px !important;
+  }
+
+  .dropdown-logout-btn {
+    height: 42px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
   }
 
   /* HERO */
@@ -5070,22 +5180,9 @@ h2.sh {
 
 /* ===================== SMALL MOBILE (≤640px) ===================== */
 @media (max-width: 640px) {
-  /* NAVBAR: inherit 768px rules, only adjust dropdown position */
+  /* NAVBAR: inherit 768px rules */
   .nav-links { top: 58px; padding: 16px 14px 20px }
   .nav-links a { padding: 10px 14px; font-size: 14px }
-  .profile-dropdown-card {
-    position: fixed !important;
-    top: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    border-radius: 18px 18px 0 0 !important;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.18) !important;
-    z-index: 10001 !important;
-    animation: slideUpSheet 0.25s ease-out !important;
-  }
 
   /* SECTIONS */
   .sec { padding: 32px 14px }

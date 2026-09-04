@@ -43,16 +43,25 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or escape key
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setProfileDropdownOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setProfileDropdownOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -258,65 +267,81 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                 </button>
 
                 {profileDropdownOpen && (
-                  <div className="profile-dropdown-card">
-                    <div className="dropdown-header">
-                      <div className="dh-avatar">
-                        <UserAvatar user={user} className="dh-avatar-img" />
-                      </div>
-                      <div className="dh-details">
-                        <div className="dh-name-row">
-                          <span className="dh-name">{user.fullName}</span>
-                          <span className="dh-status-dot" title="Active Account" />
+                  <>
+                    <div 
+                      className="profile-dropdown-backdrop" 
+                      onClick={() => setProfileDropdownOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="profile-dropdown-card" role="menu">
+                      <div className="mobile-sheet-handle" aria-hidden="true" />
+                      <div className="dropdown-header">
+                        <div className="dh-avatar">
+                          <UserAvatar user={user} className="dh-avatar-img" />
                         </div>
-                        <div className="dh-email">{user.email}</div>
-                      </div>
-                    </div>
-
-                    <div className="dropdown-menu-links">
-                      <Link
-                        to="/profile"
-                        className="dropdown-link-primary"
-                        onClick={() => setProfileDropdownOpen(false)}
-                      >
-                        <div className="dropdown-link-left">
-                          <span className="dropdown-link-icon">🎓</span>
-                          <div className="dropdown-link-text">
-                            <span className="dropdown-link-title">{isHi ? 'उम्मीदवार डैशबोर्ड' : 'Candidate Dashboard'}</span>
-                            <span className="dropdown-link-desc">{isHi ? 'प्रमाणपत्र एवं प्रगति' : 'Courses, scores & certs'}</span>
+                        <div className="dh-details">
+                          <div className="dh-name-row">
+                            <span className="dh-name">{user.fullName}</span>
+                            <span className="dh-status-dot" title="Active Account" />
                           </div>
+                          <div className="dh-email">{user.email}</div>
                         </div>
-                        <span className="dropdown-link-arrow">→</span>
-                      </Link>
+                        <button 
+                          type="button" 
+                          className="dropdown-close-btn" 
+                          onClick={() => setProfileDropdownOpen(false)}
+                          aria-label="Close menu"
+                        >
+                          ✕
+                        </button>
+                      </div>
 
-                      {(user.role === 'admin' || user.email?.includes('admin')) && (
+                      <div className="dropdown-menu-links">
                         <Link
-                          to="/admin"
-                          className="dropdown-link-admin"
+                          to="/profile"
+                          className="dropdown-link-primary"
                           onClick={() => setProfileDropdownOpen(false)}
                         >
                           <div className="dropdown-link-left">
-                            <span className="dropdown-link-icon">🛡️</span>
+                            <span className="dropdown-link-icon">🎓</span>
                             <div className="dropdown-link-text">
-                              <span className="dropdown-link-title">{isHi ? 'व्यवस्थापक पोर्टल' : 'Admin Portal'}</span>
-                              <span className="dropdown-link-desc">{isHi ? 'सिस्टम प्रबंधन' : 'Mission governance'}</span>
+                              <span className="dropdown-link-title">{isHi ? 'उम्मीदवार डैशबोर्ड' : 'Candidate Dashboard'}</span>
+                              <span className="dropdown-link-desc">{isHi ? 'प्रमाणपत्र एवं प्रगति' : 'Courses, scores & certs'}</span>
                             </div>
                           </div>
                           <span className="dropdown-link-arrow">→</span>
                         </Link>
-                      )}
-                    </div>
 
-                    <div className="dropdown-footer">
-                      <button className="dropdown-logout-btn" onClick={handleLogout}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                          <polyline points="16 17 21 12 16 7"></polyline>
-                          <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        <span>{t('auth.logout', { defaultValue: 'Sign Out' })}</span>
-                      </button>
+                        {(user.role === 'admin' || user.email?.includes('admin')) && (
+                          <Link
+                            to="/admin"
+                            className="dropdown-link-admin"
+                            onClick={() => setProfileDropdownOpen(false)}
+                          >
+                            <div className="dropdown-link-left">
+                              <span className="dropdown-link-icon">🛡️</span>
+                              <div className="dropdown-link-text">
+                                <span className="dropdown-link-title">{isHi ? 'व्यवस्थापक पोर्टल' : 'Admin Portal'}</span>
+                                <span className="dropdown-link-desc">{isHi ? 'सिस्टम प्रबंधन' : 'Mission governance'}</span>
+                              </div>
+                            </div>
+                            <span className="dropdown-link-arrow">→</span>
+                          </Link>
+                        )}
+                      </div>
+
+                      <div className="dropdown-footer">
+                        <button className="dropdown-logout-btn" onClick={handleLogout}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                          </svg>
+                          <span>{t('auth.logout', { defaultValue: 'Sign Out' })}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             ) : (
