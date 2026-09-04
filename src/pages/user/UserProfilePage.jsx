@@ -426,7 +426,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
       window.dispatchEvent(new Event('bihar_ai_progress_updated'));
       window.dispatchEvent(new Event('bihar_ai_exams_updated'));
 
-      toast.success(isHi ? '✨ प्रोफ़ाइल और दैनिक कार्य डेटा रीफ्रेश हो गया!' : '✨ Profile, tasks & dashboard synced with Supabase!');
+      toast.success(isHi ? '✨ डेटा सफलतापूर्वक रीफ्रेश हो गया!' : '✨ Data refreshed successfully!');
     } catch (err) {
       console.error('Refresh error:', err);
       toast.error(isHi ? 'डेटा रीफ्रेश करने में असमर्थ' : 'Failed to refresh profile data.');

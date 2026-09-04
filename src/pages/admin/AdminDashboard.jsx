@@ -907,7 +907,7 @@ const AdminDashboard = () => {
       window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
       window.dispatchEvent(new Event('bihar_ai_progress_updated'));
 
-      toast.success('✨ Dashboard data refreshed and synced with Supabase!');
+      toast.success('✨ Dashboard data refreshed successfully!');
     } catch (err) {
       console.error('Refresh error:', err);
       toast.error('Failed to refresh data.');
