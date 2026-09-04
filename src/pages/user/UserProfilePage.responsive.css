@@ -63,13 +63,23 @@
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
 }
 
+/* Quick stats 4-card grid (desktop) */
+.profileStats {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 18px !important;
+  margin-bottom: 32px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 /* Tab navigation bar */
 .profileTabs {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .profileTabs button {
@@ -112,8 +122,8 @@
   transform: scale(0.97) !important;
 }
 
-/* ===================== TABLET (≤1024px) ===================== */
-@media (max-width: 1024px) {
+/* ===================== TABLET LANDSCAPE & LAPTOP (≤1180px) ===================== */
+@media (max-width: 1180px) {
   .profilePage {
     padding-bottom: 40px !important;
   }
@@ -127,19 +137,19 @@
     gap: 20px !important;
   }
 
-  /* Quick stats grid on tablet — clean 3-card balance */
+  /* Balanced 2x2 grid for the 4 stats cards — perfectly symmetrical, no orphan cards! */
   .profileStats {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 14px !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
   }
   .profileStats > div {
-    padding: 18px 16px !important;
+    padding: 22px 24px !important;
   }
   .profileStats .statNum {
-    font-size: 24px !important;
+    font-size: 30px !important;
   }
 
-  /* Profile Tabs on Tablet: 3 columns x 2 rows (Symmetric, No Cut-Off) */
+  /* Profile Tabs on Tablet/Laptop: 3 columns x 2 rows (Symmetric, No Squeezing) */
   .profileTabs {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
@@ -154,8 +164,8 @@
     width: 100% !important;
     min-width: 0 !important;
     flex: none !important;
-    padding: 11px 10px !important;
-    font-size: 12.5px !important;
+    padding: 11px 12px !important;
+    font-size: 13px !important;
     justify-content: center !important;
     white-space: nowrap !important;
   }

@@ -1231,12 +1231,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
         )}
 
         {/* QUICK STATS BENTO CARDS (Interactive Machined Double-Bezel Tiles) */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '18px',
-          marginBottom: '32px'
-        }} className="profileStats">
+        <div className="profileStats">
           {/* Card 1: Masterclasses */}
           <div
             onClick={() => setActiveTab('masterclasses')}
@@ -1260,7 +1255,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
                 Joined Masterclasses
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {joinedMasterclasses.length}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700', marginTop: '6px' }}>
@@ -1295,7 +1290,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
                 Officer Programs
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {joinedOfficerPrograms.length}
               </div>
               <div style={{ fontSize: '11px', color: '#34D399', fontWeight: '700', marginTop: '6px' }}>
@@ -1337,7 +1332,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
                 Certificates Earned
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {userSubmissions.filter(s => s.isPassed).length}
               </div>
               <div style={{ fontSize: '11px', color: '#FCD34D', fontWeight: '700', marginTop: '6px' }}>
@@ -1373,7 +1368,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
                 Daily Tasks
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                <span style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                   {userTaskSubmissions.filter((s) => s.status === 'APPROVED').length}
                 </span>
                 <span style={{ fontSize: '16px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '800' }}>

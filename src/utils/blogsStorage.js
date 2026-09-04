@@ -127,7 +127,20 @@ export const saveBlogToSupabase = async (blogItem) => {
 
   if (supabase) {
     try {
-      const { data, error } = await supabase.from('blogs').upsert(formattedItem);
+      const dbPayload = {
+        id: formattedItem.id,
+        title: formattedItem.title,
+        category: formattedItem.category,
+        author: formattedItem.author,
+        author_role: formattedItem.author_role,
+        date: formattedItem.date,
+        read_time: formattedItem.read_time,
+        excerpt: formattedItem.excerpt,
+        content: formattedItem.content,
+        image: formattedItem.image,
+        is_published: formattedItem.is_published,
+      };
+      const { data, error } = await supabase.from('blogs').upsert(dbPayload);
       if (error) {
         console.error('Supabase save blog error:', error);
         return { success: false, error: error.message };
@@ -174,12 +187,6 @@ export const incrementBlogViews = async (id) => {
   if (target) {
     target.views = (target.views || 0) + 1;
     cacheBlogsSilently(currentBlogs);
-  }
-
-  if (supabase && target) {
-    try {
-      await supabase.from('blogs').update({ views: target.views }).eq('id', target.id);
-    } catch (e) {}
   }
 };
 
