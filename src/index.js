@@ -6,6 +6,13 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import reportWebVitals from './reportWebVitals';
 
+// Clean production console: Suppress verbose logs, debug, and info. Only show genuine errors.
+if (process.env.NODE_ENV === 'production' || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

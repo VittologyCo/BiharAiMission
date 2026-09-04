@@ -2,6 +2,14 @@
 <html lang="en" prefix="og: https://ogp.me/ns#">
   <head>
     <meta charset="utf-8" />
+    <script>
+      // Clean production console: Suppress verbose logs, debug, and info. Only show genuine errors.
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        console.log = function() {};
+        console.info = function() {};
+        console.debug = function() {};
+      }
+    </script>
     <link rel="icon" href="%PUBLIC_URL%/bi_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#181512" />
@@ -296,11 +304,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js').then(function(reg) {
-            console.log('🎉 [PWA] ServiceWorker Registered:', reg.scope);
-          }).catch(function(err) {
-            console.warn('⚠️ [PWA] ServiceWorker Error:', err);
-          });
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
         });
       }
     </script>

@@ -5,37 +5,31 @@ const getDefaultSender = () => {
 };
 
 const sendEmailPayload = async (payload) => {
-
   const finalPayload = {
     ...payload,
     from: payload.from || getDefaultSender(),
   };
 
-  // 1. Primary Strategy: Call Serverless Function (/api/send-email on Cloudflare, /.netlify/functions/send-email on Netlify)
-  const endpoints = [
-    '/api/send-email',
-    '/.netlify/functions/send-email'
-  ];
+  try {
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(finalPayload),
+    });
 
-  for (const ep of endpoints) {
-    try {
-      const res = await fetch(ep, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalPayload),
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        console.log(`✅ Email delivered via serverless function (${ep}):`, data);
-        return { success: true, data };
-      }
-    } catch (e) {
-      // Endpoint not available or network error, continue to next
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { success: true, data };
     }
-  }
 
-  // 2. All strategies exhausted
-  return { success: false, reason: 'Email delivery failed — no serverless endpoint responded' };
+    const err = await res.json().catch(() => ({}));
+    return {
+      success: false,
+      reason: err?.error || `Email service responded with status ${res.status}`,
+    };
+  } catch (e) {
+    return { success: false, reason: e?.message || 'Network connection error' };
+  }
 };
 
 export const sendContactEmailViaResend = async ({ name, email, description }) => {
