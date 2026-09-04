@@ -7,9 +7,10 @@ export default function SmoothScroll() {
   const location = useLocation();
 
   useEffect(() => {
-    // Disable smooth scroll on admin or isolated canvas pages
+    // Disable smooth scroll on admin, isolated pages, or mobile touch devices to prevent scroll collision
     const isIsolated = location.pathname.startsWith('/admin') || location.pathname.startsWith('/experience');
-    if (isIsolated) return;
+    const isTouchMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth < 1024));
+    if (isIsolated || isTouchMobile) return;
 
     // Initialize Lenis with fast, fluid and natural momentum (zero lag/stickiness)
     const lenis = new Lenis({

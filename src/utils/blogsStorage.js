@@ -19,6 +19,14 @@ export const getBlogsFromStorage = () => {
   return [];
 };
 
+export const cacheBlogsSilently = (blogs) => {
+  try {
+    localStorage.setItem(STORAGE_BLOGS, JSON.stringify(blogs || []));
+  } catch (e) {
+    console.warn('LocalStorage error caching blogs silently:', e);
+  }
+};
+
 export const saveBlogsToStorage = (blogs) => {
   try {
     localStorage.setItem(STORAGE_BLOGS, JSON.stringify(blogs || []));
@@ -59,7 +67,7 @@ export const fetchBlogsFromSupabase = async () => {
           views: Number(b.views || 0),
           createdAt: b.created_at || new Date().toISOString(),
         }));
-        saveBlogsToStorage(formatted);
+        cacheBlogsSilently(formatted);
         return formatted;
       }
     }
@@ -165,7 +173,7 @@ export const incrementBlogViews = async (id) => {
   const target = currentBlogs.find((b) => String(b.id) === String(id) || String(b.slug) === String(id));
   if (target) {
     target.views = (target.views || 0) + 1;
-    saveBlogsToStorage(currentBlogs);
+    cacheBlogsSilently(currentBlogs);
   }
 
   if (supabase && target) {

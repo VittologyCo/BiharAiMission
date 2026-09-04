@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../hooks/useLanguage';
 import SEO from '../../components/SEO/SEO';
@@ -67,34 +67,54 @@ const copyToClipboard = async (text) => {
 };
 
 /**
- * Parse inline markdown tokens: **bold**, `code`, and [link](url)
+ * High-performance iterative markdown parser for bold, inline code, and links.
+ * Avoids regex split with empty matches that previously caused thousands of virtual DOM nodes.
  */
 const renderInlineMarkdown = (text) => {
   if (!text || typeof text !== 'string') return '';
-  const parts = text.split(/(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
+  const tokens = [];
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/;
+  let remaining = text;
+  let key = 0;
+  let iterations = 0;
+
+  while (remaining.length > 0 && iterations < 150) {
+    iterations++;
+    const match = remaining.match(regex);
+    if (!match) {
+      tokens.push(remaining);
+      break;
     }
-    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
-      return <code key={i}>{part.slice(1, -1)}</code>;
+    if (match.index > 0) {
+      tokens.push(remaining.substring(0, match.index));
     }
-    const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
-    if (linkMatch) {
-      return (
-        <a
-          key={i}
-          href={linkMatch[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#E28B5C', textDecoration: 'underline' }}
-        >
-          {linkMatch[1]}
-        </a>
-      );
+    const tokenStr = match[0];
+    if (tokenStr.startsWith('**') && tokenStr.endsWith('**')) {
+      tokens.push(<strong key={key++}>{tokenStr.slice(2, -2)}</strong>);
+    } else if (tokenStr.startsWith('`') && tokenStr.endsWith('`')) {
+      tokens.push(<code key={key++}>{tokenStr.slice(1, -1)}</code>);
+    } else {
+      const linkMatch = tokenStr.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        tokens.push(
+          <a
+            key={key++}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#E28B5C', textDecoration: 'underline' }}
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        tokens.push(tokenStr);
+      }
     }
-    return part;
-  });
+    remaining = remaining.substring(match.index + tokenStr.length);
+  }
+
+  return tokens.length > 0 ? tokens : text;
 };
 
 export default function BlogPage({ onGetInvolved }) {
@@ -110,11 +130,13 @@ export default function BlogPage({ onGetInvolved }) {
   const [activeArticle, setActiveArticle] = useState(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  // 1. Fetch Blogs directly from Supabase
+  // Prevent duplicate view increment calls that cause loops
+  const viewedArticlesRef = useRef(new Set());
+
+  // 1. Fetch Blogs from Supabase
   useEffect(() => {
     let isMounted = true;
     const loadBlogs = async () => {
-      setLoading(true);
       try {
         const data = await fetchBlogsFromSupabase();
         if (isMounted) {
@@ -133,15 +155,21 @@ export default function BlogPage({ onGetInvolved }) {
 
     loadBlogs();
 
-    const handleUpdate = () => loadBlogs();
+    const handleUpdate = () => {
+      // Only reload if user is not in the middle of reading an article
+      if (!blogId) {
+        loadBlogs();
+      }
+    };
+
     window.addEventListener('bihar_ai_blogs_updated', handleUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('bihar_ai_blogs_updated', handleUpdate);
     };
-  }, []);
+  }, [blogId]);
 
-  // 2. Handle URL deep-linking for /blog/:blogId (SEO & Direct Link Sharing)
+  // 2. Handle URL deep-linking for /blog/:blogId
   useEffect(() => {
     if (blogId && blogs.length > 0) {
       const targetSlug = String(blogId).toLowerCase().trim();
@@ -152,7 +180,11 @@ export default function BlogPage({ onGetInvolved }) {
       );
       if (found) {
         setActiveArticle(found);
-        incrementBlogViews(found.id);
+        // Increment views ONLY once per session per article to prevent infinite loop
+        if (!viewedArticlesRef.current.has(found.id)) {
+          viewedArticlesRef.current.add(found.id);
+          incrementBlogViews(found.id);
+        }
         safeScrollToTop();
       } else {
         setActiveArticle(null);
@@ -166,7 +198,10 @@ export default function BlogPage({ onGetInvolved }) {
   const handleOpenArticle = (item) => {
     if (!item) return;
     setActiveArticle(item);
-    incrementBlogViews(item.id);
+    if (!viewedArticlesRef.current.has(item.id)) {
+      viewedArticlesRef.current.add(item.id);
+      incrementBlogViews(item.id);
+    }
     navigate(`/blog/${item.slug || item.id}`, { replace: false });
     safeScrollToTop();
   };
@@ -330,6 +365,15 @@ export default function BlogPage({ onGetInvolved }) {
      ========================================================================== */
   if (activeArticle) {
     const articleCanonical = `https://biharaimission.org/blog/${activeArticle.slug || activeArticle.id}`;
+    const authorInitial = typeof activeArticle.author === 'string' && activeArticle.author.trim()
+      ? activeArticle.author.trim()[0].toUpperCase()
+      : 'B';
+    const authorName = typeof activeArticle.author === 'string' && activeArticle.author.trim()
+      ? activeArticle.author.trim()
+      : 'Bihar AI Mission Editorial Desk';
+    const authorRole = typeof activeArticle.authorRole === 'string' && activeArticle.authorRole.trim()
+      ? activeArticle.authorRole.trim()
+      : 'Author / Contributor';
 
     return (
       <div className={styles.fullArticlePage}>
@@ -340,11 +384,7 @@ export default function BlogPage({ onGetInvolved }) {
           canonical={articleCanonical}
           ogImage={activeArticle.image || 'https://biharaimission.org/bi_logo.png'}
           ogType="article"
-        />
-
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
+          schema={jsonLdSchema}
         />
 
         <div className={styles.articleMainWrap}>
@@ -392,14 +432,14 @@ export default function BlogPage({ onGetInvolved }) {
             <div className={styles.articleMetaBar}>
               <div className={styles.authorMeta}>
                 <div className={styles.authorAvatar}>
-                  {activeArticle.author ? activeArticle.author[0] : 'B'}
+                  {authorInitial}
                 </div>
                 <div>
                   <strong style={{ display: 'block', fontSize: '14.5px', color: '#FFFFFF' }}>
-                    {activeArticle.author || 'Bihar AI Mission Editorial Desk'}
+                    {authorName}
                   </strong>
                   <span style={{ fontSize: '12px', color: '#E28B5C' }}>
-                    {activeArticle.authorRole || 'Author / Contributor'}
+                    {authorRole}
                   </span>
                 </div>
               </div>
@@ -473,85 +513,93 @@ export default function BlogPage({ onGetInvolved }) {
                 const trimmed = paragraph.trim();
                 if (!trimmed) return null;
 
-                if (trimmed.startsWith('#### ')) {
+                try {
+                  if (trimmed.startsWith('#### ')) {
+                    return (
+                      <h4 key={index} className={styles.bodyH4}>
+                        {renderInlineMarkdown(trimmed.replace('#### ', ''))}
+                      </h4>
+                    );
+                  }
+                  if (trimmed.startsWith('### ')) {
+                    return (
+                      <h3 key={index} className={styles.bodyH3}>
+                        {renderInlineMarkdown(trimmed.replace('### ', ''))}
+                      </h3>
+                    );
+                  }
+                  if (trimmed.startsWith('## ')) {
+                    return (
+                      <h2 key={index} className={styles.bodyH2}>
+                        {renderInlineMarkdown(trimmed.replace('## ', ''))}
+                      </h2>
+                    );
+                  }
+                  if (trimmed.startsWith('# ')) {
+                    return (
+                      <h2 key={index} className={styles.bodyH1}>
+                        {renderInlineMarkdown(trimmed.replace('# ', ''))}
+                      </h2>
+                    );
+                  }
+                  if (trimmed.startsWith('> ')) {
+                    return (
+                      <blockquote key={index} className={styles.bodyBlockquote}>
+                        {renderInlineMarkdown(trimmed.replace(/^>\s*/gm, ''))}
+                      </blockquote>
+                    );
+                  }
+                  if (trimmed.startsWith('```')) {
+                    const cleanCode = trimmed.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '');
+                    return (
+                      <pre key={index} className={styles.bodyCodeBlock}>
+                        <code>{cleanCode}</code>
+                      </pre>
+                    );
+                  }
+                  if (trimmed === '---' || trimmed === '***') {
+                    return <hr key={index} className={styles.bodyDivider} />;
+                  }
+                  if (
+                    trimmed.startsWith('* ') ||
+                    trimmed.startsWith('- ') ||
+                    trimmed.startsWith('• ')
+                  ) {
+                    const lines = trimmed.split('\n');
+                    return (
+                      <ul key={index} className={styles.bodyList}>
+                        {lines.map((l, i) => (
+                          <li key={i}>
+                            {renderInlineMarkdown(l.replace(/^(\* |- |• )/, ''))}
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  }
+                  if (/^\d+\.\s/.test(trimmed)) {
+                    const lines = trimmed.split('\n');
+                    return (
+                      <ol key={index} className={styles.bodyOrderedList}>
+                        {lines.map((l, i) => (
+                          <li key={i}>
+                            {renderInlineMarkdown(l.replace(/^\d+\.\s*/, ''))}
+                          </li>
+                        ))}
+                      </ol>
+                    );
+                  }
                   return (
-                    <h4 key={index} className={styles.bodyH4}>
-                      {renderInlineMarkdown(trimmed.replace('#### ', ''))}
-                    </h4>
+                    <p key={index} className={styles.bodyParagraph}>
+                      {renderInlineMarkdown(trimmed)}
+                    </p>
+                  );
+                } catch (e) {
+                  return (
+                    <p key={index} className={styles.bodyParagraph}>
+                      {trimmed}
+                    </p>
                   );
                 }
-                if (trimmed.startsWith('### ')) {
-                  return (
-                    <h3 key={index} className={styles.bodyH3}>
-                      {renderInlineMarkdown(trimmed.replace('### ', ''))}
-                    </h3>
-                  );
-                }
-                if (trimmed.startsWith('## ')) {
-                  return (
-                    <h2 key={index} className={styles.bodyH2}>
-                      {renderInlineMarkdown(trimmed.replace('## ', ''))}
-                    </h2>
-                  );
-                }
-                if (trimmed.startsWith('# ')) {
-                  return (
-                    <h2 key={index} className={styles.bodyH1}>
-                      {renderInlineMarkdown(trimmed.replace('# ', ''))}
-                    </h2>
-                  );
-                }
-                if (trimmed.startsWith('> ')) {
-                  return (
-                    <blockquote key={index} className={styles.bodyBlockquote}>
-                      {renderInlineMarkdown(trimmed.replace(/^>\s*/gm, ''))}
-                    </blockquote>
-                  );
-                }
-                if (trimmed.startsWith('```')) {
-                  const cleanCode = trimmed.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '');
-                  return (
-                    <pre key={index} className={styles.bodyCodeBlock}>
-                      <code>{cleanCode}</code>
-                    </pre>
-                  );
-                }
-                if (trimmed === '---' || trimmed === '***') {
-                  return <hr key={index} className={styles.bodyDivider} />;
-                }
-                if (
-                  trimmed.startsWith('* ') ||
-                  trimmed.startsWith('- ') ||
-                  trimmed.startsWith('• ')
-                ) {
-                  const lines = trimmed.split('\n');
-                  return (
-                    <ul key={index} className={styles.bodyList}>
-                      {lines.map((l, i) => (
-                        <li key={i}>
-                          {renderInlineMarkdown(l.replace(/^(\* |- |• )/, ''))}
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                }
-                if (/^\d+\.\s/.test(trimmed)) {
-                  const lines = trimmed.split('\n');
-                  return (
-                    <ol key={index} className={styles.bodyOrderedList}>
-                      {lines.map((l, i) => (
-                        <li key={i}>
-                          {renderInlineMarkdown(l.replace(/^\d+\.\s*/, ''))}
-                        </li>
-                      ))}
-                    </ol>
-                  );
-                }
-                return (
-                  <p key={index} className={styles.bodyParagraph}>
-                    {renderInlineMarkdown(trimmed)}
-                  </p>
-                );
               })}
           </div>
 
@@ -633,11 +681,7 @@ export default function BlogPage({ onGetInvolved }) {
             : 'Authoritative analysis, governance AI tutorials, student learning tracks, and agricultural technology blueprints powering Bihar’s 38 districts.'
         }
         canonical="https://biharaimission.org/blog"
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
+        schema={jsonLdSchema}
       />
 
       <div className={styles.innerWrap}>
@@ -776,7 +820,9 @@ export default function BlogPage({ onGetInvolved }) {
                   <div className={styles.authorRow}>
                     <div className={styles.authorMeta}>
                       <div className={styles.authorAvatar}>
-                        {featuredBlog.author ? featuredBlog.author[0] : 'B'}
+                        {typeof featuredBlog.author === 'string' && featuredBlog.author.trim()
+                          ? featuredBlog.author.trim()[0].toUpperCase()
+                          : 'B'}
                       </div>
                       <div>
                         <strong style={{ display: 'block', fontSize: '13.5px', color: '#FFFFFF' }}>
@@ -833,7 +879,9 @@ export default function BlogPage({ onGetInvolved }) {
                           className={styles.authorAvatar}
                           style={{ width: '32px', height: '32px', fontSize: '12px' }}
                         >
-                          {item.author ? item.author[0] : 'B'}
+                          {typeof item.author === 'string' && item.author.trim()
+                            ? item.author.trim()[0].toUpperCase()
+                            : 'B'}
                         </div>
                         <span style={{ fontSize: '12px', color: '#C2B7A3', fontWeight: '700' }}>
                           {item.author || 'Contributor'}
