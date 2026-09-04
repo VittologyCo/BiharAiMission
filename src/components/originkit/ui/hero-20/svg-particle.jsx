@@ -147,7 +147,7 @@ function mkParticle(src, x, y, idleX, idleY, isExtra = false) {
  * @framerIntrinsicWidth 200
  * @framerIntrinsicHeight 200
  */
-function __OriginkitBase_ParticleImage(__props) {
+function OriginkitBaseParticleImage(__props) {
   const {
     imageConfig,
     particleCount,
@@ -902,7 +902,7 @@ const __originkitPresetProps = {
 
 export default function ParticleImage(props) {
   return (
-    <__OriginkitBase_ParticleImage
+    <OriginkitBaseParticleImage
       {...__originkitPresetProps}
       {...props}
     />
