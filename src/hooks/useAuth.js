@@ -827,13 +827,13 @@ const resetCooldownMap = new Map();
       }
 
       return {
-        success: true,
-        message: `Password reset link has been dispatched to ${cleanEmail}. Check your inbox or spam folder.`,
+        success: false,
+        error: resendResult?.reason || 'Failed to dispatch password reset email. Please check server configuration.',
       };
     } catch (err) {
       return {
-        success: true,
-        message: `Password reset link has been generated. Please check your inbox at ${cleanEmail}.`,
+        success: false,
+        error: err?.message || 'Failed to dispatch password reset link. Please try again.',
       };
     }
   };
