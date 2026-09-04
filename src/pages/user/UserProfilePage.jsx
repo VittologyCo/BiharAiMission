@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, getIstTimestamp } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
-import { useToast } from '../../context/ToastContext';
+import { useToast, toast } from '../../context/ToastContext';
 import { supabase } from '../../utils/supabase';
 import { getLiveClassesFromStorage, getProgramsFromStorage, fetchUserMasterclassEnrollmentsFromSupabase, fetchUserOfficerProgramEnrollmentsFromSupabase, saveOfficerProgramEnrollmentToSupabase, saveMasterclassEnrollmentToSupabase, getUserCourseProgress, getSessionEndedStatus } from '../../utils/coursesStorage';
 import { getExamSubmissions, fetchExamSubmissionsFromSupabase } from '../../utils/examStorage';
@@ -140,60 +140,61 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
   }, [currentUser]);
 
   // Check for existing saved submission in Supabase or localStorage
-  useEffect(() => {
-    async function checkExisting() {
-      if (!currentUser || !currentUser.email) return;
+  const checkExisting = useCallback(async () => {
+    if (!currentUser || !currentUser.email) return;
 
-      let isSavedLocally = false;
-      let localSub = null;
-      try {
-        if (localStorage.getItem(`bihar_ai_profile_saved_${currentUser.email.toLowerCase().trim()}`) === 'true') {
-          isSavedLocally = true;
-        }
-        const localSubs = JSON.parse(localStorage.getItem('bihar_ai_local_submissions') || '[]');
-        localSub = localSubs.find(s => s.email && s.email.toLowerCase() === currentUser.email.toLowerCase());
-        if (localSub && (localSub.is_profile_locked || localSub.is_profile_saved)) {
-          isSavedLocally = true;
-        }
-      } catch (lsErr) {}
-
-      try {
-        if (supabase) {
-          const { data, error } = await supabase
-            .from('user_details')
-            .select('*')
-            .eq('email', currentUser.email.trim())
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          if (data && data.length > 0) {
-            setExistingSubmission({
-              ...data[0],
-              is_profile_locked: data[0].is_profile_locked || isSavedLocally || Boolean(localSub?.is_profile_locked),
-              is_profile_saved: data[0].is_profile_saved || isSavedLocally || Boolean(localSub?.is_profile_saved)
-            });
-            return;
-          } else if (!error) {
-            // User was deleted by admin from database: trigger instant revocation & logout!
-            console.warn('🚨 Account record missing in user_details — executing instant logout.');
-            if (forcePurgeAndLogout) {
-              forcePurgeAndLogout('Your account has been deleted by an administrator.');
-            }
-            return;
-          }
-        }
-      } catch (err) {}
-
-      if (localSub) {
-        setExistingSubmission({
-          ...localSub,
-          is_profile_locked: localSub.is_profile_locked || isSavedLocally,
-          is_profile_saved: localSub.is_profile_saved || isSavedLocally
-        });
+    let isSavedLocally = false;
+    let localSub = null;
+    try {
+      if (localStorage.getItem(`bihar_ai_profile_saved_${currentUser.email.toLowerCase().trim()}`) === 'true') {
+        isSavedLocally = true;
       }
+      const localSubs = JSON.parse(localStorage.getItem('bihar_ai_local_submissions') || '[]');
+      localSub = localSubs.find(s => s.email && s.email.toLowerCase() === currentUser.email.toLowerCase());
+      if (localSub && (localSub.is_profile_locked || localSub.is_profile_saved)) {
+        isSavedLocally = true;
+      }
+    } catch (lsErr) {}
+
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('user_details')
+          .select('*')
+          .eq('email', currentUser.email.trim())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          setExistingSubmission({
+            ...data[0],
+            is_profile_locked: data[0].is_profile_locked || isSavedLocally || Boolean(localSub?.is_profile_locked),
+            is_profile_saved: data[0].is_profile_saved || isSavedLocally || Boolean(localSub?.is_profile_saved)
+          });
+          return;
+        } else if (!error) {
+          // User was deleted by admin from database: trigger instant revocation & logout!
+          console.warn('🚨 Account record missing in user_details — executing instant logout.');
+          if (forcePurgeAndLogout) {
+            forcePurgeAndLogout('Your account has been deleted by an administrator.');
+          }
+          return;
+        }
+      }
+    } catch (err) {}
+
+    if (localSub) {
+      setExistingSubmission({
+        ...localSub,
+        is_profile_locked: localSub.is_profile_locked || isSavedLocally,
+        is_profile_saved: localSub.is_profile_saved || isSavedLocally
+      });
     }
-    checkExisting();
   }, [currentUser, forcePurgeAndLogout]);
+
+  useEffect(() => {
+    checkExisting();
+  }, [checkExisting]);
 
   const [remoteEnrolledClassIds, setRemoteEnrolledClassIds] = useState([]);
   const [remoteEnrollments, setRemoteEnrollments] = useState([]);
@@ -379,28 +380,60 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
   // Fetch user exam submissions / certificates dynamically from Supabase database
   const [userSubmissions, setUserSubmissions] = useState([]);
 
-  useEffect(() => {
-    async function syncUserExams() {
-      if (!user || !user.email) return;
+  const syncUserExams = useCallback(async () => {
+    const targetEmail = currentUser?.email || user?.email;
+    if (!targetEmail) return;
+    try {
       const all = await fetchExamSubmissionsFromSupabase();
       if (all && Array.isArray(all)) {
         const filtered = all.filter((sub) => {
           if (!sub.candidateEmail && !sub.candidateName) return false;
           return (
-            (sub.candidateEmail && sub.candidateEmail.toLowerCase() === user.email.toLowerCase()) ||
-            (sub.candidateName && user.fullName && sub.candidateName.toLowerCase().includes(user.fullName.toLowerCase()))
+            (sub.candidateEmail && sub.candidateEmail.toLowerCase() === targetEmail.toLowerCase()) ||
+            (sub.candidateName && user?.fullName && sub.candidateName.toLowerCase().includes(user.fullName.toLowerCase()))
           );
         });
         setUserSubmissions(filtered);
       }
+    } catch (err) {
+      console.warn('Error syncing user exams:', err);
     }
+  }, [currentUser?.email, user]);
 
+  useEffect(() => {
     syncUserExams();
 
     const handleUpdate = () => syncUserExams();
     window.addEventListener('bihar_ai_exams_updated', handleUpdate);
     return () => window.removeEventListener('bihar_ai_exams_updated', handleUpdate);
-  }, [user]);
+  }, [syncUserExams]);
+
+  // Candidate Dashboard live refresh from Supabase (Profile, Tasks, Enrollments, Exams)
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshProfile = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        checkExisting(),
+        loadRemoteEnrollments(),
+        loadTaskSubmissions(),
+        syncUserExams()
+      ]);
+
+      window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
+      window.dispatchEvent(new Event('bihar_ai_programs_updated'));
+      window.dispatchEvent(new Event('bihar_ai_progress_updated'));
+      window.dispatchEvent(new Event('bihar_ai_exams_updated'));
+
+      toast.success(isHi ? '✨ प्रोफ़ाइल और दैनिक कार्य डेटा रीफ्रेश हो गया!' : '✨ Profile, tasks & dashboard synced with Supabase!');
+    } catch (err) {
+      console.error('Refresh error:', err);
+      toast.error(isHi ? 'डेटा रीफ्रेश करने में असमर्थ' : 'Failed to refresh profile data.');
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   const modalSubmission = React.useMemo(() => {
     if (!activeCertSubmission) return null;
@@ -906,25 +939,62 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
             <span style={{ opacity: 0.6 }}>/</span>
             <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700' }}>{isHi ? 'मेरा लर्निंग डैशबोर्ड' : 'My Learning Dashboard'}</span>
           </div>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              color: '#FFFFFF',
-              padding: '6px 16px',
-              borderRadius: '8px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              fontSize: '12.5px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            ← Back
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleRefreshProfile}
+              disabled={isRefreshing}
+              style={{
+                background: isRefreshing ? 'rgba(193, 85, 44, 0.28)' : 'rgba(255, 255, 255, 0.08)',
+                border: isRefreshing ? '1px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(255, 255, 255, 0.18)',
+                color: isRefreshing ? '#E28B5C' : '#FFFFFF',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                cursor: isRefreshing ? 'wait' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+                boxShadow: isRefreshing ? '0 0 0 2px rgba(193, 85, 44, 0.25)' : 'none'
+              }}
+              title={isHi ? 'सुपाबेस से सभी लाइव डेटा रीफ्रेश करें' : 'Refresh and sync profile & tasks from Supabase'}
+              className="profileRefreshBtn"
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'transform 0.5s ease',
+                  transform: isRefreshing ? 'rotate(360deg)' : 'none'
+                }}
+                className={isRefreshing ? 'spinActive' : ''}
+              >
+                🔄
+              </span>
+              <span>{isRefreshing ? (isHi ? 'रीफ्रेश हो रहा है...' : 'Refreshing...') : (isHi ? 'रीफ्रेश' : 'Refresh')}</span>
+            </button>
+
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                color: '#FFFFFF',
+                padding: '6px 16px',
+                borderRadius: '8px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                fontSize: '12.5px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ← {isHi ? 'वापस' : 'Back'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1042,6 +1112,42 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
 
           {/* Quick Hero Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleRefreshProfile}
+              disabled={isRefreshing}
+              style={{
+                background: isRefreshing ? 'rgba(193, 85, 44, 0.28)' : 'rgba(255, 255, 255, 0.08)',
+                border: isRefreshing ? '1px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(255, 255, 255, 0.2)',
+                color: isRefreshing ? '#E28B5C' : '#FFFFFF',
+                borderRadius: '12px',
+                padding: '11px 20px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: isRefreshing ? 'wait' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                backdropFilter: 'blur(10px)',
+                flexShrink: 0
+              }}
+              title={isHi ? 'सुपाबेस से सभी लाइव डेटा रीफ्रेश करें' : 'Refresh and sync profile & tasks from Supabase'}
+              className="heroActionBtn profileRefreshBtn"
+            >
+              <span
+                style={{
+                  display: 'inline-block',
+                  transition: 'transform 0.5s ease',
+                  transform: isRefreshing ? 'rotate(360deg)' : 'none'
+                }}
+                className={isRefreshing ? 'spinActive' : ''}
+              >
+                🔄
+              </span>
+              <span>{isRefreshing ? (isHi ? 'रीफ्रेश हो रहा है...' : 'Refreshing...') : (isHi ? 'रीफ्रेश' : 'Refresh')}</span>
+            </button>
+
             <button
               onClick={() => {
                 logout();
@@ -1288,10 +1394,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
           </div>
         </div>
 
-        {/* DASHBOARD TABS NAVIGATION DOCK (Machined Segmented Rail - Full-Width Balanced Grid) */}
+        {/* DASHBOARD TABS NAVIGATION DOCK (Responsive Grid Dock - Perfect Symmetry) */}
         <div style={{
-          display: 'flex',
-          gap: '8px',
           background: 'rgba(20, 17, 14, 0.92)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
@@ -1300,20 +1404,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
           border: '1px solid rgba(226, 139, 92, 0.25)',
           boxShadow: '0 14px 34px -10px rgba(0, 0, 0, 0.45)',
           marginBottom: '32px',
-          flexWrap: 'nowrap',
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          alignItems: 'center',
-          width: '100%',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          width: '100%'
         }} className="profileTabs">
           {/* 1. PROFILE DETAILS (UNLOCKED) */}
           <button
             type="button"
             onClick={() => setActiveTab('get_involved')}
             style={{
-              flex: '1 1 0%',
-              minWidth: '135px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1328,7 +1428,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
           >
             <span>👤</span>
@@ -1340,8 +1441,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
             type="button"
             onClick={() => setActiveTab('leaderboard')}
             style={{
-              flex: '1 1 0%',
-              minWidth: '135px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1356,7 +1457,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
           >
             <span>🏆</span>
@@ -1369,8 +1471,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
             type="button"
             onClick={() => setActiveTab('daily_tasks')}
             style={{
-              flex: '1 1 0%',
-              minWidth: '145px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1385,7 +1487,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
           >
             <span>⚡</span>
@@ -1412,8 +1515,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               message: 'Masterclasses enrollment portal is currently locked for upcoming batch registration. Stay tuned for dates!'
             })}
             style={{
-              flex: '1 1 0%',
-              minWidth: '135px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1427,7 +1530,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
@@ -1466,8 +1570,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               message: 'Officer Programs are currently locked for upcoming cohort onboarding. Stay tuned for government circulars!'
             })}
             style={{
-              flex: '1 1 0%',
-              minWidth: '145px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1481,7 +1585,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
@@ -1515,8 +1620,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
             type="button"
             onClick={() => setShowGupShupModal(true)}
             style={{
-              flex: '1 1 0%',
-              minWidth: '130px',
+              width: '100%',
+              minWidth: 0,
               padding: '10px 12px',
               fontSize: '12.8px',
               fontWeight: '700',
@@ -1530,7 +1635,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
@@ -1543,7 +1649,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
             title="Gup-Shup (Locked - Coming Soon)"
           >
             <span>💬</span>
-            <span>Gup-Shup</span>
+            <span>{isHi ? 'गप-शप' : 'Gup-Shup'}</span>
             <span style={{
               background: 'rgba(239, 68, 68, 0.18)',
               border: '1px solid rgba(239, 68, 68, 0.35)',

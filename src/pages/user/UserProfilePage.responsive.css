@@ -65,12 +65,19 @@
 
 /* Tab navigation bar */
 .profileTabs {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
-.profileTabs::-webkit-scrollbar {
-  display: none;
+
+.profileTabs button {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: none !important;
+  box-sizing: border-box !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .profileTabs button:hover {
@@ -79,8 +86,30 @@
   transform: translateY(-1px) !important;
 }
 
-.profileTabs button {
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Refresh Button Spin Keyframes & Styling */
+@keyframes profileSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinActive {
+  animation: profileSpin 0.75s linear infinite !important;
+}
+
+.profileRefreshBtn:hover {
+  background: rgba(193, 85, 44, 0.25) !important;
+  border-color: rgba(226, 139, 92, 0.6) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.3) !important;
+}
+
+.profileRefreshBtn:active {
+  transform: scale(0.97) !important;
 }
 
 /* ===================== TABLET (≤1024px) ===================== */
@@ -90,6 +119,45 @@
   }
   .profilePage > div {
     padding: 0 16px !important;
+  }
+
+  /* Profile hero card tablet padding */
+  .profileHero {
+    padding: 28px 24px !important;
+    gap: 20px !important;
+  }
+
+  /* Quick stats grid on tablet — clean 3-card balance */
+  .profileStats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px !important;
+  }
+  .profileStats > div {
+    padding: 18px 16px !important;
+  }
+  .profileStats .statNum {
+    font-size: 24px !important;
+  }
+
+  /* Profile Tabs on Tablet: 3 columns x 2 rows (Symmetric, No Cut-Off) */
+  .profileTabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    padding: 8px !important;
+    overflow: visible !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .profileTabs button {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+    padding: 11px 10px !important;
+    font-size: 12.5px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
   }
 }
 
@@ -143,21 +211,27 @@
     font-size: 22px !important;
   }
 
-  /* Tab bar — horizontal scroll */
+  /* Tab bar on Mobile: 2 columns x 3 rows */
   .profileTabs {
-    gap: 6px !important;
-    flex-wrap: nowrap !important;
-    padding: 6px !important;
-    margin-bottom: 20px !important;
-    overflow-x: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    padding: 7px !important;
+    margin-bottom: 22px !important;
+    overflow: visible !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   .profileTabs button {
-    padding: 8px 14px !important;
-    font-size: 13px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+    padding: 10px 8px !important;
+    font-size: 12px !important;
     white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    min-height: auto !important;
+    justify-content: center !important;
     border-radius: 10px !important;
+    box-sizing: border-box !important;
   }
 
   /* Masterclass grid */
