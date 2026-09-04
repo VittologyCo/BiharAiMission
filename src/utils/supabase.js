@@ -6,6 +6,7 @@ const supabaseUrl =
 
 const supabaseKey =
   process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.REACT_APP_SUPABASE_PUI ||
   process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {

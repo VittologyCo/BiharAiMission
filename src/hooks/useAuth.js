@@ -655,7 +655,10 @@ const resetCooldownMap = new Map();
         return { success: false, error: 'Supabase client is not initialized' };
       }
 
-      const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '940188247500-012ore51vpirncj1bvl31dtau38s8o5u.apps.googleusercontent.com';
+      const googleClientId =
+        process.env.REACT_APP_GOOGLE_CLIENT_ID ||
+        process.env.REACT_APP_GOOGLE_CLIEN ||
+        '940188247500-012ore51vpirncj1bvl31dtau38s8o5u.apps.googleusercontent.com';
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
       if (isMobileDevice) {
