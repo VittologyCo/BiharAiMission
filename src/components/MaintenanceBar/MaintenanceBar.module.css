@@ -68,6 +68,8 @@
 @media (max-width: 768px) {
   .maintenanceBar {
     padding: 6px 0;
+    margin-top: 6px;
+    margin-bottom: 8px;
   }
   
   .itemGroup {

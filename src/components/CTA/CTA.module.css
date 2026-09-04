@@ -288,6 +288,18 @@
   color: var(--color-ochre-400, #D99B26);
 }
 
+.contactIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-ochre-400, #D99B26);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.22s ease;
+}
+
+.secondaryBtn:hover .contactIcon {
+  transform: scale(1.18);
+  color: #FFFFFF;
+}
+
 /* BUTTON 3: AMBIENT PARTNER PILL */
 .partnerBtn {
   background: rgba(193, 85, 44, 0.1);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useToast } from '../../context/ToastContext';
-import { supabase } from '../../utils/supabase';
 import { sendContactEmailViaResend } from '../../utils/resendEmail';
 import Modal from '../Modal/Modal';
 import Button from '../Button/Button';
@@ -34,69 +33,34 @@ export default function ContactUsModal({ isOpen, onClose }) {
 
     setIsSubmitting(true);
 
-    const submissionData = {
-      id: 'contact_' + Date.now(),
-      full_name: name.trim(),
-      email: email.trim().toLowerCase(),
-      mobile: 'N/A',
-      role_type: 'Contact Inquiry',
-      district: 'Bihar',
-      interests: [description.trim()],
-      created_at: new Date().toISOString(),
-    };
-
-    // 1. Upsert to Supabase user_details table (handles duplicate emails gracefully)
+    // Send email via Resend API directly — NO database / Supabase persistence
     try {
-      if (supabase) {
-        const payload = {
-          full_name: name.trim(),
-          email: email.trim().toLowerCase(),
-          mobile: 'N/A',
-          role_type: 'Contact Inquiry',
-          district: 'Bihar', // Required default — prevents NOT NULL constraint errors
-          intent: 'Website Contact Inquiry',
-          contribution: description.trim(),
-          interests: [description.trim()],
-        };
-        const { error: upsertErr } = await supabase
-          .from('user_details')
-          .upsert([payload], { onConflict: 'email', ignoreDuplicates: false });
-        if (upsertErr && upsertErr.code !== '23505') {
-          // Only surface non-duplicate errors to user
-          console.error('user_details contact upsert error:', upsertErr);
-          toast.error(isHi
-            ? 'संदेश डेटाबेस में सहेजने में विफल। कृपया पुनः प्रयास करें।'
-            : 'Failed to save message to database. Please try again.');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-    } catch (err) {
-      console.error('Supabase contact upsert exception:', err);
-      // Non-fatal: proceed with email sending even if DB write fails
-    }
-
-    // 2. Save to local storage cache
-    try {
-      const existing = JSON.parse(localStorage.getItem('bihar_ai_submissions') || '[]');
-      localStorage.setItem('bihar_ai_submissions', JSON.stringify([submissionData, ...existing]));
-    } catch (err) {
-      console.warn('Local storage save error:', err);
-    }
-
-    // 3. Send email via Resend API directly to contact@biharaimission.org
-    try {
-      await sendContactEmailViaResend({
+      const emailRes = await sendContactEmailViaResend({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         description: description.trim(),
       });
+
+      if (!emailRes || !emailRes.success) {
+        toast.error(isHi
+          ? 'ईमेल भेजने में समस्या आई। कृपया पुनः प्रयास करें।'
+          : (emailRes?.reason || 'Failed to send message. Please try again.'));
+        setIsSubmitting(false);
+        return;
+      }
     } catch (err) {
       console.warn('Resend email error:', err);
+      toast.error(isHi
+        ? 'ईमेल भेजने में समस्या आई। कृपया पुनः प्रयास करें।'
+        : 'An error occurred while sending your message. Please try again.');
+      setIsSubmitting(false);
+      return;
     }
 
     setIsSubmitting(false);
-    toast.success(isHi ? 'आपका संदेश contact@biharaimission.org पर सफलतापूर्वक भेज दिया गया है! ✨' : 'Thank you! Your message has been sent to contact@biharaimission.org successfully. ✨');
+    toast.success(isHi
+      ? 'धन्यवाद! आपका संदेश सफलतापूर्वक भेज दिया गया है। हमारी टीम जल्द ही आपसे संपर्क करेगी। ✨'
+      : 'Thank you! Your message has been sent to our team successfully. We will get back to you shortly. ✨');
 
     // Reset and Close
     setName('');

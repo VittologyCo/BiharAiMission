@@ -75,6 +75,8 @@ export async function onRequest(context) {
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
+        ...(body.reply_to ? { reply_to: body.reply_to } : {}),
+        ...(body.text ? { text: body.text } : {}),
       }),
     });
 

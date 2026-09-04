@@ -201,6 +201,30 @@ export default function RegistrationModal({ isOpen, onClose }) {
     );
   };
 
+  /* ─── Password Strength Calculation ─── */
+  const passVal = form.password || '';
+  const hasMinLength = passVal.length >= 6;
+  const hasUpper = /[A-Z]/.test(passVal);
+  const hasNumOrSymbol = /[\d\W]/.test(passVal);
+  
+  let strengthScore = 0;
+  if (hasMinLength) strengthScore += 1;
+  if (hasUpper) strengthScore += 1;
+  if (hasNumOrSymbol) strengthScore += 1;
+  if (hasMinLength && hasUpper && hasNumOrSymbol && passVal.length >= 8) {
+    strengthScore = 4;
+  }
+
+  const getStrengthTier = () => {
+    if (!passVal) return { label: isHi ? 'खाली' : 'EMPTY', color: '#6B7280', bars: 0 };
+    if (strengthScore === 1) return { label: isHi ? 'कमजोर' : 'WEAK', color: '#EF4444', bars: 1 };
+    if (strengthScore === 2) return { label: isHi ? 'मध्यम' : 'FAIR', color: '#F59E0B', bars: 2 };
+    if (strengthScore === 3) return { label: isHi ? 'अच्छा' : 'GOOD', color: '#84CC16', bars: 3 };
+    return { label: isHi ? 'मजबूत' : 'STRONG', color: '#10B981', bars: 4 };
+  };
+
+  const strengthTier = getStrengthTier();
+
   const handleNext = () => {
     if (step === 1) {
       if (!form.full_name.trim()) {
@@ -685,6 +709,56 @@ export default function RegistrationModal({ isOpen, onClose }) {
                   autoCapitalize="none"
                   spellCheck="false"
                 />
+              </div>
+            </div>
+
+            {/* PASSWORD STRENGTH WIDGET */}
+            <div className={styles.strengthWidget}>
+              <div className={styles.strengthHeader}>
+                <span className={styles.strengthTitle}>
+                  {isHi ? 'पासवर्ड की मजबूती' : 'PASSWORD STRENGTH'}
+                </span>
+                <span 
+                  className={styles.strengthBadge}
+                  style={{
+                    color: strengthTier.color,
+                    borderColor: strengthTier.color,
+                    backgroundColor: `${strengthTier.color}1F`,
+                    boxShadow: strengthTier.bars === 4 ? `0 0 10px ${strengthTier.color}66` : 'none'
+                  }}
+                >
+                  {strengthTier.label}
+                </span>
+              </div>
+
+              {/* 4 Segment Progress Bars */}
+              <div className={styles.strengthBars}>
+                {[1, 2, 3, 4].map((barIndex) => (
+                  <div 
+                    key={barIndex}
+                    className={`${styles.strengthBar} ${barIndex <= strengthTier.bars ? styles.strengthBarActive : ''}`}
+                    style={{
+                      backgroundColor: barIndex <= strengthTier.bars ? strengthTier.color : undefined,
+                      boxShadow: barIndex <= strengthTier.bars && strengthTier.bars >= 3 ? `0 0 8px ${strengthTier.color}80` : 'none'
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* 3 Requirement Checks */}
+              <div className={styles.strengthCriteria}>
+                <span className={`${styles.criteriaItem} ${hasMinLength ? styles.criteriaMet : ''}`}>
+                  <span className={styles.criteriaCheck}>{hasMinLength ? '✓' : '○'}</span>
+                  <span>{isHi ? 'कम से कम 6 अक्षर' : 'At least 6 characters'}</span>
+                </span>
+                <span className={`${styles.criteriaItem} ${hasUpper ? styles.criteriaMet : ''}`}>
+                  <span className={styles.criteriaCheck}>{hasUpper ? '✓' : '○'}</span>
+                  <span>{isHi ? 'एक बड़ा अक्षर (Uppercase)' : 'Uppercase letter'}</span>
+                </span>
+                <span className={`${styles.criteriaItem} ${hasNumOrSymbol ? styles.criteriaMet : ''}`}>
+                  <span className={styles.criteriaCheck}>{hasNumOrSymbol ? '✓' : '○'}</span>
+                  <span>{isHi ? 'संख्या या विशेष चिन्ह' : 'Number or symbol'}</span>
+                </span>
               </div>
             </div>
 

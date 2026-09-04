@@ -654,3 +654,86 @@
 .emailTaken {
   color: #dc2626;
 }
+
+/* ═════ PASSWORD STRENGTH WIDGET ═════ */
+.strengthWidget {
+  background: #0B110D;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.strengthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.strengthTitle {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #8E9893;
+  text-transform: uppercase;
+}
+
+.strengthBadge {
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  border: 1px solid;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+
+.strengthBars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.strengthBar {
+  height: 4.5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.strengthCriteria {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+.criteriaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.2s ease;
+}
+
+.criteriaMet {
+  color: #10B981 !important;
+  font-weight: 700;
+}
+
+.criteriaCheck {
+  font-size: 13px;
+  line-height: 1;
+}
+

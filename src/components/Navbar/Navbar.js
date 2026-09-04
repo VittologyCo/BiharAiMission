@@ -253,14 +253,17 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
               <div className="nav-profile-wrapper" ref={dropdownRef}>
                 <button 
                   className="nav-profile-badge" 
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  onClick={() => {
+                    setProfileDropdownOpen(prev => !prev);
+                    setMobileOpen(false);
+                  }}
                   aria-label="User profile menu"
                 >
                   <div className="profile-avatar">
                     <UserAvatar user={user} className="profile-avatar-img" />
                   </div>
                   <div className="profile-text">
-                    <span className="profile-name">{user.fullName}</span>
+                    <span className="profile-name">{user.fullName || user.full_name || 'Member'}</span>
                     <span className="profile-email-sub">{user.email}</span>
                   </div>
                   <span className="profile-chevron">▾</span>
@@ -274,27 +277,6 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
                       aria-hidden="true"
                     />
                     <div className="profile-dropdown-card" role="menu">
-                      <div className="mobile-sheet-handle" aria-hidden="true" />
-                      <div className="dropdown-header">
-                        <div className="dh-avatar">
-                          <UserAvatar user={user} className="dh-avatar-img" />
-                        </div>
-                        <div className="dh-details">
-                          <div className="dh-name-row">
-                            <span className="dh-name">{user.fullName}</span>
-                            <span className="dh-status-dot" title="Active Account" />
-                          </div>
-                          <div className="dh-email">{user.email}</div>
-                        </div>
-                        <button 
-                          type="button" 
-                          className="dropdown-close-btn" 
-                          onClick={() => setProfileDropdownOpen(false)}
-                          aria-label="Close menu"
-                        >
-                          ✕
-                        </button>
-                      </div>
 
                       <div className="dropdown-menu-links">
                         <Link
@@ -366,7 +348,10 @@ export default function Navbar({ onOpenAuth, onOpenRegistration }) {
 
             <button 
               className="mobile-toggle" 
-              onClick={() => setMobileOpen(!mobileOpen)}
+              onClick={() => {
+                setMobileOpen(prev => !prev);
+                setProfileDropdownOpen(false);
+              }}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileOpen}
             >

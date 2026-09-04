@@ -21,7 +21,7 @@ module.exports = function (app) {
   });
 
   app.post('/api/send-email', (req, res) => {
-    const { from, to, subject, html } = req.body || {};
+    const { from, to, subject, html, reply_to, text } = req.body || {};
 
     const apiKey = process.env.RESEND_API_KEY || process.env.REACT_APP_RESEND_API_KEY;
     if (!apiKey) {
@@ -34,6 +34,8 @@ module.exports = function (app) {
       to: Array.isArray(to) ? to : [to],
       subject: subject || 'Bihar AI Mission',
       html: html || '',
+      ...(reply_to ? { reply_to } : {}),
+      ...(text ? { text } : {}),
     });
 
     console.log(`📧 [Dev Proxy] Sending email to ${to} via Resend...`);

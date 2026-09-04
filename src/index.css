@@ -639,21 +639,31 @@ body:hover #cursor-spotlight { opacity: 1; }
   flex-direction: column !important;
   align-items: flex-start !important;
   text-align: left !important;
+  gap: 1px !important;
 }
 
 .profile-name {
-  font-size: 12.5px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
   color: var(--color-ink, #181512) !important;
   line-height: 1.2 !important;
   white-space: nowrap !important;
-  max-width: 130px !important;
+  max-width: 140px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 
 .profile-email-sub {
-  display: none !important; /* Conceal email in topbar pill for a compact, clean look — visible inside dropdown card */
+  display: block !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: var(--color-ink-muted, #5E554D) !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  max-width: 140px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  opacity: 0.8 !important;
 }
 
 .profile-chevron {
@@ -681,14 +691,14 @@ body:hover #cursor-spotlight { opacity: 1; }
   position: absolute !important;
   top: calc(100% + 10px) !important;
   right: 0 !important;
-  width: 280px !important;
+  width: 250px !important;
   max-width: calc(100vw - 24px) !important;
   background: var(--color-sand-50, #FAF7F2) !important;
   background: linear-gradient(180deg, #FAF7F2 0%, #F5EFE6 100%) !important;
   border: 1px solid var(--color-line, #E2D7C3) !important;
   border-radius: 18px !important;
   box-shadow: 0 20px 48px -12px rgba(24, 21, 18, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
-  padding: 16px !important;
+  padding: 12px !important;
   z-index: 1000 !important;
   animation: fadeInDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
   box-sizing: border-box !important;
@@ -770,9 +780,8 @@ body:hover #cursor-spotlight { opacity: 1; }
   display: flex !important;
   flex-direction: column !important;
   gap: 7px !important;
-  padding: 10px 0 !important;
-  margin: 4px 0 10px 0 !important;
-  border-top: 1px solid rgba(226, 215, 195, 0.7) !important;
+  padding: 0 0 10px 0 !important;
+  margin: 0 0 10px 0 !important;
   border-bottom: 1px solid rgba(226, 215, 195, 0.7) !important;
 }
 
@@ -4975,112 +4984,90 @@ h2.sh {
     display: none !important;
   }
   .nav-profile-badge {
-    padding: 3px 5px !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
     gap: 0 !important;
     border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex-shrink: 0 !important;
   }
   .profile-avatar {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 11px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
   }
 
-  /* PROFILE DROPDOWN: LUXURY MOBILE BOTTOM SHEET MODAL (≤768px) */
+  /* PROFILE DROPDOWN ON MOBILE/SMALLER DISPLAYS (≤768px) */
   .profile-dropdown-backdrop {
-    display: block !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(15, 12, 10, 0.45) !important;
-    backdrop-filter: blur(5px) !important;
-    -webkit-backdrop-filter: blur(5px) !important;
-    z-index: 10000 !important;
-    animation: fadeInDown 0.15s ease-out !important;
-  }
-
-  .profile-dropdown-card {
-    position: fixed !important;
-    top: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    max-width: 440px !important;
-    margin: 0 auto !important;
-    border-radius: 24px 24px 0 0 !important;
-    border-bottom: none !important;
-    padding: 14px 18px max(24px, env(safe-area-inset-bottom, 20px)) 18px !important;
-    box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.28) !important;
-    z-index: 10001 !important;
-    animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: none !important;
   }
 
   .mobile-sheet-handle {
-    display: block !important;
-    width: 38px !important;
-    height: 4px !important;
-    border-radius: 9999px !important;
-    background: rgba(24, 21, 18, 0.2) !important;
-    margin: 0 auto 12px auto !important;
+    display: none !important;
   }
 
   .dropdown-close-btn {
+    display: none !important;
+  }
+
+  .profile-dropdown-card {
+    position: absolute !important;
+    top: calc(100% + 10px) !important;
+    right: -4px !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: 245px !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 !important;
+    border-radius: 18px !important;
+    border: 1px solid var(--color-line, #E2D7C3) !important;
+    background: var(--color-sand-50, #FAF7F2) !important;
+    background: linear-gradient(180deg, #FAF7F2 0%, #F5EFE6 100%) !important;
+    box-shadow: 0 16px 40px -10px rgba(24, 21, 18, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.85) inset !important;
+    padding: 10px !important;
+    z-index: 1000000 !important;
+    animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-sizing: border-box !important;
+  }
+
+  .dropdown-menu-links {
     display: flex !important;
-    width: 28px !important;
-    height: 28px !important;
-    border-radius: 50% !important;
-    border: 1px solid rgba(24, 21, 18, 0.1) !important;
-    background: rgba(24, 21, 18, 0.05) !important;
-    color: var(--color-ink-muted, #5E554D) !important;
-    font-size: 13px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    flex-shrink: 0 !important;
-    margin-left: auto !important;
-    transition: all 0.2s ease !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 0 0 8px 0 !important;
+    margin: 0 0 8px 0 !important;
+    border-bottom: 1px solid rgba(226, 215, 195, 0.7) !important;
   }
 
-  .dropdown-close-btn:hover {
-    background: rgba(24, 21, 18, 0.12) !important;
-    color: var(--color-charcoal-900, #181512) !important;
+  .dropdown-link-primary {
+    padding: 9px 12px !important;
+    border-radius: 12px !important;
   }
 
-  .dh-avatar {
-    width: 44px !important;
-    height: 44px !important;
-    font-size: 17px !important;
-  }
-
-  .dh-name {
-    font-size: 15px !important;
-  }
-
-  .dh-email {
-    font-size: 11.5px !important;
-  }
-
-  .dropdown-link-primary,
   .dropdown-link-admin {
-    padding: 12px 14px !important;
-    border-radius: 14px !important;
+    padding: 9px 12px !important;
+    border-radius: 12px !important;
   }
 
   .dropdown-link-title {
-    font-size: 13.5px !important;
+    font-size: 12.5px !important;
   }
 
   .dropdown-link-desc {
-    font-size: 10.5px !important;
+    font-size: 10px !important;
+  }
+
+  .dropdown-footer {
+    padding-top: 0 !important;
   }
 
   .dropdown-logout-btn {
-    height: 42px !important;
-    font-size: 13px !important;
-    border-radius: 12px !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
   }
 
   /* HERO */
@@ -5090,6 +5077,21 @@ h2.sh {
   .hero-i { gap: 28px; padding: 0 16px }
   .hctas { flex-direction: column; width: 100% }
   .bp, .bs, .bo { width: 100%; display: block; text-align: center }
+
+  /* HERO MAIN STAGE PADDING & MARGIN ON SMALLER DEVICES */
+  .hero-main-stage {
+    min-height: unset !important;
+    height: auto !important;
+    padding-top: 26px !important;
+    padding-bottom: 40px !important;
+    margin-top: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .hero-content-stage {
+    padding-top: 10px !important;
+    margin-top: 0 !important;
+  }
 
   /* SECTIONS */
   .sec { padding: 40px 16px }
@@ -5175,6 +5177,15 @@ h2.sh {
     border-radius: 50% !important;
     width: 30px !important;
     height: 30px !important;
+  }
+  .profile-dropdown-card {
+    right: -24px !important;
+    width: 224px !important;
+  }
+  .hero-main-stage {
+    padding-top: 22px !important;
+    padding-bottom: 36px !important;
+    margin-top: 6px !important;
   }
 }
 

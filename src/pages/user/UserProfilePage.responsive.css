@@ -329,3 +329,42 @@
     min-height: auto !important;
   }
 }
+
+/* ═════ Glitch / Feedback Reporting Banner ═════ */
+.feedbackBanner {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.feedbackBanner:hover {
+  border-color: rgba(226, 139, 92, 0.6) !important;
+  box-shadow: 0 14px 34px -8px rgba(193, 85, 44, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.feedbackBtn {
+  outline: none;
+}
+
+.feedbackBtn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 22px rgba(193, 85, 44, 0.55) !important;
+}
+
+.feedbackBtn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (max-width: 768px) {
+  .feedbackBanner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 16px 16px !important;
+    gap: 16px !important;
+  }
+
+  .feedbackBtn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}

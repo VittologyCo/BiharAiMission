@@ -61,7 +61,7 @@ function parseExperience(exp) {
   return { val: num, unit: 'Years' };
 }
 
-export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
+export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpenContact }) {
   const { user, logout, forcePurgeAndLogout } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
@@ -999,6 +999,126 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration }) {
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '24px auto 48px auto', padding: '0 20px' }}>
+
+        {/* FEEDBACK & GLITCH REPORTING BANNER */}
+        <div 
+          className="feedbackBanner"
+          style={{
+            position: 'relative',
+            background: 'linear-gradient(135deg, rgba(24, 21, 18, 0.95) 0%, rgba(32, 28, 24, 0.92) 100%)',
+            border: '1px solid rgba(226, 139, 92, 0.35)',
+            borderRadius: '18px',
+            padding: '18px 24px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '20px',
+            flexWrap: 'wrap',
+            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+          }}
+        >
+          {/* Subtle Ambient Glow Strip */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: '20px',
+            right: '20px',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, #C1552C 40%, #D99B26 70%, transparent)',
+            borderRadius: '1px'
+          }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: 'rgba(193, 85, 44, 0.16)',
+              border: '1px solid rgba(226, 139, 92, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '22px',
+              flexShrink: 0
+            }}>
+              🛠️
+            </div>
+            <div>
+              <div style={{
+                fontFamily: "var(--font-display, 'Fraunces', serif)",
+                fontSize: '15px',
+                fontWeight: '700',
+                color: '#FFFFFF',
+                letterSpacing: '-0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <span>{isHi ? 'कोई तकनीकी समस्या या बग मिला? सुधारने में हमारी मदद करें' : 'Found any glitches or website issues? Help us improve!'}</span>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  padding: '2px 8px',
+                  borderRadius: '9999px',
+                  background: 'rgba(217, 155, 38, 0.18)',
+                  color: '#D99B26',
+                  border: '1px solid rgba(217, 155, 38, 0.4)',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase'
+                }}>
+                  {isHi ? 'प्रतिक्रिया' : 'FEEDBACK'}
+                </span>
+              </div>
+              <p style={{
+                fontSize: '13px',
+                color: '#C2B7A3',
+                lineHeight: 1.5,
+                margin: '4px 0 0 0'
+              }}>
+                {isHi 
+                  ? 'यदि आपको वेबसाइट में कोई गड़बड़ी, क्रैश या कार्यक्षमता से संबंधित कोई समस्या मिलती है, तो कृपया हमारी टीम को लिखें ताकि हम प्लेटफॉर्म को और बेहतर बना सकें।' 
+                  : 'If you found any glitches, website crash, or any problem related to functionality, please write to us to help us improve our website.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="feedbackBtn"
+            onClick={() => {
+              if (onOpenContact) {
+                onOpenContact();
+              } else {
+                window.dispatchEvent(new CustomEvent('bihar_ai_open_contact_modal'));
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #DE6739 0%, #C1552C 60%, #A83E16 100%)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '9999px',
+              padding: '11px 22px',
+              fontSize: '13.5px',
+              fontWeight: '700',
+              fontFamily: "var(--font-body, 'General Sans', sans-serif)",
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 16px rgba(193, 85, 44, 0.45)',
+              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              flexShrink: 0
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            <span>{isHi ? 'समस्या रिपोर्ट करें / संपर्क करें' : 'Report Glitch / Contact Us'}</span>
+          </button>
+        </div>
 
         {/* PROFILE HEADER HERO CARD (Machined Double-Bezel Dark Charcoal & Amber) */}
         <div style={{

@@ -33,11 +33,14 @@ const sendEmailPayload = async (payload) => {
 };
 
 export const sendContactEmailViaResend = async ({ name, email, description }) => {
+  const refId = Date.now().toString(36).toUpperCase();
+  const submittedTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST';
   const payload = {
     from: getDefaultSender(),
-    to: ['contact@biharaimission.org'],
+    to: ['vittologyconsultants@gmail.com'],
     reply_to: email,
-    subject: `📩 New Website Contact Inquiry from ${name}`,
+    subject: `[Inquiry #${refId}] New Message from ${name} — Bihar AI Mission`,
+    text: `New Website Contact Inquiry Received [#${refId}]\n\nName: ${name}\nEmail: ${email}\nDate: ${submittedTime}\nReference: ${refId}\n\nMessage / Inquiry:\n${description}\n\n--\nSent via official website contact desk · Bihar AI Mission`,
     html: `
       <div style="font-family: Arial, sans-serif; padding: 24px; color: #111827; max-width: 600px; border: 2px solid #000000; border-radius: 16px; background: #EFEAE5;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; border-bottom: 2px solid #F3ECE0; padding-bottom: 12px;">

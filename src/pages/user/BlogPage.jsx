@@ -4,7 +4,8 @@ import { useLanguage } from '../../hooks/useLanguage';
 import SEO from '../../components/SEO/SEO';
 import {
   fetchBlogsFromSupabase,
-  incrementBlogViews
+  incrementBlogViews,
+  getBlogsFromStorage
 } from '../../utils/blogsStorage';
 import styles from './BlogPage.module.css';
 
@@ -20,12 +21,14 @@ const CATEGORIES = [
 ];
 
 /**
- * Safe smooth scrolling helper that never throws on older mobile browsers
+ * Instant reliable scroll to top helper that never throws or lags on mobile devices
  */
 const safeScrollToTop = () => {
   try {
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     }
   } catch (e) {
     try {
@@ -133,18 +136,18 @@ export default function BlogPage({ onGetInvolved }) {
   // Prevent duplicate view increment calls that cause loops
   const viewedArticlesRef = useRef(new Set());
 
-  // 1. Fetch Blogs from Supabase
+  // 1. Fetch Blogs from Supabase once on mount
   useEffect(() => {
     let isMounted = true;
     const loadBlogs = async () => {
       try {
         const data = await fetchBlogsFromSupabase();
         if (isMounted) {
-          setBlogs(Array.isArray(data) ? data : []);
+          setBlogs(Array.isArray(data) && data.length > 0 ? data : getBlogsFromStorage());
         }
       } catch (err) {
         if (isMounted) {
-          setBlogs([]);
+          setBlogs(getBlogsFromStorage());
         }
       } finally {
         if (isMounted) {
@@ -156,10 +159,7 @@ export default function BlogPage({ onGetInvolved }) {
     loadBlogs();
 
     const handleUpdate = () => {
-      // Only reload if user is not in the middle of reading an article
-      if (!blogId) {
-        loadBlogs();
-      }
+      loadBlogs();
     };
 
     window.addEventListener('bihar_ai_blogs_updated', handleUpdate);
@@ -167,32 +167,51 @@ export default function BlogPage({ onGetInvolved }) {
       isMounted = false;
       window.removeEventListener('bihar_ai_blogs_updated', handleUpdate);
     };
-  }, [blogId]);
+  }, []);
 
   // 2. Handle URL deep-linking for /blog/:blogId
   useEffect(() => {
-    if (blogId && blogs.length > 0) {
-      const targetSlug = String(blogId).toLowerCase().trim();
-      const found = blogs.find(
+    if (blogId) {
+      const rawId = String(blogId).toLowerCase().trim();
+      let decodedId = rawId;
+      try {
+        decodedId = decodeURIComponent(rawId);
+      } catch (e) {}
+
+      // If activeArticle is already matching this blogId, don't wipe it!
+      if (
+        activeArticle &&
+        (String(activeArticle.slug || '').toLowerCase().trim() === rawId ||
+         String(activeArticle.slug || '').toLowerCase().trim() === decodedId ||
+         String(activeArticle.id || '').toLowerCase().trim() === rawId ||
+         String(activeArticle.id || '').toLowerCase().trim() === decodedId)
+      ) {
+        return;
+      }
+
+      const pool = blogs.length > 0 ? blogs : getBlogsFromStorage();
+      const found = pool.find(
         (b) =>
-          String(b.slug || '').toLowerCase().trim() === targetSlug ||
-          String(b.id || '') === String(blogId)
+          String(b.slug || '').toLowerCase().trim() === rawId ||
+          String(b.slug || '').toLowerCase().trim() === decodedId ||
+          String(b.id || '').toLowerCase().trim() === rawId ||
+          String(b.id || '').toLowerCase().trim() === decodedId
       );
+
       if (found) {
         setActiveArticle(found);
-        // Increment views ONLY once per session per article to prevent infinite loop
         if (!viewedArticlesRef.current.has(found.id)) {
           viewedArticlesRef.current.add(found.id);
           incrementBlogViews(found.id);
         }
         safeScrollToTop();
-      } else {
+      } else if (!loading) {
         setActiveArticle(null);
       }
-    } else if (!blogId) {
+    } else {
       setActiveArticle(null);
     }
-  }, [blogId, blogs]);
+  }, [blogId, blogs, loading, activeArticle]);
 
   // 3. Navigation handlers
   const handleOpenArticle = (item) => {
@@ -638,7 +657,10 @@ export default function BlogPage({ onGetInvolved }) {
                   <article
                     key={item.id}
                     className={styles.blogCard}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleOpenArticle(item)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenArticle(item); }}
                   >
                     <div className={styles.cardImageWrap}>
                       <img
@@ -646,6 +668,7 @@ export default function BlogPage({ onGetInvolved }) {
                         alt={item.title || 'Related article'}
                         className={styles.cardImage}
                         loading="lazy"
+                        onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80'; }}
                       />
                       <div className={styles.cardCategoryOverlay}>
                         <span className={styles.categoryTag}>{item.category}</span>
@@ -654,9 +677,16 @@ export default function BlogPage({ onGetInvolved }) {
                     <div className={styles.cardBody}>
                       <h4 className={styles.cardTitle}>{item.title}</h4>
                       <p className={styles.cardExcerpt}>{item.excerpt}</p>
-                      <span className={styles.readMoreLink}>
+                      <button
+                        type="button"
+                        className={styles.readMoreLink}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenArticle(item);
+                        }}
+                      >
                         {isHi ? 'पूरा लेख पढ़ें →' : 'Read Article →'}
-                      </span>
+                      </button>
                     </div>
                   </article>
                 ))}
@@ -785,7 +815,10 @@ export default function BlogPage({ onGetInvolved }) {
             {featuredBlog && activeCategory === 'All' && !searchQuery && (
               <div
                 className={styles.featuredCard}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleOpenArticle(featuredBlog)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenArticle(featuredBlog); }}
               >
                 <div className={styles.featuredImageWrap}>
                   <img
@@ -793,6 +826,7 @@ export default function BlogPage({ onGetInvolved }) {
                     alt={featuredBlog.title || 'Spotlight article'}
                     className={styles.featuredImage}
                     loading="lazy"
+                    onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80'; }}
                   />
                   <div className={styles.featuredBadge}>⭐ Spotlight Article</div>
                 </div>
@@ -834,10 +868,17 @@ export default function BlogPage({ onGetInvolved }) {
                       </div>
                     </div>
 
-                    <div className={styles.readMoreBtn}>
+                    <button
+                      type="button"
+                      className={styles.readMoreBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenArticle(featuredBlog);
+                      }}
+                    >
                       <span>{isHi ? 'पूरा लेख पढ़ें' : 'Read Full Article'}</span>
                       <span>→</span>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -849,7 +890,10 @@ export default function BlogPage({ onGetInvolved }) {
                 <article
                   key={item.id}
                   className={styles.blogCard}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleOpenArticle(item)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleOpenArticle(item); }}
                 >
                   <div className={styles.cardImageWrap}>
                     <img
@@ -857,6 +901,7 @@ export default function BlogPage({ onGetInvolved }) {
                       alt={item.title || 'Article image'}
                       className={styles.cardImage}
                       loading="lazy"
+                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80'; }}
                     />
                     <div className={styles.cardCategoryOverlay}>
                       <span className={styles.categoryTag}>{item.category}</span>
@@ -888,9 +933,16 @@ export default function BlogPage({ onGetInvolved }) {
                         </span>
                       </div>
 
-                      <span className={styles.readMoreLink}>
+                      <button
+                        type="button"
+                        className={styles.readMoreLink}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenArticle(item);
+                        }}
+                      >
                         {isHi ? 'पढ़ें →' : 'Read →'}
-                      </span>
+                      </button>
                     </div>
                   </div>
                 </article>

@@ -82,7 +82,7 @@ const AppLayout = ({
           path="/profile" 
           element={
             <UserProtectedRoute onOpenAuth={onOpenAuth}>
-              <UserProfilePage onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} />
+              <UserProfilePage onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} onOpenContact={onOpenContact} />
             </UserProtectedRoute>
           } 
         />
@@ -176,6 +176,12 @@ function App() {
 
   const handleOpenRegistration = useCallback(() => {
     setIsRegistrationOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalContact = () => setIsContactModalOpen(true);
+    window.addEventListener('bihar_ai_open_contact_modal', handleGlobalContact);
+    return () => window.removeEventListener('bihar_ai_open_contact_modal', handleGlobalContact);
   }, []);
 
 
