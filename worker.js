@@ -69,9 +69,9 @@ export default {
     if (url.pathname === '/api/config') {
       return new Response(
         JSON.stringify({
-          supabaseUrl: env?.REACT_APP_SUPABASE_URL || 'https://xvmznsqgqlrjcwtyfnwc.supabase.co',
-          supabaseAnonKey: env?.REACT_APP_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_C234meTGCdmmVHbyEFuJyg_dtW_2SrL',
-          googleClientId: env?.REACT_APP_GOOGLE_CLIENT_ID || '940188247500-012ore51vpirncj1bvl31dtau38s8o5u.apps.googleusercontent.com',
+          supabaseUrl: env?.REACT_APP_SUPABASE_URL || env?.SUPABASE_URL || '',
+          supabaseAnonKey: env?.REACT_APP_SUPABASE_PUBLISHABLE_KEY || env?.SUPABASE_ANON_KEY || '',
+          googleClientId: env?.REACT_APP_GOOGLE_CLIENT_ID || '',
           resendFromEmail: env?.REACT_APP_RESEND_FROM_EMAIL || 'Bihar AI Mission <onboarding@biharaimission.org>',
           domain: 'biharaimission.org',
         }),
@@ -105,15 +105,12 @@ export default {
             });
           }
 
-          // Active verified Resend API key fallback
-          const fallbackKey = ['re', 'UwKtUKYD', 'AXrPDfrDUqsMaQ5rAu7PEPWB'].join('_');
           const apiKey =
             env?.RESEND_API_KEY ||
-            env?.REACT_APP_RESEND_API_KEY ||
-            fallbackKey;
+            env?.REACT_APP_RESEND_API_KEY;
 
           if (!apiKey) {
-            return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured' }), {
+            return new Response(JSON.stringify({ error: 'RESEND_API_KEY is not configured in Cloudflare Worker environment' }), {
               status: 500,
               headers: {
                 'Content-Type': 'application/json',
@@ -340,13 +337,10 @@ export default {
             );
           }
 
-          // Get Service Account Credentials
-          const saEmail =
-            env?.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
-            'bihar-ai-drive-uploader@biharaimission.iam.gserviceaccount.com';
+          // Get Service Account Credentials strictly from Cloudflare environment
+          const saEmail = env?.GOOGLE_SERVICE_ACCOUNT_EMAIL;
           const saKey = env?.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
-          const driveFolderId =
-            env?.GOOGLE_DRIVE_FOLDER_ID || '1zCbPMQEsjri9S-3U9vd6EjAWwT7RRHlL';
+          const driveFolderId = env?.GOOGLE_DRIVE_FOLDER_ID;
 
           if (saEmail && saKey) {
             const privateKey = saKey.replace(/\\n/g, '\n');
@@ -509,7 +503,10 @@ export default {
           // Fallback: Return structured metadata with Supabase public path guidance
           const cleanEmail = String(userEmail).replace(/[^a-zA-Z0-9]/g, '_');
           const cleanName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-          const supaPath = `https://xvmznsqgqlrjcwtyfnwc.supabase.co/storage/v1/object/public/task-submissions/${cleanEmail}/${Date.now()}_${cleanName}`;
+          const supaUrl = env?.REACT_APP_SUPABASE_URL || env?.SUPABASE_URL || '';
+          const supaPath = supaUrl
+            ? `${supaUrl}/storage/v1/object/public/task-submissions/${cleanEmail}/${Date.now()}_${cleanName}`
+            : `/submissions/${cleanEmail}/${Date.now()}_${cleanName}`;
 
           return new Response(
             JSON.stringify({

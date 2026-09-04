@@ -2,16 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl =
   process.env.REACT_APP_SUPABASE_URL ||
-  process.env.SUPABASE_URL ||
-  'https://xvmznsqgqlrjcwtyfnwc.supabase.co';
+  process.env.SUPABASE_URL;
 
 const supabaseKey =
   process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  'sb_publishable_C234meTGCdmmVHbyEFuJyg_dtW_2SrL';
+  process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase credentials missing. Check your .env file and ensure variables start with REACT_APP_');
+  console.warn(
+    'Supabase credentials missing. Configure REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_PUBLISHABLE_KEY in environment settings.'
+  );
 }
 
 // Custom lock function to bypass Web Locks API (navigator.locks) and prevent lock stealing errors in React

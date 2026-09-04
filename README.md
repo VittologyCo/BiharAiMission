@@ -73,15 +73,15 @@ Create or verify `.env` in the root directory:
 
 ```env
 # Supabase Database & Auth (Real-time synced)
-REACT_APP_SUPABASE_URL=https://xvmznsqgqlrjcwtyfnwc.supabase.co
-REACT_APP_SUPABASE_PUBLISHABLE_KEY=sb_publishable_C234meTGCdmmVHbyEFuJyg_dtW_2SrL
+REACT_APP_SUPABASE_URL=https://your-project-ref.supabase.co
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
 
 # Resend Transactional Email API
 RESEND_API_KEY=your_resend_api_key
 REACT_APP_RESEND_FROM_EMAIL=Bihar AI Mission <onboarding@biharaimission.org>
 
 # Google OAuth
-REACT_APP_GOOGLE_CLIENT_ID=940188247500-012ore51vpirncj1bvl31dtau38s8o5u.apps.googleusercontent.com
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
 
 ---
@@ -98,18 +98,21 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-#### Optional: Configure Cloudflare Worker Secrets (Google Drive)
-If utilizing Google Drive storage directly from the Worker:
+#### Configure Cloudflare Worker Secrets
+Set your production credentials and API keys in Cloudflare Worker secrets:
 
 ```bash
+npx wrangler secret put RESEND_API_KEY
+# Enter your Resend API key
+
 npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
-# Enter: bihar-ai-drive-uploader@biharaimission.iam.gserviceaccount.com
+# Enter your Google Service Account email
 
 npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-# Paste the RSA private key from your service account
+# Paste the RSA private key from your service account JSON
 
 npx wrangler secret put GOOGLE_DRIVE_FOLDER_ID
-# Enter: 1zCbPMQEsjri9S-3U9vd6EjAWwT7RRHlL
+# Enter your Google Drive folder ID
 ```
 
 ---
