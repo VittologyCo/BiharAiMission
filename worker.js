@@ -731,32 +731,7 @@ export default {
       }
     }
 
-    // 2. Fetch direct static asset if it exists in build
-    let response = null;
-    try {
-      response = await env.ASSETS.fetch(request);
-    } catch (e) {
-      response = null;
-    }
-
-    // If direct asset found and ok (e.g. .js, .css, images, or static html), serve with enterprise headers
-    if (response && response.status < 400) {
-      const respHeaders = new Headers(response.headers);
-      respHeaders.set('X-Content-Type-Options', 'nosniff');
-      respHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-      respHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-      respHeaders.set('Vary', 'Accept, Accept-Encoding');
-      if (url.pathname.endsWith('.md') || url.pathname.endsWith('.txt')) {
-        respHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
-      }
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: respHeaders,
-      });
-    }
-
-    // 3. Known SPA routes: serve dedicated pre-rendered HTML or /index.html
+    // 2. Known SPA routes: serve dedicated pre-rendered HTML or /index.html
     if (isKnown && request.method === 'GET') {
       let targetHtml = '/index.html';
       if (cleanPath === '/about') targetHtml = '/about/index.html';
@@ -765,7 +740,7 @@ export default {
 
       let spaResponse = null;
       try {
-        spaResponse = await env.ASSETS.fetch(new Request(new URL(targetHtml, url.origin).toString()));
+        spaResponse = await env.ASSETS.fetch(new Request(new URL(targetHtml, request.url).toString(), request));
       } catch (e) {
         spaResponse = null;
       }
@@ -773,7 +748,7 @@ export default {
       if (!spaResponse || !spaResponse.ok) {
         // Fallback to root /index.html
         try {
-          spaResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin).toString()));
+          spaResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), request));
         } catch (e) {
           spaResponse = null;
         }
@@ -792,6 +767,31 @@ export default {
           headers: spaHeaders,
         });
       }
+    }
+
+    // 3. Fetch direct static asset if it exists in build (e.g. .js, .css, images, or static html)
+    let response = null;
+    try {
+      response = await env.ASSETS.fetch(request);
+    } catch (e) {
+      response = null;
+    }
+
+    // If direct asset found and ok, serve with enterprise headers
+    if (response && response.status < 400) {
+      const respHeaders = new Headers(response.headers);
+      respHeaders.set('X-Content-Type-Options', 'nosniff');
+      respHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+      respHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+      respHeaders.set('Vary', 'Accept, Accept-Encoding');
+      if (url.pathname.endsWith('.md') || url.pathname.endsWith('.txt')) {
+        respHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
+      }
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: respHeaders,
+      });
     }
 
     // 4. Unknown routes: Guaranteed Real HTTP 404 (NEVER 500, NEVER soft-200!)

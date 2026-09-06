@@ -117,4 +117,16 @@ assert.equal(resAbout.status, 200, 'Known route /about returns status 200');
 assert.ok(resAbout.headers.get('vary')?.includes('Accept'), 'About page includes Vary header');
 console.log('[PASS] /about returns HTTP 200 with pre-rendered HTML');
 
+// 4d. Known SPA route /admin returns 200 with index.html app shell
+const reqAdmin = new Request('http://localhost/admin');
+const resAdmin = await worker.fetch(reqAdmin, mockEnv);
+assert.equal(resAdmin.status, 200, 'Known SPA route /admin returns status 200');
+console.log('[PASS] /admin returns HTTP 200 with SPA app shell');
+
+// 4e. Known SPA route /learning returns 200 with index.html app shell
+const reqLearning = new Request('http://localhost/learning');
+const resLearning = await worker.fetch(reqLearning, mockEnv);
+assert.equal(resLearning.status, 200, 'Known SPA route /learning returns status 200');
+console.log('[PASS] /learning returns HTTP 200 with SPA app shell');
+
 console.log('\nAll Agentic Readiness tests passed successfully!\n');

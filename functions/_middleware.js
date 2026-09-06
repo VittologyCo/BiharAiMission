@@ -117,7 +117,46 @@ export async function onRequest(context) {
     });
   }
 
-  // 3. Process the next handler / static asset
+  // 3. Known SPA routes: rewrite to /index.html (or dedicated pre-rendered HTML)
+  if (isKnown && request.method === 'GET') {
+    let targetHtml = '/index.html';
+    if (cleanPath === '/about') targetHtml = '/about/index.html';
+    else if (cleanPath === '/contact') targetHtml = '/contact/index.html';
+    else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/index.html';
+
+    const rewriteUrl = new URL(targetHtml, request.url);
+    const rewriteReq = new Request(rewriteUrl.toString(), request);
+
+    let spaResponse = null;
+    try {
+      spaResponse = await next(rewriteReq);
+    } catch (e) {
+      spaResponse = null;
+    }
+
+    if ((!spaResponse || !spaResponse.ok) && env && env.ASSETS) {
+      try {
+        spaResponse = await env.ASSETS.fetch(rewriteReq);
+      } catch (e) {
+        spaResponse = null;
+      }
+    }
+
+    if (spaResponse && spaResponse.ok) {
+      const spaHeaders = new Headers(spaResponse.headers);
+      spaHeaders.set('Content-Type', 'text/html; charset=utf-8');
+      spaHeaders.set('Vary', 'Accept, Accept-Encoding');
+      spaHeaders.set('Cache-Control', 'no-cache, must-revalidate');
+      spaHeaders.set('X-Content-Type-Options', 'nosniff');
+      spaHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+      return new Response(spaResponse.body, {
+        status: 200,
+        headers: spaHeaders,
+      });
+    }
+  }
+
+  // 4. Process the next handler / static asset (e.g. .js, .css, images, media)
   let response;
   try {
     response = await next();
@@ -125,42 +164,8 @@ export async function onRequest(context) {
     response = new Response('Server Error', { status: 500 });
   }
 
-  // 4. Handle 404s and Known SPA Routes
+  // 5. Handle 404s for truly unknown routes -> Real HTTP 404 (NEVER soft-200!)
   if (response.status === 404 && request.method === 'GET') {
-    // If it's a known route, serve pre-rendered HTML or fallback to /index.html with status 200
-    if (isKnown) {
-      let targetHtml = '/index.html';
-      if (cleanPath === '/about') targetHtml = '/about/index.html';
-      else if (cleanPath === '/contact') targetHtml = '/contact/index.html';
-      else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/index.html';
-
-      let spaResponse = null;
-      if (env && env.ASSETS) {
-        try {
-          spaResponse = await env.ASSETS.fetch(new Request(new URL(targetHtml, url.origin).toString()));
-          if (!spaResponse || !spaResponse.ok) {
-            spaResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin).toString()));
-          }
-        } catch (e) {
-          spaResponse = null;
-        }
-      }
-
-      if (spaResponse && spaResponse.ok) {
-        const spaHeaders = new Headers(spaResponse.headers);
-        spaHeaders.set('Content-Type', 'text/html; charset=utf-8');
-        spaHeaders.set('Vary', 'Accept, Accept-Encoding');
-        spaHeaders.set('Cache-Control', 'no-cache, must-revalidate');
-        spaHeaders.set('X-Content-Type-Options', 'nosniff');
-        spaHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-        return new Response(spaResponse.body, {
-          status: 200,
-          headers: spaHeaders,
-        });
-      }
-    }
-
-    // Truly unknown route -> Real HTTP 404 (NEVER soft-200!)
     const notFoundHeaders = new Headers();
     notFoundHeaders.set('Vary', 'Accept, Accept-Encoding');
     notFoundHeaders.set('X-Content-Type-Options', 'nosniff');
