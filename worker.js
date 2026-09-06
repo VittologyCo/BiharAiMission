@@ -15,6 +15,18 @@ export default {
     const url = new URL(request.url);
 
     // ═══════════════════════════════════════════════════════════════
+    // Canonical HTTPS & Apex Domain Enforcement (301 Permanent Redirect)
+    // ═══════════════════════════════════════════════════════════════
+    const isLocal = url.hostname.includes('localhost') || url.hostname.includes('127.0.0.1');
+    if (!isLocal && (url.protocol === 'http:' || url.hostname.startsWith('www.'))) {
+      url.protocol = 'https:';
+      if (url.hostname.startsWith('www.')) {
+        url.hostname = url.hostname.replace(/^www\./, '');
+      }
+      return Response.redirect(url.toString(), 301);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Universal CORS Preflight for all API & Upload Endpoints
     // ═══════════════════════════════════════════════════════════════
     if (

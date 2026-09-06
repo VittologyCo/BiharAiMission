@@ -23,7 +23,12 @@
   RewriteEngine On
   RewriteBase /
 
-  # ── 1. Legacy redirect ─────────────────────────────────────────
+  # ── 1. Force HTTPS & Canonical Apex Domain ─────────────────────
+  RewriteCond %{HTTPS} off [OR]
+  RewriteCond %{HTTP_HOST} ^www\. [NC]
+  RewriteRule ^ https://biharaimission.org%{REQUEST_URI} [L,R=301]
+
+  # ── 2. Legacy redirect ─────────────────────────────────────────
   RewriteRule ^bihar_ai_mission\.html$ / [R=301,L]
 
   # ── 2. Serve real files and directories directly ────────────────

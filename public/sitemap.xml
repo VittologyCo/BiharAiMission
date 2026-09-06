@@ -10,13 +10,13 @@
   <!-- ═══════════════════════════════════════════ -->
   <url>
     <loc>https://biharaimission.org/</loc>
-    <lastmod>2026-08-23</lastmod>
+    <lastmod>2026-09-06</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="en-IN" href="https://biharaimission.org/" />
     <xhtml:link rel="alternate" hreflang="hi-IN" href="https://biharaimission.org/" />
     <image:image>
-      <image:loc>https://biharaimission.org/bi_logo.png</image:loc>
+      <image:loc>https://biharaimission.org/logo512.png</image:loc>
       <image:title>Bihar AI Mission — Official AI Training &amp; Certification Platform</image:title>
       <image:caption>Bihar AI Mission (बिहार AI मिशन) is Bihar's official AI literacy and digital certification platform.</image:caption>
     </image:image>
