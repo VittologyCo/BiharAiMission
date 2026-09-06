@@ -6,6 +6,11 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import reportWebVitals from './reportWebVitals';
 
+import { initGlobalErrorLogging } from './services/errorLoggingService';
+
+// Initialize global runtime error monitoring (uncaught JS + unhandled promises)
+initGlobalErrorLogging();
+
 // Clean production console: Suppress verbose logs, debug, and info. Only show genuine errors.
 if (process.env.NODE_ENV === 'production' || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
   console.log = () => {};

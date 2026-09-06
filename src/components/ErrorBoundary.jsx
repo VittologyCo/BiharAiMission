@@ -1,4 +1,5 @@
 import React from 'react';
+import { logAppError } from '../services/errorLoggingService';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,6 +14,12 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // Log privately without exposing stack trace to users in UI
     console.error('Unhandled Application Exception caught by ErrorBoundary:', error, errorInfo);
+    try {
+      logAppError(error, {
+        errorType: 'react_boundary',
+        metadata: errorInfo || {},
+      });
+    } catch (e) {}
   }
 
   handleReload = () => {
