@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../utils/supabase';
-import { sendPasswordResetEmailViaResend } from '../../utils/resendEmail';
 import styles from './Admin.module.css';
 
 const AdminLogin = () => {
@@ -10,8 +9,6 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [resetMessage, setResetMessage] = useState('');
-  const [isForgot, setIsForgot] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,46 +82,6 @@ const AdminLogin = () => {
     }
   };
 
-  const handleReset = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setResetMessage('');
-
-    if (!email) {
-      setError('Please enter your admin email address.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const cleanEmail = email.toLowerCase().trim();
-      const token = 'rst_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const expiresAt = Date.now() + 5 * 60 * 1000;
-
-      if (supabase) {
-        supabase.from('user_details').update({
-          reset_token: token,
-          reset_expires_at: new Date(expiresAt).toISOString(),
-          updated_at: new Date().toISOString(),
-        }).eq('email', cleanEmail).then(() => {}).catch(() => {});
-      }
-
-      const resetUrl = `${window.location.origin}/reset-password?email=${encodeURIComponent(cleanEmail)}&token=${token}`;
-
-      await sendPasswordResetEmailViaResend({
-        email: cleanEmail,
-        resetUrl,
-      });
-
-      setResetMessage('Password reset link has been sent to your email address. Please check your inbox.');
-    } catch (err) {
-      setError(err.message || 'Failed to send password reset email.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className={styles.adminContainer}>
       <div className={styles.loginBackgroundDecor} />
@@ -146,223 +103,121 @@ const AdminLogin = () => {
               <span>Official Admin Portal</span>
             </div>
 
-            <h1>{isForgot ? 'Reset Password' : 'Admin Portal'}</h1>
-            <p>
-              {isForgot
-                ? 'Enter your registered admin email address to receive a secure reset link.'
-                : 'Bihar AI Mission Management System'}
-            </p>
+            <h1>Admin Portal</h1>
+            <p>Bihar AI Mission Management System</p>
           </div>
 
-          {isForgot ? (
-            <form onSubmit={handleReset} autoComplete="off">
-              <div className={styles.formFieldGroup}>
-                <div className={styles.formFieldLabelRow}>
-                  <label className={styles.formLabel}>Admin Email Address</label>
-                </div>
-                <div className={styles.inputWrapper}>
-                  <div className={styles.inputIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                  </div>
-                  <input
-                    type="email"
-                    name="admin_reset_email"
-                    id="admin_reset_email"
-                    className={`${styles.loginInput} ${styles.loginInputWithoutRightIcon}`}
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="none"
-                    spellCheck="false"
-                    required
-                  />
-                </div>
+          <form onSubmit={handleLogin} autoComplete="off">
+            <div className={styles.formFieldGroup}>
+              <div className={styles.formFieldLabelRow}>
+                <label className={styles.formLabel}>Email Address</label>
               </div>
-
-              {error && (
-                <div className={`${styles.alertBox} ${styles.alertError}`}>
-                  <svg className={styles.alertIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
+              <div className={styles.inputWrapper}>
+                <div className={styles.inputIcon}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
                   </svg>
-                  <span>{error}</span>
                 </div>
-              )}
+                <input
+                  type="email"
+                  name="admin_login_email"
+                  id="admin_login_email"
+                  className={`${styles.loginInput} ${styles.loginInputWithoutRightIcon}`}
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  required
+                />
+              </div>
+            </div>
 
-              {resetMessage && (
-                <div className={`${styles.alertBox} ${styles.alertSuccess}`}>
-                  <svg className={styles.alertIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
+            <div className={styles.formFieldGroup}>
+              <div className={styles.formFieldLabelRow}>
+                <label className={styles.formLabel}>Password</label>
+              </div>
+              <div className={styles.inputWrapper}>
+                <div className={styles.inputIcon}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
-                  <span>{resetMessage}</span>
                 </div>
-              )}
-
-              <button
-                type="submit"
-                className={styles.loginSubmitBtn}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <svg className={styles.spinner} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                      <path d="M12 2a10 10 0 0 1 10 10" />
-                    </svg>
-                    <span>Sending Reset Link...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Send Reset Link</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </>
-                )}
-              </button>
-
-              <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="admin_login_password"
+                  id="admin_login_password"
+                  className={styles.loginInput}
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                  required
+                />
                 <button
                   type="button"
-                  onClick={() => { setIsForgot(false); setError(''); setResetMessage(''); }}
-                  className={styles.backLinkBtn}
+                  className={styles.passwordToggle}
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" />
-                  </svg>
-                  <span>Back to Admin Login</span>
+                  {showPassword ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
                 </button>
               </div>
-            </form>
-          ) : (
-            <form onSubmit={handleLogin} autoComplete="off">
-              <div className={styles.formFieldGroup}>
-                <div className={styles.formFieldLabelRow}>
-                  <label className={styles.formLabel}>Email Address</label>
-                </div>
-                <div className={styles.inputWrapper}>
-                  <div className={styles.inputIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                  </div>
-                  <input
-                    type="email"
-                    name="admin_login_email"
-                    id="admin_login_email"
-                    className={`${styles.loginInput} ${styles.loginInputWithoutRightIcon}`}
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="none"
-                    spellCheck="false"
-                    required
-                  />
-                </div>
-              </div>
+            </div>
 
-              <div className={styles.formFieldGroup}>
-                <div className={styles.formFieldLabelRow}>
-                  <label className={styles.formLabel}>Password</label>
-                  <button
-                    type="button"
-                    onClick={() => { setIsForgot(true); setError(''); setResetMessage(''); }}
-                    className={styles.forgotBtn}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-                <div className={styles.inputWrapper}>
-                  <div className={styles.inputIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="admin_login_password"
-                    id="admin_login_password"
-                    className={styles.loginInput}
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    autoCorrect="off"
-                    autoCapitalize="none"
-                    spellCheck="false"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className={styles.passwordToggle}
-                    onClick={() => setShowPassword(!showPassword)}
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
+            {error && (
+              <div className={`${styles.alertBox} ${styles.alertError}`}>
+                <svg className={styles.alertIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>{error}</span>
               </div>
+            )}
 
-              {error && (
-                <div className={`${styles.alertBox} ${styles.alertError}`}>
-                  <svg className={styles.alertIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
+            <button
+              type="submit"
+              className={styles.loginSubmitBtn}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <svg className={styles.spinner} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" />
                   </svg>
-                  <span>{error}</span>
-                </div>
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In to Dashboard</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </>
               )}
-
-              <button
-                type="submit"
-                className={styles.loginSubmitBtn}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <svg className={styles.spinner} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                      <path d="M12 2a10 10 0 0 1 10 10" />
-                    </svg>
-                    <span>Authenticating...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In to Dashboard</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+            </button>
+          </form>
 
           <div style={{ marginTop: '24px', textAlign: 'center' }}>
             <button
