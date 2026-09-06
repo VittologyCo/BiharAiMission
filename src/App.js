@@ -34,6 +34,8 @@ import RegistrationModal from './components/RegistrationModal/RegistrationModal'
 import MouseEffects from './components/MouseEffects/MouseEffects';
 import LiveVisitorCounter from './components/LiveVisitorCounter/LiveVisitorCounter';
 
+import PublicSubmissionPage from './pages/public/PublicSubmissionPage';
+
 // Lazy-load the Experience page (zero bundle cost to main site)
 const ExperiencePage = lazy(() => import('./experience/ExperiencePage.tsx'));
 
@@ -54,7 +56,8 @@ const AppLayout = ({
   const isAdminPage = location.pathname.startsWith('/admin');
   const isExperiencePage = location.pathname.startsWith('/experience');
   const isResetPasswordPage = location.pathname.startsWith('/reset-password');
-  const isIsolatedPage = isAdminPage || isExperiencePage || isResetPasswordPage;
+  const isSubmissionPage = location.pathname.startsWith('/submission');
+  const isIsolatedPage = isAdminPage || isExperiencePage || isResetPasswordPage || isSubmissionPage;
 
   return (
     <>
@@ -89,6 +92,10 @@ const AppLayout = ({
         <Route path="/course/:id" element={<LearningPage />} />
         <Route path="/program/:id" element={<LearningPage />} />
         <Route path="/exam/:examId" element={<LearningPage />} />
+        
+        {/* Public Submission Details Verification Route */}
+        <Route path="/submission" element={<PublicSubmissionPage />} />
+        <Route path="/submission/:id" element={<PublicSubmissionPage />} />
         
         {/* Experience Route (isolated, lazy-loaded) */}
         <Route 

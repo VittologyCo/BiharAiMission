@@ -44,3 +44,9 @@ secrets/*
 
 # local development & prototypes
 daily-radar/
+
+# dedicated storage uploads & binaries
+uploads/
+*.exe
+*.zip
+The_Cadre_Combined_Document.docx

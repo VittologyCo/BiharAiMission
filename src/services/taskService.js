@@ -6,6 +6,18 @@ const LOCAL_STORAGE_KEY = 'bihar_ai_task_submissions';
 const LOCAL_TASKS_KEY = 'bihar_ai_daily_tasks';
 
 /**
+ * Returns the configured dedicated storage server URL strictly from environment variables (.env).
+ */
+export const getStorageServerUrl = () => {
+  const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
+  // Filter out any stale/expired ephemeral test domains
+  if (!envUrl || envUrl.includes('trycloudflare.com')) {
+    return '';
+  }
+  return envUrl.replace(/\/+$/, '');
+};
+
+/**
  * Get all daily tasks (Admin created + Default 18 tasks)
  */
 export const getDailyTasks = async () => {
@@ -201,8 +213,8 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }
     ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
     : `${(file.size / 1024).toFixed(1)} KB`;
 
-  // 1. First priority: Dedicated 24/7 Local / Cloudflare Storage Server
-  const rawServerUrl = process.env.REACT_APP_STORAGE_SERVER_URL || 'https://tennis-stronger-trademark-dinner.trycloudflare.com';
+  // 1. First priority: Dedicated 24/7 Local / Ngrok Storage Server
+  const rawServerUrl = getStorageServerUrl();
   if (rawServerUrl) {
     try {
       const cleanServerUrl = rawServerUrl.replace(/\/+$/, '');
@@ -223,6 +235,7 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }
 
       const res = await fetch(uploadEndpoint, {
         method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData,
         signal: controller.signal,
       }).finally(() => clearTimeout(timeoutId));
@@ -356,15 +369,18 @@ export const getAllTaskSubmissions = async () => {
 export const deleteStoredFile = async ({ fileUrl, fileName }) => {
   if (!fileUrl && !fileName) return false;
 
-  // 1. Delete from Dedicated 24/7 Storage Server (Cloudflare tunnel or local IP)
-  const dedicatedServerUrl = process.env.REACT_APP_STORAGE_SERVER_URL || 'https://tennis-stronger-trademark-dinner.trycloudflare.com';
+  // 1. Delete from Dedicated 24/7 Storage Server (Ngrok tunnel or local IP)
+  const dedicatedServerUrl = getStorageServerUrl();
   if (dedicatedServerUrl && (fileUrl?.includes('/files/') || fileName)) {
     try {
       const cleanServerUrl = dedicatedServerUrl.replace(/\/+$/, '');
       const deleteEndpoint = `${cleanServerUrl}/delete-file`;
       await fetch(deleteEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({ fileUrl, fileName }),
       });
       console.log('🗑️ Successfully deleted previous file from Dedicated 24/7 Storage Server:', fileName || fileUrl);
@@ -481,11 +497,22 @@ export const submitTaskWork = async ({
   // Sync to Supabase with silent 401 retry
   if (supabase) {
     try {
+      let authUserId = user?.id;
+      let authEmail = (userEmail || '').toLowerCase().trim();
+      try {
+        const sessionRes = await supabase.auth.getSession();
+        if (sessionRes?.data?.session?.user) {
+          authUserId = authUserId || sessionRes.data.session.user.id;
+          authEmail = sessionRes.data.session.user.email?.toLowerCase().trim() || authEmail;
+        }
+      } catch (e) {}
+
       await withAuthRetry(
         () =>
           supabase.from('daily_task_submissions').upsert(
             {
-              user_email: userEmail,
+              user_id: authUserId || `user_${authEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              user_email: authEmail,
               user_name: userName,
               user_district: userDistrict,
               task_id: Number(taskId),
@@ -507,7 +534,7 @@ export const submitTaskWork = async ({
         { isWrite: true, idempotent: true }
       );
     } catch (err) {
-      console.warn('Supabase task submission upsert error:', err);
+      console.warn('Supabase task submission sync note (saved locally):', err?.message || err);
     }
   }
 

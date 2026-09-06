@@ -216,14 +216,21 @@ export default function RegistrationModal({ isOpen, onClose }) {
   }
 
   const getStrengthTier = () => {
-    if (!passVal) return { label: isHi ? 'खाली' : 'EMPTY', color: '#6B7280', bars: 0 };
-    if (strengthScore === 1) return { label: isHi ? 'कमजोर' : 'WEAK', color: '#EF4444', bars: 1 };
-    if (strengthScore === 2) return { label: isHi ? 'मध्यम' : 'FAIR', color: '#F59E0B', bars: 2 };
-    if (strengthScore === 3) return { label: isHi ? 'अच्छा' : 'GOOD', color: '#84CC16', bars: 3 };
-    return { label: isHi ? 'मजबूत' : 'STRONG', color: '#10B981', bars: 4 };
+    if (!passVal) return { label: isHi ? 'खाली' : 'EMPTY', color: '#8A7E72', bars: 0 };
+    if (strengthScore === 1) return { label: isHi ? 'कमजोर' : 'WEAK', color: '#DC2626', bars: 1 };
+    if (strengthScore === 2) return { label: isHi ? 'मध्यम' : 'FAIR', color: '#D97706', bars: 2 };
+    if (strengthScore === 3) return { label: isHi ? 'अच्छा' : 'GOOD', color: '#16A34A', bars: 3 };
+    return { label: isHi ? 'मजबूत' : 'STRONG', color: '#059669', bars: 4 };
   };
 
   const strengthTier = getStrengthTier();
+
+  /* Auto-reveal widget when user types; auto-hide when password is green and passwords match */
+  const confirmVal = form.confirm_password || '';
+  const hasStartedTypingPassword = passVal.length > 0 || confirmVal.length > 0;
+  const isPasswordGreen = hasMinLength && hasUpper && hasNumOrSymbol;
+  const isPasswordMatched = passVal.length >= 6 && confirmVal.length >= 6 && confirmVal === passVal;
+  const showStrengthWidget = hasStartedTypingPassword && !(isPasswordGreen && isPasswordMatched);
 
   const handleNext = () => {
     if (step === 1) {
@@ -712,55 +719,57 @@ export default function RegistrationModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* PASSWORD STRENGTH WIDGET */}
-            <div className={styles.strengthWidget}>
-              <div className={styles.strengthHeader}>
-                <span className={styles.strengthTitle}>
-                  {isHi ? 'पासवर्ड की मजबूती' : 'PASSWORD STRENGTH'}
-                </span>
-                <span 
-                  className={styles.strengthBadge}
-                  style={{
-                    color: strengthTier.color,
-                    borderColor: strengthTier.color,
-                    backgroundColor: `${strengthTier.color}1F`,
-                    boxShadow: strengthTier.bars === 4 ? `0 0 10px ${strengthTier.color}66` : 'none'
-                  }}
-                >
-                  {strengthTier.label}
-                </span>
-              </div>
-
-              {/* 4 Segment Progress Bars */}
-              <div className={styles.strengthBars}>
-                {[1, 2, 3, 4].map((barIndex) => (
-                  <div 
-                    key={barIndex}
-                    className={`${styles.strengthBar} ${barIndex <= strengthTier.bars ? styles.strengthBarActive : ''}`}
+            {/* PASSWORD STRENGTH WIDGET (AUTO SHOW ON TYPING, AUTO HIDE WHEN STRONG & MATCHED) */}
+            {showStrengthWidget && (
+              <div className={styles.strengthWidget}>
+                <div className={styles.strengthHeader}>
+                  <span className={styles.strengthTitle}>
+                    {isHi ? 'पासवर्ड की मजबूती' : 'PASSWORD STRENGTH'}
+                  </span>
+                  <span 
+                    className={styles.strengthBadge}
                     style={{
-                      backgroundColor: barIndex <= strengthTier.bars ? strengthTier.color : undefined,
-                      boxShadow: barIndex <= strengthTier.bars && strengthTier.bars >= 3 ? `0 0 8px ${strengthTier.color}80` : 'none'
+                      color: strengthTier.color,
+                      borderColor: strengthTier.color,
+                      backgroundColor: `${strengthTier.color}14`,
+                      boxShadow: strengthTier.bars === 4 ? `0 0 6px ${strengthTier.color}33` : 'none'
                     }}
-                  />
-                ))}
-              </div>
+                  >
+                    {strengthTier.label}
+                  </span>
+                </div>
 
-              {/* 3 Requirement Checks */}
-              <div className={styles.strengthCriteria}>
-                <span className={`${styles.criteriaItem} ${hasMinLength ? styles.criteriaMet : ''}`}>
-                  <span className={styles.criteriaCheck}>{hasMinLength ? '✓' : '○'}</span>
-                  <span>{isHi ? 'कम से कम 6 अक्षर' : 'At least 6 characters'}</span>
-                </span>
-                <span className={`${styles.criteriaItem} ${hasUpper ? styles.criteriaMet : ''}`}>
-                  <span className={styles.criteriaCheck}>{hasUpper ? '✓' : '○'}</span>
-                  <span>{isHi ? 'एक बड़ा अक्षर (Uppercase)' : 'Uppercase letter'}</span>
-                </span>
-                <span className={`${styles.criteriaItem} ${hasNumOrSymbol ? styles.criteriaMet : ''}`}>
-                  <span className={styles.criteriaCheck}>{hasNumOrSymbol ? '✓' : '○'}</span>
-                  <span>{isHi ? 'संख्या या विशेष चिन्ह' : 'Number or symbol'}</span>
-                </span>
+                {/* 4 Segment Progress Bars */}
+                <div className={styles.strengthBars}>
+                  {[1, 2, 3, 4].map((barIndex) => (
+                    <div 
+                      key={barIndex}
+                      className={`${styles.strengthBar} ${barIndex <= strengthTier.bars ? styles.strengthBarActive : ''}`}
+                      style={{
+                        backgroundColor: barIndex <= strengthTier.bars ? strengthTier.color : undefined,
+                        boxShadow: barIndex <= strengthTier.bars && strengthTier.bars >= 3 ? `0 0 6px ${strengthTier.color}40` : 'none'
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* 3 Requirement Checks */}
+                <div className={styles.strengthCriteria}>
+                  <span className={`${styles.criteriaItem} ${hasMinLength ? styles.criteriaMet : ''}`}>
+                    <span className={styles.criteriaCheck}>{hasMinLength ? '✓' : '○'}</span>
+                    <span>{isHi ? 'कम से कम 6 अक्षर' : 'At least 6 characters'}</span>
+                  </span>
+                  <span className={`${styles.criteriaItem} ${hasUpper ? styles.criteriaMet : ''}`}>
+                    <span className={styles.criteriaCheck}>{hasUpper ? '✓' : '○'}</span>
+                    <span>{isHi ? 'एक बड़ा अक्षर (Uppercase)' : 'Uppercase letter'}</span>
+                  </span>
+                  <span className={`${styles.criteriaItem} ${hasNumOrSymbol ? styles.criteriaMet : ''}`}>
+                    <span className={styles.criteriaCheck}>{hasNumOrSymbol ? '✓' : '○'}</span>
+                    <span>{isHi ? 'संख्या या विशेष चिन्ह' : 'Number or symbol'}</span>
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className={styles.row3}>
               <div className={styles.fieldGroup}>

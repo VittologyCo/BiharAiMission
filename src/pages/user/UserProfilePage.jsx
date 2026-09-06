@@ -1352,9 +1352,14 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
         {/* QUICK STATS BENTO CARDS (Interactive Machined Double-Bezel Tiles) */}
         <div className="profileStats">
-          {/* Card 1: Masterclasses */}
+          {/* Card 1: Joined Masterclasses (LOCKED) */}
           <div
-            onClick={() => setActiveTab('masterclasses')}
+            onClick={() => setLockedModal({
+              title: isHi ? 'मास्टरक्लासेज' : 'Joined Masterclasses',
+              icon: '🎓',
+              subtitle: 'Live Certification Masterclasses',
+              message: 'Masterclasses enrollment portal is currently locked for upcoming batch registration. Stay tuned for dates!'
+            })}
             className="bentoStatCard"
             style={{
               background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
@@ -1362,84 +1367,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               WebkitBackdropFilter: 'blur(16px)',
               padding: '24px 26px',
               borderRadius: '22px',
-              border: activeTab === 'masterclasses' ? '1.5px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
-              boxShadow: activeTab === 'masterclasses' ? '0 16px 40px -10px rgba(193, 85, 44, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
-                Joined Masterclasses
-              </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
-                {joinedMasterclasses.length}
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700', marginTop: '6px' }}>
-                {joinedMasterclasses.length > 0 ? `${joinedMasterclasses.length} Active Cohorts` : 'Explore Lectures →'}
-              </div>
-            </div>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(193, 85, 44, 0.18)', border: '1px solid rgba(226, 139, 92, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-              🎓
-            </div>
-          </div>
-
-          {/* Card 2: Officer Programs */}
-          <div
-            onClick={() => setActiveTab('programs')}
-            className="bentoStatCard"
-            style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: activeTab === 'programs' ? '1.5px solid rgba(16, 185, 129, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
-              boxShadow: activeTab === 'programs' ? '0 16px 40px -10px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
-                Officer Programs
-              </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
-                {joinedOfficerPrograms.length}
-              </div>
-              <div style={{ fontSize: '11px', color: '#34D399', fontWeight: '700', marginTop: '6px' }}>
-                Executive AI Training →
-              </div>
-            </div>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.18)', border: '1px solid rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-              🏛️
-            </div>
-          </div>
-
-          {/* Card 3: Certificates Earned */}
-          <div
-            onClick={() => {
-              if (userSubmissions.filter(s => s.isPassed).length > 0) {
-                const passSub = userSubmissions.find(s => s.isPassed);
-                if (passSub) setActiveCertSubmission(passSub);
-              } else {
-                setActiveTab('masterclasses');
-              }
-            }}
-            className="bentoStatCard"
-            style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: '1px solid rgba(232, 178, 61, 0.35)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
               display: 'flex',
               alignItems: 'center',
@@ -1449,18 +1377,116 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             }}
           >
             <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
-                Certificates Earned
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                  Joined Masterclasses
+                </span>
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
+                  🔒 Locked
+                </span>
+              </div>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+                {joinedMasterclasses.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                🔒 Portal Locked (Upcoming Batch)
+              </div>
+            </div>
+            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(193, 85, 44, 0.18)', border: '1px solid rgba(226, 139, 92, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              🎓
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
+            </div>
+          </div>
+
+          {/* Card 2: Officer Programs (LOCKED) */}
+          <div
+            onClick={() => setLockedModal({
+              title: isHi ? 'अधिकारी कार्यक्रम' : 'Enrolled Programs',
+              icon: '🏛️',
+              subtitle: 'Executive AI Programs for Officers',
+              message: 'Officer Programs are currently locked for upcoming cohort onboarding. Stay tuned for government circulars!'
+            })}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                  Officer Programs
+                </span>
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
+                  🔒 Locked
+                </span>
+              </div>
+              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+                {joinedOfficerPrograms.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                🔒 Currently Locked (Upcoming Cohort)
+              </div>
+            </div>
+            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.18)', border: '1px solid rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+              🏛️
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
+            </div>
+          </div>
+
+          {/* Card 3: Certificates Earned (LOCKED) */}
+          <div
+            onClick={() => setLockedModal({
+              title: isHi ? 'प्रमाणपत्र' : 'Certificates Earned',
+              icon: '📜',
+              subtitle: 'Official AI Certification & Verification',
+              message: 'Examination and certificate portal is currently locked for upcoming session evaluation. Certificates will unlock after exam grading!'
+            })}
+            className="bentoStatCard"
+            style={{
+              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '24px 26px',
+              borderRadius: '22px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                  Certificates Earned
+                </span>
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
+                  🔒 Locked
+                </span>
               </div>
               <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {userSubmissions.filter(s => s.isPassed).length}
               </div>
-              <div style={{ fontSize: '11px', color: '#FCD34D', fontWeight: '700', marginTop: '6px' }}>
-                {userSubmissions.filter(s => s.isPassed).length > 0 ? '📜 Click to View / Download' : 'Pass exams to earn'}
+              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                🔒 Exam & Cert Portal Locked
               </div>
             </div>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(232, 178, 61, 0.18)', border: '1px solid rgba(232, 178, 61, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(232, 178, 61, 0.18)', border: '1px solid rgba(232, 178, 61, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
               📜
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
             </div>
           </div>
 

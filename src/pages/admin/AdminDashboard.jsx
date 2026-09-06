@@ -62,6 +62,8 @@ import {
   getExamLevelBadge
 } from '../../utils/examStorage';
 import { purgeAllUserData } from '../../hooks/useAuth';
+import { createPortal } from 'react-dom';
+import { encodeSubmissionForShare, generateWhatsAppShareText } from '../../utils/submissionShare';
 import styles from './Admin.module.css';
 import CertificateModal from '../../components/CertificateModal/CertificateModal';
 import AdminAnalyticsPanel from '../../components/AdminAnalyticsPanel/AdminAnalyticsPanel';
@@ -5508,18 +5510,33 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Details Side Panel for Submissions */}
-      {selectedSubmission && (
-        <div className={styles.detailsOverlay}>
-          <div className={styles.detailsPanel} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.detailsHeader}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700' }}>Submission Details</h3>
-              <button className={styles.viewBtn} onClick={() => setSelectedSubmission(null)}>
+      {/* GLOBAL MODAL: SUBMISSION DETAILS WITH WHATSAPP SHARING */}
+      {selectedSubmission && typeof document !== 'undefined' && createPortal(
+        <div className={styles.submissionModalOverlay} onClick={() => setSelectedSubmission(null)}>
+          <div className={styles.submissionModalPanel} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.submissionModalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className={styles.submissionModalIcon}>📋</div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#181512' }}>
+                    Submission Details
+                  </h3>
+                  <span style={{ fontSize: '12.5px', color: '#73675C', fontWeight: '600' }}>
+                    {selectedSubmission.full_name || selectedSubmission.name || 'Candidate'} · {selectedSubmission.email}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.submissionCloseBtn}
+                onClick={() => setSelectedSubmission(null)}
+                aria-label="Close"
+              >
                 ✕
               </button>
             </div>
 
-            <div className={styles.detailsBody}>
+            <div className={styles.submissionModalBody}>
               <div className={styles.infoSection}>
                 <h4>Personal Information</h4>
                 <div className={styles.infoGrid}>
@@ -5551,13 +5568,13 @@ const AdminDashboard = () => {
                 <div className={styles.infoGrid}>
                   <InfoItem label="District" value={selectedSubmission.district} />
                   <InfoItem label="Block / City" value={selectedSubmission.block_city} />
-                  <InfoItem label="State" value={selectedSubmission.state} />
+                  <InfoItem label="State" value={selectedSubmission.state || 'Bihar'} />
                 </div>
               </div>
 
               <div className={styles.infoSection}>
                 <h4>Areas of Interest</h4>
-                <div style={{ marginTop: '12px' }}>
+                <div style={{ marginTop: '8px' }}>
                   {selectedSubmission.interests && selectedSubmission.interests.length > 0
                     ? selectedSubmission.interests.map((item) => (
                         <span key={item} className={styles.interestTag}>
@@ -5595,9 +5612,9 @@ const AdminDashboard = () => {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#000000', textDecoration: 'underline', fontWeight: '600' }}
+                          style={{ color: '#C1552C', textDecoration: 'underline', fontWeight: '700' }}
                         >
-                          {selectedSubmission.linkedin}
+                          {selectedSubmission.linkedin} ↗
                         </a>
                       ) : (
                         'Not provided'
@@ -5616,9 +5633,9 @@ const AdminDashboard = () => {
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#000000', textDecoration: 'underline', fontWeight: '600' }}
+                          style={{ color: '#C1552C', textDecoration: 'underline', fontWeight: '700' }}
                         >
-                          {selectedSubmission.portfolio}
+                          {selectedSubmission.portfolio} ↗
                         </a>
                       ) : (
                         'Not provided'
@@ -5628,8 +5645,57 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+
+            {/* MODAL FOOTER WITH WHATSAPP SHARE */}
+            <div className={styles.submissionModalFooter}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={styles.submissionWhatsAppBtn}
+                  onClick={() => {
+                    const shareCode = encodeSubmissionForShare(selectedSubmission);
+                    const publicUrl = `${window.location.origin}/submission?data=${shareCode}&id=${selectedSubmission.id || ''}`;
+                    const msg = generateWhatsAppShareText(selectedSubmission, publicUrl);
+                    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                    window.open(waUrl, '_blank', 'noopener,noreferrer');
+                    try {
+                      navigator.clipboard?.writeText(publicUrl);
+                      toast?.success('Opening WhatsApp! Public link copied to clipboard.');
+                    } catch (e) {}
+                  }}
+                  title="Share candidate details directly on WhatsApp (recipients can view online without logging in)"
+                >
+                  <span style={{ fontSize: '17px' }}>💬</span>
+                  <span>Share on WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.submissionCopyBtn}
+                  onClick={() => {
+                    const shareCode = encodeSubmissionForShare(selectedSubmission);
+                    const publicUrl = `${window.location.origin}/submission?data=${shareCode}&id=${selectedSubmission.id || ''}`;
+                    navigator.clipboard?.writeText(publicUrl);
+                    toast?.success('Public link copied to clipboard! Anyone can view without login.');
+                  }}
+                  title="Copy public link (No login required)"
+                >
+                  <span>🔗</span>
+                  <span>Copy Public Link</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className={styles.submissionDismissBtn}
+                onClick={() => setSelectedSubmission(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* LIVE CLASS MODAL (CREATE / EDIT) */}
