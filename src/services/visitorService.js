@@ -244,7 +244,7 @@ export const fetchAnalyticsSummary = async () => {
     // Fetch all page views for this month (covers today + week + month)
     const { data: monthViews, error } = await supabase
       .from('page_views')
-      .select('page_path, session_id, created_at')
+      .select('page_path, session_id, referrer, user_agent, user_email, created_at')
       .gte('created_at', monthStart)
       .order('created_at', { ascending: true });
 
@@ -264,10 +264,46 @@ export const fetchAnalyticsSummary = async () => {
       const p = v.page_path || '/';
       pageCount[p] = (pageCount[p] || 0) + 1;
     });
+    const totalMonthViews = Math.max(monthViews.length, 1);
     const topPages = Object.entries(pageCount)
-      .map(([page, views]) => ({ page, views, label: getPageLabel(page) }))
+      .map(([page, views]) => ({
+        page,
+        views,
+        label: getPageLabel(page),
+        pct: Math.round((views / totalMonthViews) * 100),
+      }))
       .sort((a, b) => b.views - a.views)
       .slice(0, 10);
+
+    // Sources / Referrers breakdown
+    const sourceMap = {};
+    let mobileCount = 0;
+    let desktopCount = 0;
+
+    monthViews.forEach((v) => {
+      const src = parseReferrerSource(v.referrer);
+      sourceMap[src] = (sourceMap[src] || 0) + 1;
+
+      const dev = parseDeviceFromUA(v.user_agent);
+      if (dev === 'Mobile') mobileCount++;
+      else desktopCount++;
+    });
+
+    const sources = Object.entries(sourceMap)
+      .map(([source, count]) => ({
+        source,
+        count,
+        pct: Math.round((count / totalMonthViews) * 100),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
+
+    const devices = {
+      mobile: mobileCount,
+      desktop: desktopCount,
+      mobilePct: Math.round((mobileCount / totalMonthViews) * 100),
+      desktopPct: Math.round((desktopCount / totalMonthViews) * 100),
+    };
 
     // Hourly breakdown for today
     const hourlyToday = Array(24).fill(0);
@@ -313,12 +349,37 @@ export const fetchAnalyticsSummary = async () => {
       if (count !== null && count !== undefined) allTimeViews = count;
     } catch (e) {}
 
+    // Latest 10 live stream hits
+    let recentHits = [];
+    try {
+      const { data: recents } = await supabase
+        .from('page_views')
+        .select('id, page_path, page_title, referrer, user_agent, user_email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (Array.isArray(recents)) {
+        recentHits = recents.map((r) => ({
+          id: r.id,
+          page: r.page_path,
+          label: getPageLabel(r.page_path),
+          source: parseReferrerSource(r.referrer),
+          device: parseDeviceFromUA(r.user_agent),
+          userEmail: r.user_email || 'Guest Visitor',
+          createdAt: r.created_at,
+        }));
+      }
+    } catch (e) {}
+
     return {
       today: { views: todayViews.length, unique: todayUnique },
       thisWeek: { views: weekViews.length, unique: weekUnique },
       thisMonth: { views: monthViews.length, unique: monthUnique },
       allTime: { views: allTimeViews, unique: allTimeUnique },
       topPages,
+      sources,
+      devices,
+      recentHits,
       hourlyToday,
       dailyThisMonth,
       peakConcurrent,
@@ -335,6 +396,9 @@ const getEmptyAnalytics = () => ({
   thisMonth: { views: 0, unique: 0 },
   allTime: { views: 0, unique: 0 },
   topPages: [],
+  sources: [],
+  devices: { mobile: 0, desktop: 0, mobilePct: 0, desktopPct: 0 },
+  recentHits: [],
   hourlyToday: Array(24).fill(0),
   dailyThisMonth: Array(31).fill(0),
   peakConcurrent: 0,
@@ -365,6 +429,34 @@ export const getPageLabel = (path) => {
   if (path.startsWith('/exam/')) return 'Exam Page';
   if (path.startsWith('/experience')) return 'Experience';
   return path;
+};
+
+export const parseReferrerSource = (referrer) => {
+  if (!referrer || typeof referrer !== 'string' || !referrer.trim()) return 'Direct / Bookmark';
+  const r = referrer.toLowerCase();
+  if (r.includes('google.')) return 'Google Search';
+  if (r.includes('whatsapp') || r.includes('api.whatsapp') || r.includes('wa.me')) return 'WhatsApp';
+  if (r.includes('linkedin.')) return 'LinkedIn';
+  if (r.includes('t.co') || r.includes('twitter.') || r.includes('x.com')) return 'X / Twitter';
+  if (r.includes('facebook.') || r.includes('fb.com')) return 'Facebook';
+  if (r.includes('instagram.')) return 'Instagram';
+  if (r.includes('youtube.')) return 'YouTube';
+  if (r.includes('bing.') || r.includes('yahoo.')) return 'Search Engine';
+  try {
+    const u = new URL(referrer);
+    return u.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return 'External Referral';
+  }
+};
+
+export const parseDeviceFromUA = (ua) => {
+  if (!ua || typeof ua !== 'string') return 'Desktop';
+  const lower = ua.toLowerCase();
+  if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(lower)) {
+    return 'Mobile';
+  }
+  return 'Desktop';
 };
 
 /**

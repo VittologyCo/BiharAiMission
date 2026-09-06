@@ -941,41 +941,6 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button
-              type="button"
-              onClick={handleRefreshProfile}
-              disabled={isRefreshing}
-              style={{
-                background: isRefreshing ? 'rgba(193, 85, 44, 0.28)' : 'rgba(255, 255, 255, 0.08)',
-                border: isRefreshing ? '1px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(255, 255, 255, 0.18)',
-                color: isRefreshing ? '#E28B5C' : '#FFFFFF',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                fontSize: '12.5px',
-                fontWeight: '700',
-                cursor: isRefreshing ? 'wait' : 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease',
-                boxShadow: isRefreshing ? '0 0 0 2px rgba(193, 85, 44, 0.25)' : 'none'
-              }}
-              title={isHi ? 'सुपाबेस से सभी लाइव डेटा रीफ्रेश करें' : 'Refresh and sync profile & tasks from Supabase'}
-              className="profileRefreshBtn"
-            >
-              <span
-                style={{
-                  display: 'inline-block',
-                  transition: 'transform 0.5s ease',
-                  transform: isRefreshing ? 'rotate(360deg)' : 'none'
-                }}
-                className={isRefreshing ? 'spinActive' : ''}
-              >
-                🔄
-              </span>
-              <span>{isRefreshing ? (isHi ? 'रीफ्रेश हो रहा है...' : 'Refreshing...') : (isHi ? 'रीफ्रेश' : 'Refresh')}</span>
-            </button>
-
-            <button
               onClick={() => navigate(-1)}
               style={{
                 background: 'rgba(255, 255, 255, 0.08)',
