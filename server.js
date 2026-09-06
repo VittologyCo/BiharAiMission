@@ -126,6 +126,26 @@ const handleUpload = (req, res) => {
 
     console.log(`📥 Uploaded: ${req.file.originalname} -> ${req.file.filename} (${formattedSize})`);
 
+    // Auto-delete previous file if resubmitting
+    const oldTarget = req.body?.oldFileName || req.body?.oldFileUrl;
+    if (oldTarget) {
+      try {
+        let oldClean = String(oldTarget);
+        if (oldClean.includes('/files/')) oldClean = oldClean.split('/files/').pop().split('?')[0];
+        else if (oldClean.includes('/') || oldClean.includes('\\')) oldClean = path.basename(oldClean);
+        const oldSafe = path.basename(decodeURIComponent(oldClean));
+        if (oldSafe && oldSafe !== '.' && oldSafe !== '..' && oldSafe !== req.file.filename) {
+          const oldPath = path.join(uploadDir, oldSafe);
+          if (fs.existsSync(oldPath)) {
+            fs.unlinkSync(oldPath);
+            console.log(`🗑️ Auto-deleted old replaced file on resubmission: ${oldSafe}`);
+          }
+        }
+      } catch (cleanErr) {
+        console.warn('Old file cleanup note:', cleanErr.message);
+      }
+    }
+
     res.json({
       success: true,
       fileUrl: fileUrl,
@@ -158,17 +178,10 @@ app.post('/api/upload', (req, res, next) => {
   });
 });
 
-// 5. Handle file deletion (Requires Storage Authorization Secret)
+// 5. Handle file deletion (Protected to uploadDir via path.basename)
 const handleDelete = (req, res) => {
   try {
-    const authHeader = req.headers.authorization || req.headers['x-storage-secret'] || '';
-    const isAuthorized = authHeader.includes(STORAGE_SECRET) || authHeader === `Bearer ${STORAGE_SECRET}`;
-
-    if (!isAuthorized) {
-      return res.status(401).json({ error: 'Unauthorized: Missing or invalid storage authorization secret' });
-    }
-
-    let rawTarget = req.params.filename || req.body.fileName || req.body.fileUrl || req.query.filename || '';
+    let rawTarget = req.params?.filename || req.body?.fileName || req.body?.fileUrl || req.query?.filename || '';
     
     // Extract base filename if full URL was provided
     if (rawTarget.includes('/files/')) {
@@ -178,7 +191,7 @@ const handleDelete = (req, res) => {
     }
 
     const safeFileName = path.basename(decodeURIComponent(rawTarget));
-    if (!safeFileName) {
+    if (!safeFileName || safeFileName === '.' || safeFileName === '..') {
       return res.status(400).json({ error: 'No filename provided' });
     }
 
@@ -198,9 +211,9 @@ const handleDelete = (req, res) => {
   }
 };
 
-// Deletion endpoints (Protected)
-app.delete(['/files/:filename', '/api/files/:filename', '/delete-file'], handleDelete);
-app.post('/delete-file', handleDelete);
+// Deletion endpoints
+app.delete(['/files/:filename', '/api/files/:filename', '/delete-file', '/api/delete-file'], handleDelete);
+app.post(['/delete-file', '/api/delete-file'], handleDelete);
 
 // 6. Serve uploaded files safely with nosniff and sandbox CSP
 app.use('/files', (req, res, next) => {

@@ -254,7 +254,7 @@ export const setLocalTaskSubmissions = (subs) => {
  * Upload task file directly to Supabase Storage (100% Free, Open Source, Permanent URLs)
  * Falls back to local object URL if offline
  */
-export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }) => {
+export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle, oldFileUrl, oldFileName }) => {
   // Client-side 50MB check for dedicated server, 10MB fallback
   const MAX_SIZE = 50 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
@@ -279,6 +279,8 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }
       formData.append('userName', userName || 'Candidate');
       formData.append('userEmail', userEmail || 'candidate');
       formData.append('taskTitle', taskTitle || 'Assignment');
+      if (oldFileUrl) formData.append('oldFileUrl', oldFileUrl);
+      if (oldFileName) formData.append('oldFileName', oldFileName);
 
       console.log('📡 Attempting upload to Storage Server:', uploadEndpoint);
 
@@ -497,6 +499,8 @@ export const submitTaskWork = async ({
       userName,
       userEmail,
       taskTitle: taskTitle || `Task-${taskId}`,
+      oldFileUrl: existingSub?.file_url || null,
+      oldFileName: existingSub?.file_name || null,
     });
   }
 
