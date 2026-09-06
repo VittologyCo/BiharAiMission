@@ -602,11 +602,11 @@ export default {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Accept-Markdown Content Negotiation (acceptmarkdown.com)
+    // Accept-Markdown Content Negotiation (acceptmarkdown.com) & SPA Routing
     // ═══════════════════════════════════════════════════════════════
     const acceptHeader = (request.headers.get('accept') || '').toLowerCase();
     const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
-    const wantsMarkdown = acceptHeader.includes('text/markdown');
+    const wantsMarkdown = acceptHeader.includes('text/markdown') || acceptHeader.includes('text/x-markdown');
     const isAiAgent =
       wantsMarkdown ||
       userAgent.includes('is-agentic') ||
@@ -615,6 +615,8 @@ export default {
       userAgent.includes('claudebot') ||
       userAgent.includes('perplexitybot') ||
       userAgent.includes('curl/');
+
+    const cleanPath = url.pathname.replace(/\/+$/, '') || '/';
 
     // Known SPA route whitelist
     const KNOWN_SPA_ROUTES = new Set([
@@ -636,7 +638,6 @@ export default {
       '/admin/dashboard',
     ]);
 
-    const cleanPath = url.pathname.replace(/\/+$/, '') || '/';
     const isKnown =
       KNOWN_SPA_ROUTES.has(cleanPath) ||
       cleanPath.startsWith('/blog/') ||
@@ -647,105 +648,161 @@ export default {
       cleanPath.startsWith('/experience/') ||
       cleanPath.startsWith('/admin/');
 
-    // 1. Handle Markdown Content Negotiation on known routes
-    if (wantsMarkdown && isKnown) {
-      // If asking for root or specific pages with Accept: text/markdown, serve llms.txt / llms.md
-      let mdAsset = '/llms.txt';
-      if (cleanPath === '/about' || cleanPath === '/learning' || cleanPath === '/tools') {
-        mdAsset = '/llms.md';
-      }
-      const mdRequest = new Request(new URL(mdAsset, request.url), request);
-      const mdResponse = await env.ASSETS.fetch(mdRequest);
-      const mdHeaders = new Headers(mdResponse.headers);
-      mdHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
-      mdHeaders.set('Vary', 'Accept, Accept-Encoding');
-      mdHeaders.set('Cache-Control', 'public, max-age=3600');
-      return new Response(mdResponse.body, {
-        status: 200,
-        headers: mdHeaders,
-      });
-    }
+    // 1. Markdown content negotiation (acceptmarkdown.com)
+    if (wantsMarkdown) {
+      if (isKnown || cleanPath.endsWith('.md') || cleanPath.endsWith('.txt')) {
+        let mdAsset = '/llms.txt';
+        if (cleanPath === '/about' || cleanPath === '/learning' || cleanPath === '/tools') {
+          mdAsset = '/llms.md';
+        } else if (cleanPath === '/contact') {
+          mdAsset = '/agent-instructions.md';
+        } else if (cleanPath === '/privacy' || cleanPath === '/policy') {
+          mdAsset = '/llms.md';
+        }
 
-    // 2. Fetch static assets or handle routing
-    let response = await env.ASSETS.fetch(request);
+        let markdownBody = '';
+        try {
+          const assetRes = await env.ASSETS.fetch(new Request(new URL(mdAsset, url.origin).toString()));
+          if (assetRes && assetRes.ok) {
+            markdownBody = await assetRes.text();
+          }
+        } catch (e) {
+          // fallback below
+        }
 
-    // 3. Known SPA routes serve /index.html with status 200
-    if (response.status === 404 && request.method === 'GET' && isKnown) {
-      const indexRequest = new Request(new URL('/index.html', request.url), request);
-      response = await env.ASSETS.fetch(indexRequest);
-    }
+        if (!markdownBody) {
+          markdownBody = `# Bihar AI Mission (बिहार AI मिशन)\n\nOfficial AI Literacy and Digital Certification Platform for Bihar.\nWebsite: https://biharaimission.org\nDocumentation: https://biharaimission.org/llms.txt\nContact: contact@biharaimission.org\nPhone: +91-612-2215000\n`;
+        }
 
-    // 4. Unknown routes return genuine HTTP 404 (NEVER soft-404!)
-    if (response.status === 404 && request.method === 'GET') {
-      if (wantsMarkdown || isAiAgent) {
-        // Agent-friendly markdown 404 with discovery guidance
-        const markdown404 = [
-          `# 404 Not Found — Bihar AI Mission`,
-          ``,
-          `The requested resource \`${url.pathname}\` does not exist on this server.`,
-          ``,
-          `## Machine & Agent Guidance`,
-          `- **Agent Guide & Instructions**: https://biharaimission.org/agent-instructions.md`,
-          `- **Machine-Readable Index**: https://biharaimission.org/llms.txt`,
-          `- **Full Curriculum & Operational Guide**: https://biharaimission.org/llms.md`,
-          `- **XML Sitemap Index**: https://biharaimission.org/sitemap.xml`,
-          `- **Official Home**: https://biharaimission.org/`,
-          `- **Learning & Verification**: https://biharaimission.org/learning`,
-          `- **AI Governance Tools**: https://biharaimission.org/tools`,
-          `- **About Desk**: https://biharaimission.org/about`,
-          `- **Official Contact**: https://biharaimission.org/contact`,
-          `- **Privacy Policy**: https://biharaimission.org/privacy`,
-          ``,
-          `*Verification: Status 404 Not Found — biharaimission.org*`
-        ].join('\n');
-
-        return new Response(markdown404, {
-          status: 404,
-          statusText: 'Not Found',
+        return new Response(markdownBody, {
+          status: 200,
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',
             'Vary': 'Accept, Accept-Encoding',
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'public, max-age=3600',
             'X-Content-Type-Options': 'nosniff',
+            'Access-Control-Allow-Origin': '*',
           },
         });
       }
+    }
 
-      // Human browser requesting HTML -> serve 404.html with status 404
-      const notFoundRequest = new Request(new URL('/404.html', request.url), request);
-      const notFoundResponse = await env.ASSETS.fetch(notFoundRequest);
-      const notFoundHeaders = new Headers(notFoundResponse.headers);
-      notFoundHeaders.set('Content-Type', 'text/html; charset=utf-8');
-      notFoundHeaders.set('Vary', 'Accept, Accept-Encoding');
-      notFoundHeaders.set('X-Content-Type-Options', 'nosniff');
-      return new Response(notFoundResponse.body, {
+    // 2. Fetch direct static asset if it exists in build
+    let response = null;
+    try {
+      response = await env.ASSETS.fetch(request);
+    } catch (e) {
+      response = null;
+    }
+
+    // If direct asset found and ok (e.g. .js, .css, images, or static html), serve with enterprise headers
+    if (response && response.status < 400) {
+      const respHeaders = new Headers(response.headers);
+      respHeaders.set('X-Content-Type-Options', 'nosniff');
+      respHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+      respHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+      respHeaders.set('Vary', 'Accept, Accept-Encoding');
+      if (url.pathname.endsWith('.md') || url.pathname.endsWith('.txt')) {
+        respHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
+      }
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: respHeaders,
+      });
+    }
+
+    // 3. Known SPA routes: serve dedicated pre-rendered HTML or /index.html
+    if (isKnown && request.method === 'GET') {
+      let targetHtml = '/index.html';
+      if (cleanPath === '/about') targetHtml = '/about/index.html';
+      else if (cleanPath === '/contact') targetHtml = '/contact/index.html';
+      else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/index.html';
+
+      let spaResponse = null;
+      try {
+        spaResponse = await env.ASSETS.fetch(new Request(new URL(targetHtml, url.origin).toString()));
+      } catch (e) {
+        spaResponse = null;
+      }
+
+      if (!spaResponse || !spaResponse.ok) {
+        // Fallback to root /index.html
+        try {
+          spaResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', url.origin).toString()));
+        } catch (e) {
+          spaResponse = null;
+        }
+      }
+
+      if (spaResponse && spaResponse.ok) {
+        const spaHeaders = new Headers(spaResponse.headers);
+        spaHeaders.set('Content-Type', 'text/html; charset=utf-8');
+        spaHeaders.set('X-Content-Type-Options', 'nosniff');
+        spaHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+        spaHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        spaHeaders.set('Vary', 'Accept, Accept-Encoding');
+        spaHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+        return new Response(spaResponse.body, {
+          status: 200,
+          headers: spaHeaders,
+        });
+      }
+    }
+
+    // 4. Unknown routes: Guaranteed Real HTTP 404 (NEVER 500, NEVER soft-200!)
+    const notFoundHeaders = new Headers();
+    notFoundHeaders.set('Vary', 'Accept, Accept-Encoding');
+    notFoundHeaders.set('X-Content-Type-Options', 'nosniff');
+    notFoundHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    if (wantsMarkdown || isAiAgent) {
+      notFoundHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
+      const md404Body = [
+        '# 404 Not Found — Bihar AI Mission',
+        '',
+        `The requested resource \`${url.pathname}\` does not exist on this server.`,
+        '',
+        '## Agent & Machine Recovery Guidance',
+        '- **Agent Instructions**: https://biharaimission.org/agent-instructions.md',
+        '- **Machine-Readable Index**: https://biharaimission.org/llms.txt',
+        '- **Curriculum & Operational Guide**: https://biharaimission.org/llms.md',
+        '- **Sitemap**: https://biharaimission.org/sitemap.xml',
+        '- **Official Homepage**: https://biharaimission.org/',
+        '- **About Desk**: https://biharaimission.org/about',
+        '- **Contact Desk**: https://biharaimission.org/contact',
+        '- **Privacy Policy**: https://biharaimission.org/privacy',
+        '',
+        '*Status: 404 Not Found — biharaimission.org*'
+      ].join('\n');
+
+      return new Response(md404Body, {
         status: 404,
         statusText: 'Not Found',
         headers: notFoundHeaders,
       });
     }
 
-    // Apply enterprise security, markdown negotiation & browser cache headers
-    const newHeaders = new Headers(response.headers);
-    newHeaders.set('X-Content-Type-Options', 'nosniff');
-    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    newHeaders.set('Vary', 'Accept, Accept-Encoding');
-
-    if (url.pathname.endsWith('.md') || url.pathname.endsWith('.txt')) {
-      newHeaders.set('Content-Type', 'text/markdown; charset=utf-8');
+    // Browser HTML 404
+    notFoundHeaders.set('Content-Type', 'text/html; charset=utf-8');
+    let html404Body = '';
+    try {
+      const asset404 = await env.ASSETS.fetch(new Request(new URL('/404.html', url.origin).toString()));
+      if (asset404 && asset404.ok) {
+        html404Body = await asset404.text();
+      }
+    } catch (e) {
+      // fallback
     }
 
-    if (url.pathname.startsWith('/static/')) {
-      newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
-    } else if (url.pathname === '/' || url.pathname === '/index.html' || !url.pathname.includes('.')) {
-      newHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    if (!html404Body) {
+      html404Body = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>404 Not Found — Bihar AI Mission</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:sans-serif;background:#181512;color:#f0ece1;padding:2rem;text-align:center"><h1>404 — Page Not Found</h1><p>The requested page <code>${url.pathname}</code> does not exist.</p><p><a href="/" style="color:#f5af87">Return to Bihar AI Mission Homepage &rarr;</a></p></body></html>`;
     }
 
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: newHeaders,
+    return new Response(html404Body, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: notFoundHeaders,
     });
   },
 };
