@@ -5,19 +5,16 @@ import { classworkAssignments as defaultSeedTasks } from '../data/classworkData'
 const LOCAL_STORAGE_KEY = 'bihar_ai_task_submissions';
 const LOCAL_TASKS_KEY = 'bihar_ai_daily_tasks';
 
-const DEFAULT_STORAGE_SERVER_URL = 'https://coach-latch-nugget.ngrok-free.dev';
-
 /**
- * Returns the configured dedicated storage server URL.
- * Uses REACT_APP_STORAGE_SERVER_URL if set, or falls back to Bihar AI's dedicated permanent tunnel.
+ * Returns the configured dedicated storage server URL strictly from environment variables (.env).
  */
 export const getStorageServerUrl = () => {
   const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
   // Filter out any stale/expired ephemeral test domains
-  if (envUrl && !envUrl.includes('trycloudflare.com')) {
-    return envUrl.replace(/\/+$/, '');
+  if (!envUrl || envUrl.includes('trycloudflare.com')) {
+    return '';
   }
-  return DEFAULT_STORAGE_SERVER_URL;
+  return envUrl.replace(/\/+$/, '');
 };
 
 /**
