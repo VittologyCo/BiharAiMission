@@ -1346,8 +1346,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
                   Joined Masterclasses
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
-                  🔒 Locked
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                  🔒
                 </span>
               </div>
               <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
@@ -1392,8 +1392,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
                   Officer Programs
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
-                  🔒 Locked
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                  🔒
                 </span>
               </div>
               <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
@@ -1438,8 +1438,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
                   Certificates Earned
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '1px 6px', borderRadius: '9999px', fontSize: '9.5px', color: '#FCA5A5', fontWeight: '800' }}>
-                  🔒 Locked
+                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                  🔒
                 </span>
               </div>
               <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
@@ -2708,10 +2708,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                       padding: '2px 8px',
                       borderRadius: '9999px',
                       fontSize: '11px',
-                      fontWeight: '800'
+                      fontWeight: '800',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1
                     }}
+                    title="Locked"
                   >
-                    🔒 Locked
+                    🔒
                   </span>
                 </div>
                 <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#C2B7A3' }}>
