@@ -287,7 +287,6 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }
 
       const res = await fetch(uploadEndpoint, {
         method: 'POST',
-        headers: { 'ngrok-skip-browser-warning': 'true' },
         body: formData,
         signal: controller.signal,
       }).finally(() => clearTimeout(timeoutId));
@@ -431,7 +430,6 @@ export const deleteStoredFile = async ({ fileUrl, fileName }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({ fileUrl, fileName }),
       });

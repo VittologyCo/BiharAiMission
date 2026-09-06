@@ -31,16 +31,29 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3001'
 ];
 
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.biharaimission.org') || origin.endsWith('.vercel.app')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-storage-secret, ngrok-skip-browser-warning, *');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests or verified domains
     if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.biharaimission.org') || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
     return callback(new Error('Blocked by CORS policy: Origin not allowed'));
   },
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-storage-secret', 'ngrok-skip-browser-warning']
+  allowedHeaders: ['*']
 }));
 
 // Uploads directory: D:\Bihar_Ai_Mission\uploads
