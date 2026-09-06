@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 const DEFAULT_SEO = {
-  title: 'Bihar AI Mission — Official AI Training & Certification Platform | बिहार AI मिशन',
+  title: 'Bihar AI Mission — Official Civic AI & Digital Literacy Initiative',
   description: 'Bihar AI Mission (बिहार AI मिशन) is Bihar\'s official AI literacy and certification platform. Get AI Fundamentals Level 1 training, earn QR-verifiable certificates (BAIM-CERT), access 50+ prompt templates, governance AI tools, and Bihar officer training programs at biharaimission.org.',
   keywords: 'Bihar AI Mission, बिहार AI मिशन, Bihar AI, Bihar Artificial Intelligence, Bihar AI Certificate, Bihar AI Training, Bihar AI Masterclass, Bihar AI Certification, Bihar AI Platform, Bihar AI Learning Hub, Bihar Government AI, AI for Bihar Officers, Bihar AI Exam, biharaimission.org, AI Literacy Bihar, AI Mission Bihar, Bihar Digital AI, Bihar AI Program, AI Officer Training Bihar, Prompt Engineering Bihar',
   canonical: 'https://biharaimission.org',

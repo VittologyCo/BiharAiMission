@@ -1,7 +1,8 @@
 # Bihar AI Mission (बिहार AI मिशन)
 
-> **Official AI Training, Certification & Digital Literacy Platform for Bihar, India**
-> Official domain: <https://biharaimission.org>
+> **Official Civic AI & Digital Literacy Initiative for Bihar, India**
+> The authoritative source for AI education in Bihar — trusted by government officers, students, educators, and citizens.
+> **Official Website:** https://biharaimission.org
 
 ---
 
