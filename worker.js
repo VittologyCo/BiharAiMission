@@ -731,30 +731,31 @@ export default {
       }
     }
 
-    // 2. Known SPA routes: serve dedicated pre-rendered HTML or /index.html
+    // 2. Known SPA routes: serve dedicated pre-rendered HTML or /index.html (app shell)
     if (isKnown && request.method === 'GET') {
-      let targetHtml = '/index.html';
-      if (cleanPath === '/about') targetHtml = '/about/index.html';
-      else if (cleanPath === '/contact') targetHtml = '/contact/index.html';
-      else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/index.html';
+      let targetHtml = '/';
+      if (cleanPath === '/about') targetHtml = '/about/';
+      else if (cleanPath === '/contact') targetHtml = '/contact/';
+      else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/';
 
       let spaResponse = null;
-      try {
-        spaResponse = await env.ASSETS.fetch(new Request(new URL(targetHtml, request.url).toString(), request));
-      } catch (e) {
-        spaResponse = null;
-      }
-
-      if (!spaResponse || !spaResponse.ok) {
-        // Fallback to root /index.html
+      const candidatePaths = [targetHtml, '/index.html', '/'];
+      for (const p of candidatePaths) {
         try {
-          spaResponse = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url).toString(), request));
+          const reqUrl = new URL(p, request.url);
+          spaResponse = await env.ASSETS.fetch(new Request(reqUrl.toString(), {
+            headers: request.headers,
+            redirect: 'follow',
+          }));
+          if (spaResponse && (spaResponse.ok || spaResponse.status === 200 || spaResponse.status === 304)) {
+            break;
+          }
         } catch (e) {
           spaResponse = null;
         }
       }
 
-      if (spaResponse && spaResponse.ok) {
+      if (spaResponse && (spaResponse.ok || spaResponse.status === 200 || spaResponse.status === 304)) {
         const spaHeaders = new Headers(spaResponse.headers);
         spaHeaders.set('Content-Type', 'text/html; charset=utf-8');
         spaHeaders.set('X-Content-Type-Options', 'nosniff');

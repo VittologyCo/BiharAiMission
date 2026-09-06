@@ -1,20 +1,20 @@
 # Cloudflare Pages SPA Rewrites for Known Routes (status 200)
 # Truly unknown paths fall through to 404.html with status 404
 
-/admin                /index.html   200
-/admin/*              /index.html   200
-/learning             /index.html   200
-/tools                /index.html   200
+/admin                /   200
+/admin/*              /   200
+/learning             /   200
+/tools                /   200
 /policy               /privacy/index.html 200
-/blog                 /index.html   200
-/blog/*               /index.html   200
-/startups             /index.html   200
-/profile              /index.html   200
-/reset-password       /index.html   200
-/experience           /index.html   200
-/experience/*         /index.html   200
-/course/*             /index.html   200
-/program/*            /index.html   200
-/exam/*               /index.html   200
-/submission           /index.html   200
-/submission/*         /index.html   200
+/blog                 /   200
+/blog/*               /   200
+/startups             /   200
+/profile              /   200
+/reset-password       /   200
+/experience           /   200
+/experience/*         /   200
+/course/*             /   200
+/program/*            /   200
+/exam/*               /   200
+/submission           /   200
+/submission/*         /   200

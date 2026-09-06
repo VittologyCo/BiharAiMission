@@ -117,32 +117,48 @@ export async function onRequest(context) {
     });
   }
 
-  // 3. Known SPA routes: rewrite to /index.html (or dedicated pre-rendered HTML)
+  // 3. Known SPA routes: rewrite to /index.html, /, or dedicated pre-rendered HTML
   if (isKnown && request.method === 'GET') {
-    let targetHtml = '/index.html';
-    if (cleanPath === '/about') targetHtml = '/about/index.html';
-    else if (cleanPath === '/contact') targetHtml = '/contact/index.html';
-    else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/index.html';
-
-    const rewriteUrl = new URL(targetHtml, request.url);
-    const rewriteReq = new Request(rewriteUrl.toString(), request);
+    let targetHtml = '/';
+    if (cleanPath === '/about') targetHtml = '/about/';
+    else if (cleanPath === '/contact') targetHtml = '/contact/';
+    else if (cleanPath === '/privacy' || cleanPath === '/policy') targetHtml = '/privacy/';
 
     let spaResponse = null;
-    try {
-      spaResponse = await next(rewriteReq);
-    } catch (e) {
-      spaResponse = null;
-    }
+    const candidatePaths = [targetHtml, '/index.html', '/'];
 
-    if ((!spaResponse || !spaResponse.ok) && env && env.ASSETS) {
+    for (const p of candidatePaths) {
       try {
-        spaResponse = await env.ASSETS.fetch(rewriteReq);
+        const rewriteUrl = new URL(p, request.url);
+        const rewriteReq = new Request(rewriteUrl.toString(), {
+          headers: request.headers,
+          redirect: 'follow',
+        });
+        spaResponse = await next(rewriteReq);
+        if (spaResponse && (spaResponse.ok || spaResponse.status === 200 || spaResponse.status === 304)) {
+          break;
+        }
       } catch (e) {
         spaResponse = null;
       }
+
+      if ((!spaResponse || !spaResponse.ok) && env && env.ASSETS) {
+        try {
+          const rewriteUrl = new URL(p, request.url);
+          spaResponse = await env.ASSETS.fetch(new Request(rewriteUrl.toString(), {
+            headers: request.headers,
+            redirect: 'follow',
+          }));
+          if (spaResponse && (spaResponse.ok || spaResponse.status === 200 || spaResponse.status === 304)) {
+            break;
+          }
+        } catch (e) {
+          spaResponse = null;
+        }
+      }
     }
 
-    if (spaResponse && spaResponse.ok) {
+    if (spaResponse && (spaResponse.ok || spaResponse.status === 200 || spaResponse.status === 304)) {
       const spaHeaders = new Headers(spaResponse.headers);
       spaHeaders.set('Content-Type', 'text/html; charset=utf-8');
       spaHeaders.set('Vary', 'Accept, Accept-Encoding');
