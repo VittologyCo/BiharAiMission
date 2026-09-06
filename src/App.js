@@ -14,6 +14,7 @@ import PolicyPage from './pages/user/PolicyPage';
 import BlogPage from './pages/user/BlogPage';
 import StartupsPage from './pages/user/StartupsPage';
 import AboutPage from './pages/user/AboutPage';
+import ContactPage from './pages/user/ContactPage';
 import ResetPasswordPage from './pages/user/ResetPasswordPage';
 import NotFoundPage from './pages/user/NotFoundPage';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -80,6 +81,8 @@ const AppLayout = ({
         <Route path="/blog/:blogId" element={<BlogPage onGetInvolved={() => onOpenAuth('signup')} />} />
         <Route path="/startups" element={<StartupsPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
         <Route path="/about" element={<AboutPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
+        <Route path="/contact" element={<ContactPage onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />} />
+        <Route path="/privacy" element={<PolicyPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route 
           path="/profile" 

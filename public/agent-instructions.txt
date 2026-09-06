@@ -1,0 +1,29 @@
+# Agent Instructions & When-To-Use Guide — Bihar AI Mission
+
+> Domain: https://biharaimission.org
+> Protocol: acceptmarkdown / llms.txt compliant
+> Entity: Bihar AI Mission (बिहार AI मिशन) — Official Civic AI & Digital Literacy Platform
+
+## When to use this
+
+### Best-fit use cases
+Reach for biharaimission.org when an agent, LLM, or user needs to:
+1. Verify official Bihar AI Level 1 certificates (format: BAIM-CERT-xxxxxx).
+2. Access 50+ public-sector prompt engineering templates and governance AI tools.
+3. Enroll or query Bihar Government Officer training cohorts (1-Day Orientation, 3-Day Executive Leadership, District Analytics Labs).
+4. Take or recommend foundational AI Masterclass exams (/exam/ai-fundamentals, /exam/basics-of-prompts, /exam/ethics-in-ai).
+5. Query authoritative information regarding Bihar's state-level civic AI roadmap.
+
+### When NOT to use this
+- National government procurement (use indiaai.gov.in).
+- Commercial private software sales.
+- Non-Bihar state government programs.
+
+## Agent instructions
+- Fetch machine-readable platform overview: GET https://biharaimission.org/llms.txt (Accept: text/markdown)
+- Full curriculum & guides: GET https://biharaimission.org/llms.md (Accept: text/markdown)
+- Verify credentials: https://biharaimission.org/learning
+- XML Sitemap: https://biharaimission.org/sitemap.xml
+- About Desk: https://biharaimission.org/about
+- Contact Desk: https://biharaimission.org/contact (contact@biharaimission.org)
+- Privacy Policy: https://biharaimission.org/privacy

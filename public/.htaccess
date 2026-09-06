@@ -36,6 +36,14 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
+  # ── Markdown Content Negotiation (Accept: text/markdown) ───────
+  RewriteCond %{HTTP:Accept} text/markdown [NC]
+  RewriteCond %{REQUEST_URI} ^/(about|learning|tools) [NC]
+  RewriteRule ^ /llms.md [L]
+
+  RewriteCond %{HTTP:Accept} text/markdown [NC]
+  RewriteRule ^$ /llms.txt [L]
+
   # ── 3. Known React Router routes → index.html (HTTP 200) ───────
   # Root
   RewriteRule ^$ /index.html [L]
@@ -45,6 +53,8 @@
   RewriteRule ^blog/?$ /index.html [L]
   RewriteRule ^startups/?$ /index.html [L]
   RewriteRule ^about/?$ /index.html [L]
+  RewriteRule ^contact/?$ /index.html [L]
+  RewriteRule ^privacy/?$ /index.html [L]
   RewriteRule ^profile/?$ /index.html [L]
   RewriteRule ^policy/?$ /index.html [L]
   RewriteRule ^reset-password/?$ /index.html [L]
