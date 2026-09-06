@@ -58,8 +58,7 @@ export default function PublicSubmissionPage() {
 
   const handleWhatsAppShare = () => {
     if (!submission) return;
-    const currentUrl = window.location.href;
-    const message = generateWhatsAppShareText(submission, currentUrl);
+    const message = generateWhatsAppShareText(submission);
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };

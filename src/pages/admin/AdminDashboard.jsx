@@ -5653,17 +5653,12 @@ const AdminDashboard = () => {
                   type="button"
                   className={styles.submissionWhatsAppBtn}
                   onClick={() => {
-                    const shareCode = encodeSubmissionForShare(selectedSubmission);
-                    const publicUrl = `${window.location.origin}/submission?data=${shareCode}&id=${selectedSubmission.id || ''}`;
-                    const msg = generateWhatsAppShareText(selectedSubmission, publicUrl);
+                    const msg = generateWhatsAppShareText(selectedSubmission);
                     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
                     window.open(waUrl, '_blank', 'noopener,noreferrer');
-                    try {
-                      navigator.clipboard?.writeText(publicUrl);
-                      toast?.success('Opening WhatsApp! Public link copied to clipboard.');
-                    } catch (e) {}
+                    toast?.success('Opening WhatsApp with candidate details!');
                   }}
-                  title="Share candidate details directly on WhatsApp (recipients can view online without logging in)"
+                  title="Share candidate details directly on WhatsApp"
                 >
                   <span style={{ fontSize: '17px' }}>💬</span>
                   <span>Share on WhatsApp</span>
@@ -5673,10 +5668,16 @@ const AdminDashboard = () => {
                   type="button"
                   className={styles.submissionCopyBtn}
                   onClick={() => {
-                    const shareCode = encodeSubmissionForShare(selectedSubmission);
-                    const publicUrl = `${window.location.origin}/submission?data=${shareCode}&id=${selectedSubmission.id || ''}`;
-                    navigator.clipboard?.writeText(publicUrl);
-                    toast?.success('Public link copied to clipboard! Anyone can view without login.');
+                    const origin = window.location.origin.includes('localhost')
+                      ? 'https://biharaimission.org'
+                      : window.location.origin;
+                    const cleanUrl = selectedSubmission.id
+                      ? `${origin}/submission?id=${encodeURIComponent(selectedSubmission.id)}`
+                      : (selectedSubmission.email
+                          ? `${origin}/submission?id=${encodeURIComponent(selectedSubmission.email)}`
+                          : `${origin}/submission`);
+                    navigator.clipboard?.writeText(cleanUrl);
+                    toast?.success('Public verification link copied to clipboard!');
                   }}
                   title="Copy public link (No login required)"
                 >

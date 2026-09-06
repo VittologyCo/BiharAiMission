@@ -6004,7 +6004,12 @@ html.lenis, html.lenis body {
   }
 }
 
-
-
-
-
+/* GLOBAL TOAST NOTIFICATION STACKING PRIORITY */
+.Toastify__toast-container,
+.Toastify__toast-container--top-right {
+  z-index: 999999999 !important;
+  pointer-events: auto !important;
+}
+.Toastify__toast {
+  z-index: 999999999 !important;
+}

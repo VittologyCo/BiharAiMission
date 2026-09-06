@@ -28,12 +28,13 @@ export const ToastProvider = ({ children }) => {
         draggable
         pauseOnHover
         theme="light"
-        style={{ zIndex: 999999 }}
+        style={{ zIndex: 999999999 }}
       />
       <style>{`
         .Toastify__toast-container {
           width: 340px !important;
           padding: 0 !important;
+          z-index: 999999999 !important;
         }
         .Toastify__toast {
           border-radius: 8px !important;
@@ -47,6 +48,7 @@ export const ToastProvider = ({ children }) => {
           min-height: 44px !important;
           margin-bottom: 8px !important;
           position: relative !important;
+          z-index: 999999999 !important;
         }
         .Toastify__toast--success {
           border-left: 4px solid #10B981 !important;

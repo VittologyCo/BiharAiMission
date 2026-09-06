@@ -79,8 +79,25 @@ export const decodeSubmissionFromShare = (encodedStr) => {
   }
 };
 
-export const generateWhatsAppShareText = (sub, publicUrl) => {
+export const generateWhatsAppShareText = (sub) => {
   if (!sub) return '';
+
+  const formatLink = (url) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return 'Not provided';
+    const trimmed = url.trim();
+    if (
+      trimmed.toLowerCase() === 'not provided' ||
+      trimmed.toLowerCase() === 'n/a' ||
+      trimmed.toLowerCase() === 'none' ||
+      trimmed.toLowerCase() === 'null'
+    ) {
+      return 'Not provided';
+    }
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
+  };
+
   const lines = [
     `📋 *BIHAR AI MISSION — CANDIDATE SUBMISSION*`,
     `━━━━━━━━━━━━━━━━━━━━━━━━`,
@@ -111,18 +128,18 @@ export const generateWhatsAppShareText = (sub, publicUrl) => {
     lines.push(`🤝 *Proposed Contribution:* ${sub.contribution}`);
   }
 
-  if (sub.linkedin) {
-    lines.push(`🔗 *LinkedIn:* ${sub.linkedin}`);
-  }
+  const linkedinUrl = formatLink(sub.linkedin || sub.linkedin_url);
+  const portfolioUrl = formatLink(sub.portfolio || sub.portfolio_url || sub.github);
 
-  if (publicUrl) {
-    lines.push(``);
-    lines.push(`🌐 *View Complete Verified Profile Online:*`);
-    lines.push(publicUrl);
-  }
+  // Must show both LinkedIn Profile and Portfolio / GitHub prominently
+  lines.push(``);
+  lines.push(`🔗 *PROFESSIONAL LINKS:*`);
+  lines.push(`• *LinkedIn Profile:* ${linkedinUrl}`);
+  lines.push(`• *Portfolio / GitHub:* ${portfolioUrl}`);
 
   lines.push(`━━━━━━━━━━━━━━━━━━━━━━━━`);
   lines.push(`_Official Civic AI & Digital Literacy Initiative — Bihar AI Mission_`);
 
   return lines.join('\n');
 };
+
