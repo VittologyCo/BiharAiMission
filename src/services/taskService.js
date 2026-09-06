@@ -9,19 +9,33 @@ let dynamicStorageUrl = null;
 
 /**
  * Resolves the active storage server URL asynchronously.
- * 1. Checks local environment variable (process.env.REACT_APP_STORAGE_SERVER_URL)
- * 2. If not found, fetches from Cloudflare runtime environment (/api/config)
+ * 1. Checks build-time environment variable (all common naming variations)
+ * 2. If not found or empty, fetches fresh runtime config from Cloudflare (/api/config)
  */
 export const resolveStorageServerUrl = async () => {
-  const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
+  const envUrl = (
+    process.env.REACT_APP_STORAGE_SERVER_URL ||
+    process.env['REACT_APP_STORAGE_SER\\'] ||
+    process.env.REACT_APP_STORAGE_SER ||
+    process.env.REACT_APP_STORAGE_SERVER ||
+    process.env.STORAGE_SERVER_URL ||
+    ''
+  ).trim();
+
   if (envUrl && !envUrl.includes('trycloudflare.com')) {
     return envUrl.replace(/\/+$/, '');
   }
-  if (dynamicStorageUrl !== null) {
+
+  // Only return cached dynamic URL if it is a valid non-empty string
+  if (dynamicStorageUrl && typeof dynamicStorageUrl === 'string' && dynamicStorageUrl.trim()) {
     return dynamicStorageUrl;
   }
+
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch(`/api/config?_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     if (res.ok) {
       const data = await res.json();
       if (data?.storageServerUrl && !data.storageServerUrl.includes('trycloudflare.com')) {
@@ -29,8 +43,10 @@ export const resolveStorageServerUrl = async () => {
         return dynamicStorageUrl;
       }
     }
-  } catch (e) {}
-  dynamicStorageUrl = '';
+  } catch (e) {
+    console.warn('Runtime storage config fetch warning:', e);
+  }
+
   return '';
 };
 
@@ -38,7 +54,15 @@ export const resolveStorageServerUrl = async () => {
  * Returns the cached or synchronous storage server URL.
  */
 export const getStorageServerUrl = () => {
-  const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
+  const envUrl = (
+    process.env.REACT_APP_STORAGE_SERVER_URL ||
+    process.env['REACT_APP_STORAGE_SER\\'] ||
+    process.env.REACT_APP_STORAGE_SER ||
+    process.env.REACT_APP_STORAGE_SERVER ||
+    process.env.STORAGE_SERVER_URL ||
+    ''
+  ).trim();
+
   if (envUrl && !envUrl.includes('trycloudflare.com')) {
     return envUrl.replace(/\/+$/, '');
   }

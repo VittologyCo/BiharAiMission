@@ -67,6 +67,37 @@ export default {
     // Client Configuration — /api/config
     // ═══════════════════════════════════════════════════════════════
     if (url.pathname === '/api/config') {
+      // Dynamically resolve storage server URL from any possible key or value in env
+      let resolvedStorageUrl = '';
+      if (env) {
+        resolvedStorageUrl =
+          env.REACT_APP_STORAGE_SERVER_URL ||
+          env['REACT_APP_STORAGE_SER\\'] ||
+          env.REACT_APP_STORAGE_SER ||
+          env.REACT_APP_STORAGE_SERVER ||
+          env.STORAGE_SERVER_URL ||
+          env.STORAGE_SERVER ||
+          env.STORAGE_URL ||
+          '';
+
+        if (!resolvedStorageUrl) {
+          for (const [k, v] of Object.entries(env)) {
+            if (typeof v === 'string' && v.trim()) {
+              const keyLower = k.toLowerCase();
+              if (
+                keyLower.includes('storage') ||
+                v.includes('ngrok-free.dev') ||
+                v.includes('ngrok.io') ||
+                v.includes(':5000')
+              ) {
+                resolvedStorageUrl = v.trim();
+                break;
+              }
+            }
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({
           supabaseUrl:
@@ -87,18 +118,17 @@ export default {
             env?.REACT_APP_RESEND_FROM ||
             env?.RESEND_FROM_EMAIL ||
             'Bihar AI Mission <onboarding@biharaimission.org>',
-          storageServerUrl:
-            env?.REACT_APP_STORAGE_SERVER_URL ||
-            env?.STORAGE_SERVER_URL ||
-            '',
+          storageServerUrl: resolvedStorageUrl,
           domain: 'biharaimission.org',
+          debugKeys: env ? Object.keys(env).filter(k => k !== 'ASSETS' && !k.toLowerCase().includes('key') && !k.toLowerCase().includes('secret')) : [],
         }),
         {
           status: 200,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=300',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
           },
         }
       );
