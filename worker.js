@@ -87,6 +87,10 @@ export default {
             env?.REACT_APP_RESEND_FROM ||
             env?.RESEND_FROM_EMAIL ||
             'Bihar AI Mission <onboarding@biharaimission.org>',
+          storageServerUrl:
+            env?.REACT_APP_STORAGE_SERVER_URL ||
+            env?.STORAGE_SERVER_URL ||
+            '',
           domain: 'biharaimission.org',
         }),
         {

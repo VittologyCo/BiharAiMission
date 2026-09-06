@@ -5,16 +5,44 @@ import { classworkAssignments as defaultSeedTasks } from '../data/classworkData'
 const LOCAL_STORAGE_KEY = 'bihar_ai_task_submissions';
 const LOCAL_TASKS_KEY = 'bihar_ai_daily_tasks';
 
+let dynamicStorageUrl = null;
+
 /**
- * Returns the configured dedicated storage server URL strictly from environment variables (.env).
+ * Resolves the active storage server URL asynchronously.
+ * 1. Checks local environment variable (process.env.REACT_APP_STORAGE_SERVER_URL)
+ * 2. If not found, fetches from Cloudflare runtime environment (/api/config)
+ */
+export const resolveStorageServerUrl = async () => {
+  const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
+  if (envUrl && !envUrl.includes('trycloudflare.com')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  if (dynamicStorageUrl !== null) {
+    return dynamicStorageUrl;
+  }
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.storageServerUrl && !data.storageServerUrl.includes('trycloudflare.com')) {
+        dynamicStorageUrl = data.storageServerUrl.replace(/\/+$/, '');
+        return dynamicStorageUrl;
+      }
+    }
+  } catch (e) {}
+  dynamicStorageUrl = '';
+  return '';
+};
+
+/**
+ * Returns the cached or synchronous storage server URL.
  */
 export const getStorageServerUrl = () => {
   const envUrl = (process.env.REACT_APP_STORAGE_SERVER_URL || '').trim();
-  // Filter out any stale/expired ephemeral test domains
-  if (!envUrl || envUrl.includes('trycloudflare.com')) {
-    return '';
+  if (envUrl && !envUrl.includes('trycloudflare.com')) {
+    return envUrl.replace(/\/+$/, '');
   }
-  return envUrl.replace(/\/+$/, '');
+  return dynamicStorageUrl || '';
 };
 
 /**
@@ -214,7 +242,7 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle }
     : `${(file.size / 1024).toFixed(1)} KB`;
 
   // 1. First priority: Dedicated 24/7 Local / Ngrok Storage Server
-  const rawServerUrl = getStorageServerUrl();
+  const rawServerUrl = await resolveStorageServerUrl();
   if (rawServerUrl) {
     try {
       const cleanServerUrl = rawServerUrl.replace(/\/+$/, '');
@@ -370,7 +398,7 @@ export const deleteStoredFile = async ({ fileUrl, fileName }) => {
   if (!fileUrl && !fileName) return false;
 
   // 1. Delete from Dedicated 24/7 Storage Server (Ngrok tunnel or local IP)
-  const dedicatedServerUrl = getStorageServerUrl();
+  const dedicatedServerUrl = await resolveStorageServerUrl();
   if (dedicatedServerUrl && (fileUrl?.includes('/files/') || fileName)) {
     try {
       const cleanServerUrl = dedicatedServerUrl.replace(/\/+$/, '');
