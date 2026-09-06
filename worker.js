@@ -27,6 +27,52 @@ export default {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // Accept-Markdown Content Negotiation (acceptmarkdown.com)
+    // Priority check before any API or routing logic
+    // ═══════════════════════════════════════════════════════════════
+    const acceptHeader = (request.headers.get('accept') || '').toLowerCase();
+    const wantsMarkdown = acceptHeader.includes('text/markdown') || acceptHeader.includes('text/x-markdown');
+
+    if (wantsMarkdown && request.method === 'GET' && !url.pathname.startsWith('/api/')) {
+      const cleanPath = url.pathname.replace(/\/+$/, '') || '/';
+      let mdAsset = '/llms.txt';
+      if (cleanPath === '/about' || cleanPath === '/learning' || cleanPath === '/tools') {
+        mdAsset = '/llms.md';
+      } else if (cleanPath === '/contact') {
+        mdAsset = '/agent-instructions.md';
+      } else if (cleanPath === '/privacy' || cleanPath === '/policy') {
+        mdAsset = '/llms.md';
+      }
+
+      let markdownBody = '';
+      if (env && env.ASSETS) {
+        try {
+          const assetRes = await env.ASSETS.fetch(new Request(new URL(mdAsset, url.origin).toString()));
+          if (assetRes && assetRes.ok) {
+            markdownBody = await assetRes.text();
+          }
+        } catch (e) {
+          // fallback
+        }
+      }
+
+      if (!markdownBody) {
+        markdownBody = `# Bihar AI Mission (बिहार AI मिशन)\n\nOfficial AI Literacy and Digital Certification Platform for Bihar.\nWebsite: https://biharaimission.org\nDocumentation: https://biharaimission.org/llms.txt\nFull Guide: https://biharaimission.org/llms.md\nContact: contact@biharaimission.org\nPhone: +91-612-2215000\n`;
+      }
+
+      return new Response(markdownBody, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Vary': 'Accept, Accept-Encoding',
+          'Cache-Control': 'no-cache, must-revalidate',
+          'X-Content-Type-Options': 'nosniff',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Universal CORS Preflight for all API & Upload Endpoints
     // ═══════════════════════════════════════════════════════════════
     if (
@@ -604,9 +650,7 @@ export default {
     // ═══════════════════════════════════════════════════════════════
     // Accept-Markdown Content Negotiation (acceptmarkdown.com) & SPA Routing
     // ═══════════════════════════════════════════════════════════════
-    const acceptHeader = (request.headers.get('accept') || '').toLowerCase();
     const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
-    const wantsMarkdown = acceptHeader.includes('text/markdown') || acceptHeader.includes('text/x-markdown');
     const isAiAgent =
       wantsMarkdown ||
       userAgent.includes('is-agentic') ||
@@ -742,7 +786,7 @@ export default {
         spaHeaders.set('X-Frame-Options', 'SAMEORIGIN');
         spaHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
         spaHeaders.set('Vary', 'Accept, Accept-Encoding');
-        spaHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+        spaHeaders.set('Cache-Control', 'no-cache, must-revalidate');
         return new Response(spaResponse.body, {
           status: 200,
           headers: spaHeaders,
