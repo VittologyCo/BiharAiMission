@@ -9,8 +9,8 @@
  * 4. Guaranteed at least 5 items in both options (capped at 10).
  */
 
-const CACHE_KEY_AI_LIVE = 'bihar_ai_radar_live_ai_mix_v5';
-const CACHE_KEY_GOVT_LIVE = 'bihar_ai_radar_live_govt_mix_v5';
+const CACHE_KEY_AI_LIVE = 'bihar_ai_radar_live_ai_mix_v6';
+const CACHE_KEY_GOVT_LIVE = 'bihar_ai_radar_live_govt_mix_v6';
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes cache
 
 /**
@@ -87,6 +87,82 @@ export const isLikelyRealArticle = (rawUrl) => {
   } catch (e) {
     return false;
   }
+};
+
+/**
+ * Relevance Filter: AI & Tech
+ * Checks if the article title+description actually contains AI/Tech keywords.
+ * Returns true only if at least one keyword matches.
+ */
+const AI_TECH_KEYWORDS = [
+  // Core AI
+  'artificial intelligence', 'ai ', ' ai', 'machine learning', 'deep learning',
+  'neural network', 'generative ai', 'gen ai', 'genai', 'llm', 'large language model',
+  'chatgpt', 'openai', 'anthropic', 'deepmind', 'gemini ai', 'claude ai', 'gpt-',
+  'copilot', 'midjourney', 'stable diffusion', 'dall-e',
+  // NLP / Vision
+  'natural language', 'nlp', 'computer vision', 'image recognition',
+  'speech recognition', 'text-to-speech', 'voice assistant',
+  // Robotics & Hardware
+  'robotics', 'robot ', 'autonomous', 'drone tech', 'semiconductor', 'chip',
+  'gpu', 'quantum comput', 'supercomputer',
+  // Tech Industry
+  'startup', 'tech startup', 'incubat', 'accelerator', 'fintech',
+  'edtech', 'healthtech', 'agritech', 'medtech', 'biotech',
+  'saas', 'cloud computing', 'blockchain', 'cryptocurrency', 'web3',
+  // Digital / IT
+  'digital india', 'bhashini', 'meity', 'it sector', 'it department',
+  'software', 'cybersecurity', 'data science', 'data analytics',
+  'internet of things', 'iot', '5g', '6g',
+  // Bihar specific tech
+  'bihar ai', 'iit patna', 'nit patna', 'bihar it', 'bihar tech',
+  'bihar startup', 'bihar digital', 'patna tech', 'patna startup',
+  'bihar innovation', 'bihar hackathon',
+  // IndiaAI
+  'indiaai', 'india ai mission', 'niti aayog', 'c-dac',
+];
+
+const GOVT_KEYWORDS = [
+  // Central Government
+  'cabinet', 'parliament', 'lok sabha', 'rajya sabha', 'union budget',
+  'prime minister', 'modi government', 'government scheme', 'govt scheme',
+  'ministry of', 'minister ', 'policy', 'regulation',
+  'gazette', 'notification', 'ordinance', 'amendment', 'bill passed',
+  // PIB / Official
+  'pib', 'press information bureau', 'official statement',
+  'government order', 'executive order', 'circular',
+  // Bihar Government
+  'bihar government', 'bihar cabinet', 'bihar assembly', 'nitish kumar',
+  'bihar chief minister', 'bihar cm', 'bihar budget', 'bihar scheme',
+  'bihar department', 'bihar administration', 'bihar secretariat',
+  'district magistrate', 'collector ', 'block development',
+  // Departments & Sectors
+  'health department', 'education department', 'road construction',
+  'rural development', 'urban development', 'panchayati raj',
+  'social welfare', 'women development', 'child development',
+  'agriculture department', 'water resources', 'disaster management',
+  'public distribution', 'ration', 'subsidy', 'pension scheme',
+  // Infrastructure
+  'smart city', 'metro rail', 'highway', 'national highway',
+  'railway ministry', 'indian railways', 'vande bharat',
+  'airport', 'waterway', 'inland waterway',
+  // International Governance
+  'united nations', 'world bank', 'imf', 'g20', 'g7',
+  'world trade', 'climate accord', 'paris agreement',
+  'bilateral', 'multilateral', 'summit', 'diplomatic',
+  // Election / Democracy
+  'election commission', 'election', 'by-election', 'nomination',
+  'swearing-in', 'oath', 'governor',
+];
+
+export const isRelevantAiTech = (item) => {
+  const text = `${item.title || ''} ${item.description || item.content || ''}`.toLowerCase();
+  return AI_TECH_KEYWORDS.some((kw) => text.includes(kw));
+};
+
+export const isRelevantGovt = (item) => {
+  const text = `${item.title || ''} ${item.description || item.content || ''}`.toLowerCase();
+  return GOVT_KEYWORDS.some((kw) => text.includes(kw));
 };
 
 /**
@@ -421,14 +497,19 @@ export const fetchTop10AiNews = async () => {
 
   try {
     const [biharRaw, indiaRaw, globalRaw] = await Promise.all([
-      fetchRssFeed('(Bihar OR Patna) (AI OR technology OR IT OR startup OR robotics OR digital)'),
-      fetchRssFeed('("IndiaAI" OR "Artificial Intelligence India" OR "MeitY AI" OR "Tech India" OR "Digital India")'),
-      fetchRssFeed('("Artificial Intelligence" OR "OpenAI" OR "Anthropic" OR "Google DeepMind" OR "LLM" OR "Generative AI")')
+      fetchRssFeed('(Bihar OR Patna) ("artificial intelligence" OR "AI startup" OR "tech startup" OR "IT sector" OR "robotics" OR "digital India" OR "machine learning" OR "software")'),
+      fetchRssFeed('("IndiaAI" OR "Artificial Intelligence India" OR "MeitY" OR "Digital India" OR "India AI Mission" OR "NASSCOM" OR "Indian tech" OR "Bhashini")'),
+      fetchRssFeed('("Artificial Intelligence" OR "OpenAI" OR "Anthropic" OR "Google DeepMind" OR "LLM" OR "Generative AI" OR "ChatGPT" OR "machine learning")')
     ]);
 
-    const biharParsed = biharRaw.map((i) => parseNewsItem(i, 'bihar', 'State AI & Tech'));
-    const indiaParsed = indiaRaw.map((i) => parseNewsItem(i, 'india', 'National AI Mission'));
-    const globalParsed = globalRaw.map((i) => parseNewsItem(i, 'global', 'Global Frontier AI'));
+    // Filter raw RSS items for AI/Tech relevance BEFORE parsing
+    const biharFiltered = biharRaw.filter(isRelevantAiTech);
+    const indiaFiltered = indiaRaw.filter(isRelevantAiTech);
+    const globalFiltered = globalRaw.filter(isRelevantAiTech);
+
+    const biharParsed = biharFiltered.map((i) => parseNewsItem(i, 'bihar', 'State AI & Tech'));
+    const indiaParsed = indiaFiltered.map((i) => parseNewsItem(i, 'india', 'National AI Mission'));
+    const globalParsed = globalFiltered.map((i) => parseNewsItem(i, 'global', 'Global Frontier AI'));
 
     const combined = [...biharParsed, ...indiaParsed, ...globalParsed];
     const prioritized = prioritizeTopNews(combined, 'ai');
@@ -463,14 +544,19 @@ export const fetchTop10GovtNews = async () => {
 
   try {
     const [biharGovtRaw, indiaGovtRaw, globalPolicyRaw] = await Promise.all([
-      fetchRssFeed('(Bihar Cabinet OR "Bihar Government" OR "Nitish Kumar" OR Patna administration OR "Bihar scheme" OR "Bihar development" OR "Bihar department" OR "Bihar health" OR "Bihar education" OR "Bihar road" OR "Bihar flood")'),
-      fetchRssFeed('("Union Cabinet" OR "Cabinet approves" OR "PIB India" OR "Central Government scheme" OR "Ministry of Finance" OR "Railway" OR "Parliament" OR "Prime Minister Modi")'),
-      fetchRssFeed('("World Bank" OR "United Nations" OR "International Monetary Fund" OR "G20" OR "Global Economy")')
+      fetchRssFeed('("Bihar Cabinet" OR "Bihar Government" OR "Nitish Kumar" OR "Bihar administration" OR "Bihar scheme" OR "Bihar department" OR "Bihar Chief Minister" OR "Bihar assembly" OR "Bihar budget")'),
+      fetchRssFeed('("Union Cabinet" OR "Cabinet approves" OR "PIB" OR "government scheme" OR "Ministry of" OR "Parliament session" OR "Prime Minister" OR "policy" OR "regulation")'),
+      fetchRssFeed('("World Bank" OR "United Nations" OR "IMF" OR "G20 summit" OR "climate accord" OR "multilateral" OR "diplomatic")')
     ]);
 
-    const biharParsed = biharGovtRaw.map((i) => parseNewsItem(i, 'bihar', 'Bihar Cabinet & Govt'));
-    const indiaParsed = indiaGovtRaw.map((i) => parseNewsItem(i, 'india', 'Central Govt & PIB'));
-    const globalParsed = globalPolicyRaw.map((i) => parseNewsItem(i, 'global', 'Global Governance'));
+    // Filter raw RSS items for Government relevance BEFORE parsing
+    const biharFiltered = biharGovtRaw.filter(isRelevantGovt);
+    const indiaFiltered = indiaGovtRaw.filter(isRelevantGovt);
+    const globalFiltered = globalPolicyRaw.filter(isRelevantGovt);
+
+    const biharParsed = biharFiltered.map((i) => parseNewsItem(i, 'bihar', 'Bihar Cabinet & Govt'));
+    const indiaParsed = indiaFiltered.map((i) => parseNewsItem(i, 'india', 'Central Govt & PIB'));
+    const globalParsed = globalFiltered.map((i) => parseNewsItem(i, 'global', 'Global Governance'));
 
     const combined = [...biharParsed, ...indiaParsed, ...globalParsed];
     const prioritized = prioritizeTopNews(combined, 'govt');
