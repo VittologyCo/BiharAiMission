@@ -64,6 +64,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isNudging, setIsNudging] = useState(false);
+  const nudgeTimer = useRef(null);
 
   const [form, setForm] = useState({
     full_name: '',
@@ -155,10 +157,21 @@ export default function RegistrationModal({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  // Close on backdrop click
+  // Clean up nudge timer on unmount
+  useEffect(() => {
+    return () => {
+      if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+    };
+  }, []);
+
+  // Handle backdrop click: DO NOT close modal on outside click, nudge gently to signal user should use the cross button
   const handleBackdropClick = (e) => {
     if (modalRef.current && !modalRef.current.contains(e.target)) {
-      onClose();
+      if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+      setIsNudging(true);
+      nudgeTimer.current = setTimeout(() => {
+        setIsNudging(false);
+      }, 350);
     }
   };
 
@@ -519,8 +532,14 @@ export default function RegistrationModal({ isOpen, onClose }) {
   if (isSuccess) {
     return (
       <div className={styles.overlay} onClick={handleBackdropClick} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
-        <div className={styles.modal} ref={modalRef} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        <div
+          className={`${styles.modal} ${isNudging ? styles.modalNudge : ''}`}
+          ref={modalRef}
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
           <div className={styles.successState}>
             <div className={styles.successIcon}>🎉</div>
             <h2 className={styles.successTitle}>
@@ -544,9 +563,15 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
   return (
     <div className={styles.overlay} onClick={handleBackdropClick} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
-      <div className={styles.modal} ref={modalRef} data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
+      <div
+        className={`${styles.modal} ${isNudging ? styles.modalNudge : ''}`}
+        ref={modalRef}
+        data-lenis-prevent="true"
+        onWheel={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* CLOSE BUTTON */}
-        <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
 
         {/* MODAL HEADER */}
         <div className={styles.header}>
