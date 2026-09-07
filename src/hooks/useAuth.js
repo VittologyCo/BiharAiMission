@@ -104,12 +104,28 @@ export const purgeAllUserData = (email) => {
           }
         }
       } catch (e) {}
+
+      // 7. Remove from bihar_ai_task_submissions (Daily Tasks)
+      try {
+        const rawTasks = localStorage.getItem('bihar_ai_task_submissions');
+        if (rawTasks) {
+          const tasks = JSON.parse(rawTasks);
+          if (Array.isArray(tasks)) {
+            const filtered = tasks.filter((s) => {
+              const semail = (s.user_email || s.email || '').toLowerCase().trim();
+              return semail !== clean;
+            });
+            localStorage.setItem('bihar_ai_task_submissions', JSON.stringify(filtered));
+          }
+        }
+      } catch (e) {}
     }
 
-    // 7. Dispatch purge events for all components
+    // 8. Dispatch purge events for all components
     window.dispatchEvent(new Event('bihar_ai_user_purged'));
     window.dispatchEvent(new Event('bihar_ai_exams_updated'));
     window.dispatchEvent(new Event('bihar_ai_courses_updated'));
+    window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
   } catch (err) {
     console.warn('Error in purgeAllUserData:', err);
   }
@@ -212,7 +228,13 @@ export const AuthProvider = ({ children }) => {
 
   // Force purge user data and terminate session immediately
   const forcePurgeAndLogout = (reason = 'Your session has ended.') => {
-    const targetEmail = (user?.email || localStorage.getItem('bihar_ai_reset_email') || '').toLowerCase().trim();
+    let targetEmail = (user?.email || localStorage.getItem('bihar_ai_reset_email') || '').toLowerCase().trim();
+    if (!targetEmail) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('bihar_ai_user') || '{}');
+        targetEmail = (saved.email || '').toLowerCase().trim();
+      } catch (e) {}
+    }
     purgeAllUserData(targetEmail);
     try {
       if (supabase && supabase.auth) {
@@ -371,14 +393,32 @@ export const AuthProvider = ({ children }) => {
     let userDetailsChannel = null;
     let heartbeatTimer = null;
 
+    const getFreshUserIdentity = () => {
+      let email = (user?.email || '').toLowerCase().trim();
+      let id = user?.id;
+      if (!email) {
+        try {
+          const saved = JSON.parse(localStorage.getItem('bihar_ai_user') || '{}');
+          email = (saved.email || '').toLowerCase().trim();
+          id = id || saved.id;
+        } catch (e) {}
+      }
+      return { email, id };
+    };
+
     if (supabase) {
       // Listen for admin broadcast event 'user_deleted'
       try {
-        authEventsChannel = supabase.channel('bihar_ai_auth_events');
+        authEventsChannel = supabase.channel('bihar_ai_auth_events', {
+          config: { broadcast: { self: true } }
+        });
         authEventsChannel.on('broadcast', { event: 'user_deleted' }, (payload) => {
-          const deletedEmail = payload?.payload?.email?.toLowerCase()?.trim();
-          const activeEmail = (user?.email || localStorage.getItem('bihar_ai_reset_email') || '').toLowerCase().trim();
-          if (deletedEmail && activeEmail && deletedEmail === activeEmail) {
+          const deletedEmail = (payload?.payload?.email || '').toLowerCase().trim();
+          const deletedId = payload?.payload?.id || payload?.payload?.user_id;
+          const { email: activeEmail, id: activeId } = getFreshUserIdentity();
+
+          if ((deletedEmail && activeEmail && deletedEmail === activeEmail) ||
+              (deletedId && activeId && String(deletedId) === String(activeId))) {
             console.warn('🚨 Instant revocation: user_deleted event received via Realtime broadcast.');
             forcePurgeAndLogout('Your account has been deleted by an administrator.');
           }
@@ -395,8 +435,11 @@ export const AuthProvider = ({ children }) => {
           { event: 'DELETE', schema: 'public', table: 'user_details' },
           (payload) => {
             const deletedEmail = (payload?.old?.email || '').toLowerCase().trim();
-            const activeEmail = (user?.email || '').toLowerCase().trim();
-            if (deletedEmail && activeEmail && deletedEmail === activeEmail) {
+            const deletedId = payload?.old?.id || payload?.old?.user_id;
+            const { email: activeEmail, id: activeId } = getFreshUserIdentity();
+
+            if ((deletedEmail && activeEmail && deletedEmail === activeEmail) ||
+                (deletedId && activeId && String(deletedId) === String(activeId))) {
               console.warn('🚨 Instant revocation: user_details row deleted in PostgreSQL.');
               forcePurgeAndLogout('Your account has been deleted by an administrator.');
             }
@@ -407,9 +450,9 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 4. Heartbeat check every 15 seconds to actively verify account integrity
+    // 4. Heartbeat check every 3 seconds to actively verify account integrity
     heartbeatTimer = setInterval(async () => {
-      const activeEmail = user?.email?.toLowerCase()?.trim();
+      const { email: activeEmail } = getFreshUserIdentity();
       if (!activeEmail || !supabase) return;
       try {
         const { data, error } = await supabase
@@ -423,11 +466,11 @@ export const AuthProvider = ({ children }) => {
           forcePurgeAndLogout('Your account has been deleted by an administrator.');
         }
       } catch (e) {}
-    }, 15000);
+    }, 3000);
 
     // 5. Tab visibility change & window focus check
     const handleFocusCheck = async () => {
-      const activeEmail = user?.email?.toLowerCase()?.trim();
+      const { email: activeEmail } = getFreshUserIdentity();
       if (!activeEmail || !supabase) return;
       if (document.visibilityState === 'visible') {
         try {
@@ -444,6 +487,36 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
+    // 6. Cross-tab and local storage signals for instantaneous same-browser force logout
+    const handleLocalPurge = (e) => {
+      const deletedEmail = e?.detail?.email?.toLowerCase()?.trim();
+      const { email: activeEmail } = getFreshUserIdentity();
+      if (!deletedEmail || (activeEmail && deletedEmail === activeEmail)) {
+        forcePurgeAndLogout('Your account has been deleted by an administrator.');
+      }
+    };
+
+    const handleStorageEvent = (e) => {
+      if (e.key === 'bihar_ai_purged_user') {
+        try {
+          const parsed = JSON.parse(e.newValue || '{}');
+          const deletedEmail = (parsed.email || '').toLowerCase().trim();
+          const { email: activeEmail } = getFreshUserIdentity();
+          if (deletedEmail && activeEmail && deletedEmail === activeEmail) {
+            forcePurgeAndLogout('Your account has been deleted by an administrator.');
+          }
+        } catch (err) {}
+      } else if (e.key === 'bihar_ai_user' && !e.newValue) {
+        setUser(null);
+        if (['/profile', '/admin'].some((p) => window.location.pathname.startsWith(p))) {
+          window.location.replace('/');
+        }
+      }
+    };
+
+    window.addEventListener('bihar_ai_user_purged', handleLocalPurge);
+    window.addEventListener('bihar_ai_user_deleted', handleLocalPurge);
+    window.addEventListener('storage', handleStorageEvent);
     document.addEventListener('visibilitychange', handleFocusCheck);
     window.addEventListener('focus', handleFocusCheck);
 
@@ -461,6 +534,9 @@ export const AuthProvider = ({ children }) => {
       if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
       }
+      window.removeEventListener('bihar_ai_user_purged', handleLocalPurge);
+      window.removeEventListener('bihar_ai_user_deleted', handleLocalPurge);
+      window.removeEventListener('storage', handleStorageEvent);
       document.removeEventListener('visibilitychange', handleFocusCheck);
       window.removeEventListener('focus', handleFocusCheck);
     };

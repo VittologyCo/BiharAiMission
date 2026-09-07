@@ -74,7 +74,9 @@ import {
   saveDailyTask,
   deleteDailyTask,
   getSubmissionLeaderboard,
-  subscribeToLeaderboardRealtime
+  subscribeToLeaderboardRealtime,
+  deleteStoredFile,
+  getLocalTaskSubmissions
 } from '../../services/taskService';
 
 function getCleanCandidateName(rawName, email) {
@@ -714,15 +716,51 @@ const AdminDashboard = () => {
           // 1. Delete from Supabase tables and auth.users via RPC & direct parallel deletes
           if (sub.email) {
             const cleanEmail = sub.email.toLowerCase().trim();
+
+            // 1A. Delete all uploaded files related to this user from storage server & Supabase storage
+            try {
+              let userTaskFiles = [];
+              if (supabase) {
+                const { data: dbTasks } = await supabase
+                  .from('daily_task_submissions')
+                  .select('file_url, file_name')
+                  .ilike('user_email', cleanEmail);
+                if (dbTasks && Array.isArray(dbTasks)) {
+                  userTaskFiles.push(...dbTasks);
+                }
+              }
+              const localTasks = getLocalTaskSubmissions().filter(
+                (t) => (t.user_email || t.email || '').toLowerCase().trim() === cleanEmail
+              );
+              userTaskFiles.push(...localTasks);
+
+              for (const tf of userTaskFiles) {
+                if (tf.file_url || tf.file_name) {
+                  await deleteStoredFile({ fileUrl: tf.file_url, fileName: tf.file_name });
+                }
+              }
+
+              // Also purge user folder in Supabase Storage bucket 'task-submissions'
+              if (supabase?.storage) {
+                const userFolder = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
+                const { data: files } = await supabase.storage.from('task-submissions').list(userFolder);
+                if (files && files.length > 0) {
+                  const paths = files.map((f) => `${userFolder}/${f.name}`);
+                  await supabase.storage.from('task-submissions').remove(paths);
+                }
+              }
+            } catch (fileErr) {
+              console.warn('User file cleanup warning:', fileErr);
+            }
             
-            // A. Execute backend RPC purge (deletes from auth.users, auth.sessions, and custom tables)
+            // 1B. Execute backend RPC purge (deletes from auth.users, auth.sessions, and custom tables)
             try { 
               await supabase.rpc('delete_user_by_admin', { email_input: cleanEmail }); 
             } catch (rpcErr) { 
               console.warn('RPC delete info:', rpcErr); 
             }
 
-            // B. Explicit direct parallel deletes across every user table to guarantee zero leftovers
+            // 1C. Explicit direct parallel deletes across every user table to guarantee zero leftovers
             try {
               await Promise.allSettled([
                 supabase.from('user_details').delete().eq('email', cleanEmail),
@@ -747,9 +785,11 @@ const AdminDashboard = () => {
               console.warn('Direct tables delete error:', e);
             }
 
-            // C. Broadcast Realtime force-logout event to instantly kick out any active user sessions
+            // 1D. Broadcast Realtime force-logout event to instantly kick out any active user sessions
             try {
-              const authBroadcastChannel = supabase.channel('bihar_ai_auth_events');
+              const authBroadcastChannel = supabase.channel('bihar_ai_auth_events', {
+                config: { broadcast: { self: true } }
+              });
               authBroadcastChannel.subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
                   authBroadcastChannel.send({
@@ -764,8 +804,14 @@ const AdminDashboard = () => {
               console.warn('Auth event broadcast warning:', bcErr);
             }
 
-            // D. Completely wipe all client-side data, enrollments, cached exams, & tokens for this user
+            // 1E. Set cross-tab signal in localStorage to notify all open browser tabs
+            try {
+              localStorage.setItem('bihar_ai_purged_user', JSON.stringify({ email: cleanEmail, id: sub.id, user_id: sub.user_id, time: Date.now() }));
+            } catch (e) {}
+
+            // 1F. Completely wipe all client-side data, enrollments, cached exams, daily tasks & tokens
             purgeAllUserData(cleanEmail);
+            window.dispatchEvent(new CustomEvent('bihar_ai_user_deleted', { detail: { email: cleanEmail, id: sub.id, user_id: sub.user_id } }));
           }
           if (sub.id) {
             try { await supabase.from('user_details').delete().eq('id', sub.id); } catch (e) {}

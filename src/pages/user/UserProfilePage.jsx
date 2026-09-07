@@ -9,7 +9,7 @@ import { getExamSubmissions, fetchExamSubmissionsFromSupabase } from '../../util
 import CertificateModal from '../../components/CertificateModal/CertificateModal';
 import UserAvatar from '../../components/UserAvatar/UserAvatar';
 import AIClasswork from '../../components/AIClasswork/AIClasswork';
-import { getUserTaskSubmissions } from '../../services/taskService';
+import { getUserTaskSubmissions, getDailyTasks } from '../../services/taskService';
 import SEO from '../../components/SEO/SEO';
 import TaskLeaderboard from '../../components/TaskLeaderboard/TaskLeaderboard';
 import './UserProfilePage.responsive.css';
@@ -227,12 +227,20 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
   };
 
   const [userTaskSubmissions, setUserTaskSubmissions] = useState([]);
+  const [totalTasksCount, setTotalTasksCount] = useState(18);
   const [showGupShupModal, setShowGupShupModal] = useState(false);
 
   const loadTaskSubmissions = async () => {
-    if (!currentUser || !currentUser.email) return;
     try {
-      const subs = await getUserTaskSubmissions(currentUser.email);
+      const allTasks = await getDailyTasks();
+      if (allTasks && allTasks.length > 0) {
+        setTotalTasksCount(allTasks.length);
+      }
+    } catch (e) {}
+
+    const targetEmail = currentUser?.email || 'candidate@biharaimission.org';
+    try {
+      const subs = await getUserTaskSubmissions(targetEmail);
       setUserTaskSubmissions(subs || []);
     } catch (e) {
       console.warn('Error loading task submissions:', e);
@@ -311,12 +319,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     };
     window.addEventListener('bihar_ai_programs_updated', handleEvents);
     window.addEventListener('bihar_ai_progress_updated', handleEvents);
+    window.addEventListener('bihar_ai_tasks_updated', handleEvents);
+    window.addEventListener('bihar_ai_task_submitted', handleEvents);
     window.addEventListener('storage', handleEvents);
 
     return () => {
       supabase.removeChannel(realtimeChannel);
       window.removeEventListener('bihar_ai_programs_updated', handleEvents);
       window.removeEventListener('bihar_ai_progress_updated', handleEvents);
+      window.removeEventListener('bihar_ai_tasks_updated', handleEvents);
+      window.removeEventListener('bihar_ai_task_submitted', handleEvents);
       window.removeEventListener('storage', handleEvents);
     };
   }, [currentUser?.email]);
@@ -1480,21 +1492,25 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                 <span style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
-                  {userTaskSubmissions.filter((s) => s.status === 'APPROVED').length}
+                  {userTaskSubmissions.length}
                 </span>
                 <span style={{ fontSize: '16px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '800' }}>
-                  / 18
+                  / {totalTasksCount}
                 </span>
               </div>
-              <div style={{ fontSize: '11px', color: userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0 ? '#E8B23D' : 'var(--color-sand-200, #C2B7A3)', fontWeight: '700', marginTop: '6px' }}>
-                {userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0
-                  ? `⏳ ${userTaskSubmissions.filter((s) => s.status === 'PENDING').length} Under Review`
+              <div style={{ fontSize: '11px', color: userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0 ? '#E8B23D' : userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0 ? '#10B981' : 'var(--color-sand-200, #C2B7A3)', fontWeight: '700', marginTop: '6px' }}>
+                {userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0 && userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0
+                  ? `✅ ${userTaskSubmissions.filter((s) => s.status === 'APPROVED').length} Approved · ⏳ ${userTaskSubmissions.filter((s) => s.status === 'PENDING').length} Under Review`
+                  : userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0
+                  ? `✅ ${userTaskSubmissions.filter((s) => s.status === 'APPROVED').length} of ${totalTasksCount} Approved`
+                  : userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0
+                  ? `⏳ ${userTaskSubmissions.filter((s) => s.status === 'PENDING').length} Task${userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 1 ? 's' : ''} Under Review`
                   : userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0
                   ? `⚠️ ${userTaskSubmissions.filter((s) => s.status === 'REJECTED').length} Needs Revision`
-                  : `18 Practical Tasks →`}
+                  : `${totalTasksCount} Practical Tasks →`}
               </div>
             </div>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(217, 155, 38, 0.18)', border: '1px solid rgba(217, 155, 38, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: userTaskSubmissions.length > 0 ? 'rgba(217, 155, 38, 0.28)' : 'rgba(217, 155, 38, 0.18)', border: '1px solid rgba(217, 155, 38, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
               ⚡
             </div>
           </div>
@@ -1607,7 +1623,9 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               fontSize: '10.5px',
               fontWeight: '800'
             }}>
-              18 Tasks
+              {userTaskSubmissions.length > 0
+                ? `${userTaskSubmissions.length}/${totalTasksCount} Submitted`
+                : `${totalTasksCount} Tasks`}
             </span>
           </button>
 

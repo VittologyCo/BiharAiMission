@@ -885,7 +885,7 @@ export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}) =>
   });
 
   return Array.from(userMap.values())
-    .sort((a, b) => b.approved - a.approved || b.total - a.total)
+    .sort((a, b) => (b.total - a.total) || (b.approved - a.approved) || (new Date(b.lastSubmission || 0) - new Date(a.lastSubmission || 0)))
     .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
 };
 
@@ -894,10 +894,11 @@ export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}) =>
  * Queries both daily_task_submissions and user_details from Supabase
  */
 export const fetchRealtimeLeaderboardData = async () => {
+  const localSubs = getLocalTaskSubmissions();
   let allSubs = [];
   let userDetailsMap = {};
 
-  // 1. Fetch all submissions (Remote Supabase or Local Fallback)
+  // 1. Fetch all submissions (Remote Supabase + Local Fallback Smart Merge)
   if (supabase) {
     try {
       const { data: subsData, error: subsError } = await supabase
@@ -905,14 +906,25 @@ export const fetchRealtimeLeaderboardData = async () => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      const mergedMap = new Map();
       if (!subsError && Array.isArray(subsData)) {
-        allSubs = subsData;
-        setLocalTaskSubmissions(subsData);
-      } else {
-        allSubs = getLocalTaskSubmissions();
+        subsData.forEach((sub) => {
+          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+          mergedMap.set(key, sub);
+        });
       }
+
+      // Merge local submissions so newly submitted tasks appear immediately
+      localSubs.forEach((sub) => {
+        const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, sub);
+        }
+      });
+
+      allSubs = Array.from(mergedMap.values());
     } catch (e) {
-      allSubs = getLocalTaskSubmissions();
+      allSubs = localSubs;
     }
 
     // 2. Fetch user profile details for rich designations & organizations
@@ -932,7 +944,7 @@ export const fetchRealtimeLeaderboardData = async () => {
       console.warn('Error fetching user_details for leaderboard:', e);
     }
   } else {
-    allSubs = getLocalTaskSubmissions();
+    allSubs = localSubs;
   }
 
   // Also merge any local profile cache if available
@@ -991,18 +1003,30 @@ export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
     }
   }
 
-  // Also listen to local window events
+  // Also listen to local window & storage events
+  const handleStorageChange = (e) => {
+    if (!e || !e.key || e.key === LOCAL_STORAGE_KEY || e.key === 'bihar_ai_user') {
+      refreshAndNotify();
+    }
+  };
+
   window.addEventListener('bihar_ai_task_submitted', refreshAndNotify);
   window.addEventListener('bihar_ai_tasks_updated', refreshAndNotify);
   window.addEventListener('bihar_ai_profile_updated', refreshAndNotify);
+  window.addEventListener('storage', handleStorageChange);
+
+  // Periodic heartbeat poll every 10s for rock-solid live update
+  const pollTimer = setInterval(refreshAndNotify, 10000);
 
   // Return unsubscribe cleanup handler
   return () => {
     if (channel && supabase) {
       supabase.removeChannel(channel);
     }
+    clearInterval(pollTimer);
     window.removeEventListener('bihar_ai_task_submitted', refreshAndNotify);
     window.removeEventListener('bihar_ai_tasks_updated', refreshAndNotify);
     window.removeEventListener('bihar_ai_profile_updated', refreshAndNotify);
+    window.removeEventListener('storage', handleStorageChange);
   };
 };
