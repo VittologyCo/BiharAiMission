@@ -5948,7 +5948,6 @@ html.lenis, html.lenis body {
   .profilePage > div,
   [class*="learningContainer"],
   [class*="toolsContainer"],
-  [class*="blogContainer"],
   [class*="aboutContainer"],
   [class*="policyContainer"],
   [class*="footerContainer"],
@@ -6043,7 +6042,6 @@ html.lenis, html.lenis body {
   .profilePage > div,
   [class*="learningContainer"],
   [class*="toolsContainer"],
-  [class*="blogContainer"],
   [class*="aboutContainer"],
   [class*="policyContainer"],
   [class*="footerContainer"],
@@ -6221,36 +6219,36 @@ html.lenis, html.lenis body {
 
 @media (min-width: 4800px) {
   .topnav {
-    max-width: 4200px !important;
-    top: 36px !important;
+    max-width: 4600px !important;
+    top: 20px !important;
   }
   .nav-i {
-    height: 116px !important;
-    padding: 16px 50px !important;
+    height: 96px !important;
+    padding: 12px 44px !important;
     border-radius: 9999px !important;
   }
   .logo-box {
-    width: 78px !important;
-    height: 78px !important;
+    width: 64px !important;
+    height: 64px !important;
   }
   .logo-name {
-    font-size: 30px !important;
+    font-size: 24px !important;
   }
   .logo-sub {
-    font-size: 19px !important;
+    font-size: 15px !important;
   }
   .nav-links a {
-    font-size: 24px !important;
-    padding: 14px 28px !important;
+    font-size: 20px !important;
+    padding: 11px 22px !important;
   }
   .nav-lock-badge {
-    font-size: 18px !important;
+    font-size: 15px !important;
   }
   .nav-actions {
-    gap: 24px !important;
+    gap: 18px !important;
   }
   .btn-pill {
-    font-size: 22px !important;
-    padding: 14px 34px !important;
+    font-size: 19px !important;
+    padding: 12px 28px !important;
   }
 }
