@@ -37,10 +37,17 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
       }
     } catch (e) {}
 
-    if (currentUser?.email) {
-      const subs = await getUserTaskSubmissions(currentUser.email);
-      setTaskSubmissions(subs || []);
-      if (onSubmissionUpdated) onSubmissionUpdated(subs);
+    const targetEmail = currentUser?.email || 'candidate@biharaimission.org';
+    try {
+      const subs = await getUserTaskSubmissions(targetEmail);
+      if (subs && subs.length > 0) {
+        setTaskSubmissions(subs);
+        if (onSubmissionUpdated) onSubmissionUpdated(subs);
+      } else {
+        setTaskSubmissions((prev) => (prev && prev.length > 0 ? prev : (subs || [])));
+      }
+    } catch (e) {
+      console.warn('Error loading user task submissions:', e);
     }
   };
 
@@ -49,9 +56,11 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
     const handleStorageChange = () => loadData();
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('bihar_ai_tasks_updated', handleStorageChange);
+    window.addEventListener('bihar_ai_task_submitted', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bihar_ai_tasks_updated', handleStorageChange);
+      window.removeEventListener('bihar_ai_task_submitted', handleStorageChange);
     };
   }, [currentUser?.email]);
 
@@ -134,7 +143,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
   };
 
   const openSubmitModal = (task) => {
-    const existing = taskSubmissions.find((s) => s.task_id === task.num);
+    const existing = taskSubmissions.find((s) => Number(s.task_id) === Number(task.num));
     setActiveModalTask(task);
     setUploadFile(null);
     setIsDragging(false);
@@ -150,7 +159,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
 
     setSubmitting(true);
     try {
-      await submitTaskWork({
+      const submitted = await submitTaskWork({
         user: currentUser,
         taskId: activeModalTask.num,
         taskTitle: `${activeModalTask.toolName} — ${activeModalTask.title}`,
@@ -158,6 +167,19 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
         file: uploadFile,
         notes: submissionNotes.trim(),
       });
+
+      if (submitted) {
+        setTaskSubmissions((prev) => [
+          submitted,
+          ...(Array.isArray(prev) ? prev.filter((s) => Number(s.task_id) !== Number(activeModalTask.num)) : [])
+        ]);
+        if (onSubmissionUpdated) {
+          onSubmissionUpdated((prev) => [
+            submitted,
+            ...(Array.isArray(prev) ? prev.filter((s) => Number(s.task_id) !== Number(activeModalTask.num)) : [])
+          ]);
+        }
+      }
 
       if (toast) {
         toast.success(`🎉 Task #${activeModalTask.num} submitted for Admin review!`);
@@ -252,7 +274,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
           {/* DYNAMIC ASSIGNMENTS LIST */}
           <div className={styles.assignmentsList}>
             {tasksList.map((item) => {
-              const sub = taskSubmissions.find((s) => s.task_id === item.num);
+              const sub = taskSubmissions.find((s) => Number(s.task_id) === Number(item.num));
               const status = sub?.status || 'NOT_SUBMITTED';
 
               return (

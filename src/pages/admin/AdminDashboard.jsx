@@ -474,6 +474,7 @@ const AdminDashboard = () => {
     window.addEventListener('bihar_ai_progress_updated', handleProgressUpdate);
     window.addEventListener('storage', handleTasksUpdate);
     window.addEventListener('bihar_ai_tasks_updated', handleTasksUpdate);
+    window.addEventListener('bihar_ai_task_submitted', handleTasksUpdate);
 
     const unsubscribeLeaderboard = subscribeToLeaderboardRealtime(() => {
       loadAdminTaskSubmissions();
@@ -487,6 +488,7 @@ const AdminDashboard = () => {
       window.removeEventListener('bihar_ai_progress_updated', handleProgressUpdate);
       window.removeEventListener('storage', handleTasksUpdate);
       window.removeEventListener('bihar_ai_tasks_updated', handleTasksUpdate);
+      window.removeEventListener('bihar_ai_task_submitted', handleTasksUpdate);
       if (typeof unsubscribeLeaderboard === 'function') unsubscribeLeaderboard();
     };
     // eslint-disable-next-line

@@ -360,40 +360,76 @@ export const uploadFileToDrive = async ({ file, userName, userEmail, taskTitle, 
  */
 export const getUserTaskSubmissions = async (userEmail) => {
   if (!userEmail) return [];
+  const cleanEmail = String(userEmail).toLowerCase().trim();
 
+  // 1. Read existing local submissions for this user
+  const allLocal = getLocalTaskSubmissions();
+  const userLocal = allLocal.filter(
+    (s) => s.user_email && s.user_email.toLowerCase() === cleanEmail
+  );
+
+  // 2. Fetch remote submissions from Supabase if online
   if (supabase) {
     try {
       const { data, error } = await supabase
         .from('daily_task_submissions')
         .select('*')
-        .ilike('user_email', String(userEmail).trim())
+        .ilike('user_email', cleanEmail)
         .order('created_at', { ascending: false });
 
-      if (!error) {
-        const remoteSubs = data || [];
-        // Update local cache so it matches database precisely
+      if (!error && Array.isArray(data)) {
+        // Smart merge: Remote is authoritative for review statuses (APPROVED/REJECTED),
+        // but NEVER erase locally queued or submitted work!
+        const mergedMap = new Map();
+
+        // Remote submissions
+        data.forEach((sub) => {
+          mergedMap.set(Number(sub.task_id), { ...sub, _synced: true });
+        });
+
+        // Overlay local submissions if remote doesn't have it yet, or if local is pending sync
+        userLocal.forEach((localSub) => {
+          const tId = Number(localSub.task_id);
+          const remoteSub = mergedMap.get(tId);
+          if (!remoteSub) {
+            mergedMap.set(tId, localSub);
+          } else if (
+            localSub.updated_at &&
+            (!remoteSub.updated_at || new Date(localSub.updated_at) > new Date(remoteSub.updated_at)) &&
+            remoteSub.status === 'PENDING'
+          ) {
+            mergedMap.set(tId, { ...remoteSub, ...localSub });
+          }
+        });
+
+        const mergedSubs = Array.from(mergedMap.values()).sort(
+          (a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)
+        );
+
+        // Update local storage so it keeps merged truth
         try {
-          const currentAll = getLocalTaskSubmissions().filter(
-            (s) => s.user_email && s.user_email.toLowerCase() !== String(userEmail).toLowerCase()
+          const otherUserSubs = allLocal.filter(
+            (s) => !s.user_email || s.user_email.toLowerCase() !== cleanEmail
           );
-          setLocalTaskSubmissions([...currentAll, ...remoteSubs]);
+          setLocalTaskSubmissions([...otherUserSubs, ...mergedSubs]);
         } catch (e) {}
-        return remoteSubs;
+
+        return mergedSubs;
       }
     } catch (err) {
       console.warn('Supabase task fetch failed, falling back to local cache:', err);
     }
   }
 
-  return getLocalTaskSubmissions().filter(
-    (s) => s.user_email && s.user_email.toLowerCase() === String(userEmail || '').toLowerCase()
-  );
+  return userLocal;
 };
 
 /**
  * Fetch ALL task submissions across all candidates (for Admin Dashboard)
  */
 export const getAllTaskSubmissions = async () => {
+  const localSubs = getLocalTaskSubmissions();
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -401,19 +437,37 @@ export const getAllTaskSubmissions = async () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data !== null) {
-        // Update local storage to match database truth
+      if (!error && Array.isArray(data)) {
+        // Merge remote and local submissions so admin sees both database truth and local queue
+        const mergedMap = new Map();
+        data.forEach((sub) => {
+          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+          mergedMap.set(key, { ...sub, _synced: true });
+        });
+
+        localSubs.forEach((sub) => {
+          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, sub);
+          }
+        });
+
+        const allMerged = Array.from(mergedMap.values()).sort(
+          (a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)
+        );
+
         try {
-          setLocalTaskSubmissions(data || []);
+          setLocalTaskSubmissions(allMerged);
         } catch (e) {}
-        return data || [];
+
+        return allMerged;
       }
     } catch (err) {
       console.warn('Supabase admin task fetch error, falling back to local cache:', err);
     }
   }
 
-  return getLocalTaskSubmissions();
+  return localSubs;
 };
 
 /**
@@ -548,47 +602,77 @@ export const submitTaskWork = async ({
     window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
   } catch (e) {}
 
-  // Sync to Supabase with silent 401 retry
+  // Multi-tier Supabase Sync
   if (supabase) {
+    let authUserId = user?.id;
+    let authEmail = (userEmail || '').toLowerCase().trim();
     try {
-      let authUserId = user?.id;
-      let authEmail = (userEmail || '').toLowerCase().trim();
-      try {
-        const sessionRes = await supabase.auth.getSession();
-        if (sessionRes?.data?.session?.user) {
-          authUserId = authUserId || sessionRes.data.session.user.id;
-          authEmail = sessionRes.data.session.user.email?.toLowerCase().trim() || authEmail;
-        }
-      } catch (e) {}
+      const sessionRes = await supabase.auth.getSession();
+      if (sessionRes?.data?.session?.user) {
+        authUserId = authUserId || sessionRes.data.session.user.id;
+        authEmail = sessionRes.data.session.user.email?.toLowerCase().trim() || authEmail;
+      }
+    } catch (e) {}
 
-      await withAuthRetry(
-        () =>
-          supabase.from('daily_task_submissions').upsert(
-            {
-              user_id: authUserId || `user_${authEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
-              user_email: authEmail,
-              user_name: userName,
-              user_district: userDistrict,
-              task_id: Number(taskId),
-              task_title: taskTitle,
-              category: category || 'Practical Classwork',
-              file_url: newSubmission.file_url,
-              file_name: newSubmission.file_name,
-              file_size: newSubmission.file_size,
-              drive_file_id: newSubmission.drive_file_id,
-              notes: newSubmission.notes,
-              status: 'PENDING',
-              admin_feedback: null,
-              reviewed_by: null,
-              reviewed_at: null,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_email,task_id' }
-          ),
-        { isWrite: true, idempotent: true }
-      );
-    } catch (err) {
-      console.warn('Supabase task submission sync note (saved locally):', err?.message || err);
+    const submissionPayload = {
+      id: newSubmission.id,
+      user_id: authUserId || `user_${authEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      user_email: authEmail,
+      user_name: userName,
+      user_district: userDistrict,
+      user_designation: userDesignation,
+      task_id: Number(taskId),
+      task_title: taskTitle,
+      category: category || 'AI Practical Classwork',
+      file_url: newSubmission.file_url,
+      file_name: newSubmission.file_name,
+      file_size: newSubmission.file_size,
+      drive_file_id: newSubmission.drive_file_id,
+      notes: newSubmission.notes,
+      status: 'PENDING',
+      admin_feedback: null,
+      reviewed_by: null,
+      reviewed_at: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let remoteSaved = false;
+
+    // Strategy A: SECURITY DEFINER RPC (bypasses RLS smoothly)
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('submit_candidate_task', {
+        submission_data: submissionPayload,
+      });
+      if (!rpcError && rpcData?.success) {
+        remoteSaved = true;
+        newSubmission._synced = true;
+        console.log('✅ Task submission persisted via submit_candidate_task RPC');
+      }
+    } catch (rpcEx) {
+      console.warn('RPC submit_candidate_task notice:', rpcEx?.message || rpcEx);
+    }
+
+    // Strategy B: Direct public.daily_task_submissions upsert
+    if (!remoteSaved) {
+      try {
+        const { error: upsertErr } = await withAuthRetry(
+          () =>
+            supabase
+              .from('daily_task_submissions')
+              .upsert(submissionPayload, { onConflict: 'user_email,task_id' }),
+          { isWrite: true, idempotent: true }
+        );
+
+        if (!upsertErr) {
+          remoteSaved = true;
+          newSubmission._synced = true;
+          console.log('✅ Task submission persisted via direct upsert');
+        } else {
+          console.warn('Supabase task direct upsert error (saved locally):', upsertErr.message);
+        }
+      } catch (err) {
+        console.warn('Supabase task submission sync note (saved locally):', err?.message || err);
+      }
     }
   }
 
