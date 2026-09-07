@@ -427,14 +427,14 @@ export default function BlogPage({ onGetInvolved }) {
               <span className={styles.categoryTag}>{activeArticle.category || 'Mission'}</span>
               {activeArticle.date && (
                 <>
-                  <span style={{ color: '#9CA3AF', fontSize: '13px' }}>•</span>
-                  <span style={{ color: '#9CA3AF', fontSize: '13px' }}>📅 {activeArticle.date}</span>
+                  <span className={styles.metaDot}>•</span>
+                  <span className={styles.metaDate}>📅 {activeArticle.date}</span>
                 </>
               )}
               {activeArticle.targetPage && (
                 <>
-                  <span style={{ color: '#9CA3AF', fontSize: '13px' }}>•</span>
-                  <span style={{ color: '#E28B5C', fontSize: '12px', fontWeight: '700' }}>
+                  <span className={styles.metaDot}>•</span>
+                  <span className={styles.targetPageBadge}>
                     🔗 {activeArticle.targetPage}
                   </span>
                 </>
@@ -454,10 +454,10 @@ export default function BlogPage({ onGetInvolved }) {
                   {authorInitial}
                 </div>
                 <div>
-                  <strong style={{ display: 'block', fontSize: '14.5px', color: '#FFFFFF' }}>
+                  <strong className={styles.authorNameText}>
                     {authorName}
                   </strong>
-                  <span style={{ fontSize: '12px', color: '#E28B5C' }}>
+                  <span className={styles.authorRoleText}>
                     {authorRole}
                   </span>
                 </div>
@@ -859,10 +859,10 @@ export default function BlogPage({ onGetInvolved }) {
                           : 'B'}
                       </div>
                       <div>
-                        <strong style={{ display: 'block', fontSize: '13.5px', color: '#FFFFFF' }}>
+                        <strong className={styles.authorNameText}>
                           {featuredBlog.author || 'Bihar AI Mission'}
                         </strong>
-                        <span style={{ fontSize: '11.5px', color: '#A19A8E' }}>
+                        <span className={styles.authorRoleText}>
                           {featuredBlog.authorRole || 'Lead Author'}
                         </span>
                       </div>
@@ -920,15 +920,12 @@ export default function BlogPage({ onGetInvolved }) {
 
                     <div className={styles.authorRow}>
                       <div className={styles.authorMeta}>
-                        <div
-                          className={styles.authorAvatar}
-                          style={{ width: '32px', height: '32px', fontSize: '12px' }}
-                        >
+                        <div className={`${styles.authorAvatar} ${styles.authorAvatarSmall}`}>
                           {typeof item.author === 'string' && item.author.trim()
                             ? item.author.trim()[0].toUpperCase()
                             : 'B'}
                         </div>
-                        <span style={{ fontSize: '12px', color: '#C2B7A3', fontWeight: '700' }}>
+                        <span className={styles.cardAuthorName}>
                           {item.author || 'Contributor'}
                         </span>
                       </div>

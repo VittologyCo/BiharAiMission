@@ -342,6 +342,48 @@
   flex-shrink: 0;
 }
 
+.authorAvatarSmall {
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 11px !important;
+}
+
+.authorNameText {
+  display: block;
+  font-size: 13.5px;
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: color 0.2s ease;
+}
+
+.authorRoleText {
+  display: block;
+  font-size: 11.5px;
+  color: #E28B5C;
+}
+
+.cardAuthorName {
+  font-size: 12px;
+  color: #C2B7A3;
+  font-weight: 700;
+}
+
+.metaDot {
+  color: #9CA3AF;
+  font-size: 13px;
+}
+
+.metaDate {
+  color: #9CA3AF;
+  font-size: 13px;
+}
+
+.targetPageBadge {
+  color: #E28B5C;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .readMoreBtn {
   display: inline-flex;
   align-items: center;
@@ -870,10 +912,694 @@
 }
 
 /* ───────────────────────────────────────────────
-   RESPONSIVE DESIGN SYSTEM
+   RESPONSIVE DESIGN SYSTEM — ALL SCREEN SIZES
+   Mobile (320px) → Tablet → Laptop → 2K → 4K → 8K (7680x2160)
    ─────────────────────────────────────────────── */
 
-/* 1. TABLET LANDSCAPE & PORTRAIT (≤ 1024px) */
+/* 1. ULTRA-WIDE 8K DISPLAYS (7680x2160, 5120x2880) (≥ 4800px) */
+@media (min-width: 4800px) {
+  .blogContainer, .fullArticlePage {
+    padding: 220px 80px 160px;
+  }
+
+  .innerWrap {
+    max-width: clamp(4200px, 72vw, 5800px);
+  }
+
+  .heroSection {
+    margin-bottom: 72px;
+  }
+
+  .badgePill {
+    font-size: 20px;
+    padding: 12px 36px;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .pageTitle {
+    font-size: clamp(68px, 3.8vw, 96px);
+    margin-bottom: 24px;
+    line-height: 1.15;
+  }
+
+  .pageSubtitle {
+    font-size: clamp(24px, 1.4vw, 34px);
+    max-width: 2000px;
+    line-height: 1.6;
+  }
+
+  .controlsBar {
+    padding: 38px 48px;
+    border-radius: 36px;
+    gap: 28px;
+    margin-bottom: 60px;
+  }
+
+  .searchInput {
+    padding: 22px 64px 22px 76px;
+    font-size: 26px;
+    border-radius: 22px;
+  }
+
+  .searchIcon {
+    left: 26px;
+    font-size: 28px;
+  }
+
+  .clearSearchBtn {
+    right: 22px;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .categoryPills {
+    gap: 16px;
+    padding-bottom: 12px;
+  }
+
+  .pillBtn {
+    padding: 16px 36px;
+    font-size: 22px;
+  }
+
+  .featuredCard {
+    grid-template-columns: 1.3fr 1fr;
+    gap: 64px;
+    border-radius: 44px;
+    margin-bottom: 64px;
+    min-height: 640px;
+  }
+
+  .featuredImageWrap {
+    min-height: 640px;
+  }
+
+  .featuredBadge {
+    font-size: 18px;
+    padding: 10px 24px;
+    top: 28px;
+    left: 28px;
+  }
+
+  .featuredBody {
+    padding: 48px 48px 48px 0;
+  }
+
+  .featuredTitle {
+    font-size: clamp(38px, 2vw, 50px);
+    line-height: 1.25;
+    margin-bottom: 20px;
+  }
+
+  .featuredExcerpt {
+    font-size: 24px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+  }
+
+  .cardMeta {
+    font-size: 20px;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .categoryTag {
+    font-size: 16px;
+    padding: 6px 16px;
+    border-radius: 8px;
+  }
+
+  .authorAvatar {
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+
+  .authorAvatarSmall {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 18px !important;
+  }
+
+  .authorNameText {
+    font-size: 22px;
+  }
+
+  .authorRoleText {
+    font-size: 18px;
+  }
+
+  .cardAuthorName {
+    font-size: 18px;
+  }
+
+  .readMoreBtn {
+    font-size: 20px;
+    padding: 14px 32px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .blogGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 56px;
+  }
+
+  .cardImageWrap {
+    height: 350px;
+  }
+
+  .cardBody {
+    padding: 34px;
+  }
+
+  .cardTitle {
+    font-size: clamp(24px, 1.3vw, 32px);
+    line-height: 1.35;
+    margin-bottom: 14px;
+  }
+
+  .cardExcerpt {
+    font-size: 20px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .readMoreLink {
+    font-size: 18px;
+  }
+
+  /* Full Article Reading View on 8K */
+  .articleMainWrap {
+    max-width: clamp(2200px, 48vw, 3200px);
+  }
+
+  .articleTopNav {
+    margin-bottom: 48px;
+    padding-bottom: 28px;
+  }
+
+  .backBtn {
+    padding: 14px 32px;
+    font-size: 20px;
+    gap: 12px;
+  }
+
+  .articleReadStats {
+    font-size: 20px;
+    gap: 14px;
+  }
+
+  .articleHeader {
+    margin-bottom: 44px;
+  }
+
+  .articleTitleMain {
+    font-size: clamp(56px, 3vw, 80px);
+    line-height: 1.18;
+    margin-bottom: 24px;
+  }
+
+  .articleSubtitle {
+    font-size: 32px;
+    line-height: 1.6;
+    margin-bottom: 36px;
+  }
+
+  .articleMetaBar {
+    padding: 26px 0;
+    margin-bottom: 40px;
+    gap: 24px;
+  }
+
+  .shareBar {
+    gap: 14px;
+  }
+
+  .shareBtn {
+    padding: 12px 24px;
+    font-size: 18px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+
+  .articleCoverWrap {
+    max-height: 820px;
+    border-radius: 36px;
+    margin-bottom: 50px;
+  }
+
+  .articleCoverImg {
+    max-height: 820px;
+  }
+
+  .keyHighlightsBox {
+    padding: 36px 48px;
+    margin-bottom: 48px;
+    border-radius: 0 24px 24px 0;
+    border-left-width: 8px;
+  }
+
+  .highlightsTitle {
+    font-size: 24px;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .highlightsText {
+    font-size: 26px;
+    line-height: 1.7;
+  }
+
+  .articleBody {
+    font-size: 26px;
+    line-height: 1.85;
+    margin-bottom: 60px;
+  }
+
+  .bodyH1, .bodyH2, .articleBody h2 {
+    font-size: 44px;
+    margin: 52px 0 24px;
+  }
+
+  .bodyH3, .articleBody h3 {
+    font-size: 36px;
+    margin: 40px 0 18px;
+  }
+
+  .bodyH4, .articleBody h4 {
+    font-size: 28px;
+    margin: 30px 0 14px;
+  }
+
+  .bottomActionBanner {
+    padding: 44px 54px;
+    border-radius: 32px;
+    margin-top: 60px;
+  }
+
+  .actionBannerTitle {
+    font-size: 36px;
+  }
+
+  .actionBannerText {
+    font-size: 22px;
+  }
+
+  .actionBannerBtn {
+    padding: 16px 36px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+
+  .relatedSection {
+    margin-top: 80px;
+    padding-top: 48px;
+  }
+
+  .relatedTitle {
+    font-size: 36px;
+    margin-bottom: 32px;
+  }
+}
+
+/* 2. 4K UHD HIGH-RESOLUTION (3840x2160) (≥ 3200px and < 4800px) */
+@media (min-width: 3200px) and (max-width: 4799px) {
+  .blogContainer, .fullArticlePage {
+    padding: 160px 48px 120px;
+  }
+
+  .innerWrap {
+    max-width: 3000px;
+  }
+
+  .heroSection {
+    margin-bottom: 56px;
+  }
+
+  .badgePill {
+    font-size: 16px;
+    padding: 10px 28px;
+    margin-bottom: 22px;
+  }
+
+  .pageTitle {
+    font-size: 64px;
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+
+  .pageSubtitle {
+    font-size: 22px;
+    max-width: 1200px;
+    line-height: 1.6;
+  }
+
+  .controlsBar {
+    padding: 28px 36px;
+    border-radius: 28px;
+    gap: 22px;
+    margin-bottom: 48px;
+  }
+
+  .searchInput {
+    font-size: 20px;
+    padding: 18px 56px 18px 60px;
+    border-radius: 18px;
+  }
+
+  .searchIcon {
+    left: 20px;
+    font-size: 22px;
+  }
+
+  .clearSearchBtn {
+    right: 18px;
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+
+  .pillBtn {
+    font-size: 17px;
+    padding: 12px 26px;
+  }
+
+  .featuredCard {
+    grid-template-columns: 1.3fr 1fr;
+    gap: 56px;
+    border-radius: 36px;
+    min-height: 520px;
+    margin-bottom: 52px;
+  }
+
+  .featuredImageWrap {
+    min-height: 520px;
+  }
+
+  .featuredBadge {
+    font-size: 15px;
+    padding: 8px 20px;
+    top: 24px;
+    left: 24px;
+  }
+
+  .featuredBody {
+    padding: 40px 40px 40px 0;
+  }
+
+  .featuredTitle {
+    font-size: 38px;
+    line-height: 1.25;
+    margin-bottom: 16px;
+  }
+
+  .featuredExcerpt {
+    font-size: 19px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+
+  .cardMeta {
+    font-size: 16px;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .categoryTag {
+    font-size: 14px;
+    padding: 5px 14px;
+    border-radius: 8px;
+  }
+
+  .authorAvatar {
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+  }
+
+  .authorAvatarSmall {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 15px !important;
+  }
+
+  .authorNameText {
+    font-size: 18px;
+  }
+
+  .authorRoleText {
+    font-size: 15px;
+  }
+
+  .cardAuthorName {
+    font-size: 15px;
+  }
+
+  .readMoreBtn {
+    font-size: 16px;
+    padding: 12px 26px;
+    border-radius: 12px;
+  }
+
+  .blogGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 44px;
+  }
+
+  .cardImageWrap {
+    height: 280px;
+  }
+
+  .cardBody {
+    padding: 28px;
+  }
+
+  .cardTitle {
+    font-size: 24px;
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+
+  .cardExcerpt {
+    font-size: 17px;
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+
+  .readMoreLink {
+    font-size: 15px;
+  }
+
+  /* Full Article Reading View on 4K */
+  .articleMainWrap {
+    max-width: 1600px;
+  }
+
+  .articleTopNav {
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+  }
+
+  .backBtn {
+    font-size: 17px;
+    padding: 12px 26px;
+  }
+
+  .articleReadStats {
+    font-size: 17px;
+    gap: 12px;
+  }
+
+  .articleHeader {
+    margin-bottom: 38px;
+  }
+
+  .articleTitleMain {
+    font-size: 54px;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  .articleSubtitle {
+    font-size: 24px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+  }
+
+  .articleMetaBar {
+    padding: 22px 0;
+    margin-bottom: 36px;
+  }
+
+  .shareBtn {
+    padding: 10px 20px;
+    font-size: 15px;
+    border-radius: 10px;
+    gap: 6px;
+  }
+
+  .articleCoverWrap {
+    max-height: 640px;
+    border-radius: 28px;
+    margin-bottom: 42px;
+  }
+
+  .articleCoverImg {
+    max-height: 640px;
+  }
+
+  .keyHighlightsBox {
+    padding: 30px 38px;
+    margin-bottom: 42px;
+    border-radius: 0 20px 20px 0;
+    border-left-width: 6px;
+  }
+
+  .highlightsTitle {
+    font-size: 18px;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .highlightsText {
+    font-size: 20px;
+    line-height: 1.7;
+  }
+
+  .articleBody {
+    font-size: 22px;
+    line-height: 1.85;
+    margin-bottom: 50px;
+  }
+
+  .bodyH1, .bodyH2, .articleBody h2 {
+    font-size: 34px;
+    margin: 44px 0 20px;
+  }
+
+  .bodyH3, .articleBody h3 {
+    font-size: 28px;
+    margin: 34px 0 16px;
+  }
+
+  .bodyH4, .articleBody h4 {
+    font-size: 22px;
+    margin: 26px 0 12px;
+  }
+
+  .bottomActionBanner {
+    padding: 36px 44px;
+    border-radius: 26px;
+    margin-top: 50px;
+  }
+
+  .actionBannerTitle {
+    font-size: 30px;
+  }
+
+  .actionBannerText {
+    font-size: 18px;
+  }
+
+  .actionBannerBtn {
+    padding: 14px 30px;
+    font-size: 17px;
+    border-radius: 12px;
+  }
+
+  .relatedSection {
+    margin-top: 70px;
+    padding-top: 42px;
+  }
+
+  .relatedTitle {
+    font-size: 30px;
+    margin-bottom: 28px;
+  }
+}
+
+/* 3. QUAD HD & 2K ULTRAWIDE (2560x1440, 3440x1440) (≥ 2000px and < 3200px) */
+@media (min-width: 2000px) and (max-width: 3199px) {
+  .innerWrap {
+    max-width: 2000px;
+  }
+
+  .blogGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 36px;
+  }
+
+  .featuredCard {
+    grid-template-columns: 1.25fr 1fr;
+    gap: 48px;
+    border-radius: 32px;
+  }
+
+  .featuredImageWrap {
+    min-height: 420px;
+  }
+
+  .featuredTitle {
+    font-size: 32px;
+  }
+
+  .featuredExcerpt {
+    font-size: 16px;
+  }
+
+  .cardImageWrap {
+    height: 230px;
+  }
+
+  .cardTitle {
+    font-size: 21px;
+  }
+
+  .cardExcerpt {
+    font-size: 15px;
+  }
+
+  .articleMainWrap {
+    max-width: 1200px;
+  }
+
+  .articleTitleMain {
+    font-size: 50px;
+  }
+
+  .articleSubtitle {
+    font-size: 21px;
+  }
+
+  .articleBody {
+    font-size: 19px;
+  }
+
+  .articleCoverWrap {
+    max-height: 520px;
+  }
+}
+
+/* 4. LARGE DESKTOP (≥ 1500px and < 2000px) */
+@media (min-width: 1500px) and (max-width: 1999px) {
+  .innerWrap {
+    max-width: 1540px;
+  }
+
+  .blogGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .articleMainWrap {
+    max-width: 980px;
+  }
+}
+
+/* 5. TABLET LANDSCAPE & DESKTOP (≤ 1024px) */
 @media (max-width: 1024px) {
   .blogContainer, .fullArticlePage {
     padding: 70px 20px 60px;
@@ -912,7 +1638,7 @@
   }
 }
 
-/* 2. TABLET PORTRAIT & MEDIUM MOBILE (≤ 768px) */
+/* 6. TABLET PORTRAIT & MEDIUM MOBILE (≤ 768px) */
 @media (max-width: 768px) {
   .blogContainer, .fullArticlePage {
     padding: 24px 16px 50px;
@@ -1021,7 +1747,7 @@
   }
 
   .shareBtn {
-    height: 38px;
+    height: 40px;
     padding: 0 8px;
     font-size: 12px;
     justify-content: center;
@@ -1106,7 +1832,7 @@
   }
 }
 
-/* 3. SMALL MOBILE PHONES (≤ 480px) */
+/* 7. SMALL MOBILE PHONES (≤ 480px) */
 @media (max-width: 480px) {
   .blogContainer, .fullArticlePage {
     padding: 18px 12px 40px;
@@ -1177,7 +1903,7 @@
   }
 }
 
-/* 4. ULTRA-SMALL MOBILE (≤ 380px) */
+/* 8. ULTRA-SMALL MOBILE (≤ 380px) */
 @media (max-width: 380px) {
   .blogContainer, .fullArticlePage {
     padding: 14px 10px 36px;

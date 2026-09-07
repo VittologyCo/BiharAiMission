@@ -1000,7 +1000,7 @@ export const fetchRealtimeLeaderboardData = async () => {
       console.warn('Error fetching user_details for leaderboard:', e);
     }
   } else {
-    allSubs = localSubs;
+    allSubs = getLocalTaskSubmissions();
   }
 
   // Also merge any local profile cache if available
