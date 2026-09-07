@@ -76,6 +76,7 @@ import {
   getSubmissionLeaderboard,
   subscribeToLeaderboardRealtime,
   deleteStoredFile,
+  deleteTaskSubmission,
   getLocalTaskSubmissions
 } from '../../services/taskService';
 
@@ -434,6 +435,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteTaskSubmission = async (sub) => {
+    const candidateName = sub.user_name || sub.user_email || 'Candidate';
+    if (!window.confirm(`Are you sure you want to permanently delete this submission for Task #${sub.task_id} from ${candidateName}? This will delete the uploaded file and remove the record from the database.`)) {
+      return;
+    }
+    try {
+      await deleteTaskSubmission({
+        submissionId: sub.id,
+        userEmail: sub.user_email,
+        taskId: sub.task_id,
+        fileUrl: sub.file_url,
+        fileName: sub.file_name,
+      });
+      toast.success(`Submission for Task #${sub.task_id} deleted successfully.`);
+      await loadAdminTaskSubmissions();
+    } catch (err) {
+      console.error('Failed to delete task submission:', err);
+      toast.error('Failed to delete submission.');
+    }
+  };
+
   const loadEnrollmentsData = async () => {
     try {
       const [mcEnr, offEnr, offProg] = await Promise.all([
@@ -478,11 +500,50 @@ const AdminDashboard = () => {
     window.addEventListener('bihar_ai_tasks_updated', handleTasksUpdate);
     window.addEventListener('bihar_ai_task_submitted', handleTasksUpdate);
 
+    let adminRealtimeChannel = null;
+    if (supabase) {
+      try {
+        adminRealtimeChannel = supabase
+          .channel('admin_global_database_sync')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'daily_task_submissions' },
+            (payload) => {
+              console.log('⚡ Realtime daily_task_submissions change detected:', payload.eventType);
+              loadAdminTaskSubmissions();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'daily_tasks' },
+            () => {
+              loadAdminTasksData();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'user_details' },
+            (payload) => {
+              console.log('⚡ Realtime user_details change detected:', payload.eventType);
+              fetchSubmissions();
+              fetchStats();
+              loadAdminTaskSubmissions();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Admin realtime channel error:', err);
+      }
+    }
+
     const unsubscribeLeaderboard = subscribeToLeaderboardRealtime(() => {
       loadAdminTaskSubmissions();
     });
 
     return () => {
+      if (adminRealtimeChannel && supabase) {
+        supabase.removeChannel(adminRealtimeChannel);
+      }
       window.removeEventListener('bihar_ai_exams_updated', handleExamUpdate);
       window.removeEventListener('bihar_ai_live_classes_updated', handleLiveClassUpdate);
       window.removeEventListener('bihar_ai_masterclass_questions_updated', handleQuestionsUpdate);
@@ -6842,11 +6903,32 @@ const AdminDashboard = () => {
                           {/* ACTIONS */}
                           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                             <button
-                              onClick={() => handleOpenRejectModal(sub)}
+                              onClick={() => handleDeleteTaskSubmission(sub)}
+                              title="Permanently delete this submission and attached file"
                               style={{
                                 background: '#FFF1F2',
-                                color: '#E11D48',
-                                border: '1px solid #FDA4AF',
+                                color: '#BE123C',
+                                border: '1px solid #FECDD3',
+                                padding: '8px 14px',
+                                borderRadius: '8px',
+                                fontWeight: '800',
+                                fontSize: '12.5px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              🗑️ Delete Submission
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenRejectModal(sub)}
+                              style={{
+                                background: '#FFFBEB',
+                                color: '#B45309',
+                                border: '1px solid #FDE68A',
                                 padding: '8px 16px',
                                 borderRadius: '8px',
                                 fontWeight: '800',

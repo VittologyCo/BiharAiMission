@@ -7,6 +7,7 @@ import {
   generateClassworkDoc
 } from '../../data/classworkData';
 import { getUserTaskSubmissions, submitTaskWork, getDailyTasks } from '../../services/taskService';
+import { supabase } from '../../utils/supabase';
 import styles from './AIClasswork.module.css';
 
 export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
@@ -40,12 +41,8 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
     const targetEmail = currentUser?.email || 'candidate@biharaimission.org';
     try {
       const subs = await getUserTaskSubmissions(targetEmail);
-      if (subs && subs.length > 0) {
-        setTaskSubmissions(subs);
-        if (onSubmissionUpdated) onSubmissionUpdated(subs);
-      } else {
-        setTaskSubmissions((prev) => (prev && prev.length > 0 ? prev : (subs || [])));
-      }
+      setTaskSubmissions(subs || []);
+      if (onSubmissionUpdated) onSubmissionUpdated(subs || []);
     } catch (e) {
       console.warn('Error loading user task submissions:', e);
     }
@@ -57,7 +54,34 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('bihar_ai_tasks_updated', handleStorageChange);
     window.addEventListener('bihar_ai_task_submitted', handleStorageChange);
+
+    let userRealtimeChannel = null;
+    if (supabase) {
+      try {
+        userRealtimeChannel = supabase
+          .channel(`user_classwork_realtime_${(currentUser?.email || 'guest').replace(/[^a-zA-Z0-9]/g, '_')}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'daily_task_submissions' },
+            () => {
+              loadData();
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'daily_tasks' },
+            () => {
+              loadData();
+            }
+          )
+          .subscribe();
+      } catch (e) {}
+    }
+
     return () => {
+      if (userRealtimeChannel && supabase) {
+        supabase.removeChannel(userRealtimeChannel);
+      }
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('bihar_ai_tasks_updated', handleStorageChange);
       window.removeEventListener('bihar_ai_task_submitted', handleStorageChange);

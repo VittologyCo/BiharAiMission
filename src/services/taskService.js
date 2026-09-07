@@ -97,24 +97,38 @@ export const getDailyTasks = async () => {
       .eq('is_active', true)
       .order('num', { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      const formatted = data.map((t) => ({
-        num: t.num,
-        toolName: t.tool_name,
-        title: t.title,
-        classwork: t.classwork,
-        instructions: t.instructions,
-        finalSubmission: Array.isArray(t.final_submission)
-          ? t.final_submission
-          : typeof t.final_submission === 'string'
-          ? JSON.parse(t.final_submission || '[]')
-          : [],
-        category: t.category || 'AI Practical Classwork',
-        id: t.id,
-      }));
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const dbMap = new Map();
+      data.forEach((t) => {
+        dbMap.set(Number(t.num), {
+          num: t.num,
+          toolName: t.tool_name,
+          title: t.title,
+          classwork: t.classwork,
+          instructions: t.instructions,
+          finalSubmission: Array.isArray(t.final_submission)
+            ? t.final_submission
+            : typeof t.final_submission === 'string'
+            ? JSON.parse(t.final_submission || '[]')
+            : [],
+          category: t.category || 'AI Practical Classwork',
+          id: t.id,
+          _synced: true,
+        });
+      });
 
-      formatted.forEach((t) => taskMap.set(Number(t.num), t));
-      const merged = Array.from(taskMap.values()).sort((a, b) => a.num - b.num);
+      // Start with default seed tasks merged with Supabase versions
+      const mergedMap = new Map();
+      defaultSeedTasks.forEach((t) => {
+        const num = Number(t.num);
+        mergedMap.set(num, dbMap.has(num) ? dbMap.get(num) : t);
+      });
+      // Add any additional tasks created in Supabase
+      dbMap.forEach((val, num) => {
+        mergedMap.set(num, val);
+      });
+
+      const merged = Array.from(mergedMap.values()).sort((a, b) => a.num - b.num);
       try {
         localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(merged));
       } catch (e) {}
@@ -378,27 +392,24 @@ export const getUserTaskSubmissions = async (userEmail) => {
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        // Smart merge: Remote is authoritative for review statuses (APPROVED/REJECTED),
-        // but NEVER erase locally queued or submitted work!
-        const mergedMap = new Map();
+        // Supabase is authoritative!
+        // Only keep local submissions that are actively pending sync (< 60s old)
+        const now = Date.now();
+        const pendingLocal = userLocal.filter((s) => {
+          if (!s._pendingSync) return false;
+          const age = now - new Date(s.updated_at || s.created_at || 0).getTime();
+          return age < 60000;
+        });
 
-        // Remote submissions
+        const mergedMap = new Map();
         data.forEach((sub) => {
           mergedMap.set(Number(sub.task_id), { ...sub, _synced: true });
         });
 
-        // Overlay local submissions if remote doesn't have it yet, or if local is pending sync
-        userLocal.forEach((localSub) => {
+        pendingLocal.forEach((localSub) => {
           const tId = Number(localSub.task_id);
-          const remoteSub = mergedMap.get(tId);
-          if (!remoteSub) {
+          if (!mergedMap.has(tId)) {
             mergedMap.set(tId, localSub);
-          } else if (
-            localSub.updated_at &&
-            (!remoteSub.updated_at || new Date(localSub.updated_at) > new Date(remoteSub.updated_at)) &&
-            remoteSub.status === 'PENDING'
-          ) {
-            mergedMap.set(tId, { ...remoteSub, ...localSub });
           }
         });
 
@@ -406,7 +417,7 @@ export const getUserTaskSubmissions = async (userEmail) => {
           (a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)
         );
 
-        // Update local storage so it keeps merged truth
+        // Update local storage so deleted records in Supabase are purged from local storage too
         try {
           const otherUserSubs = allLocal.filter(
             (s) => !s.user_email || s.user_email.toLowerCase() !== cleanEmail
@@ -428,8 +439,6 @@ export const getUserTaskSubmissions = async (userEmail) => {
  * Fetch ALL task submissions across all candidates (for Admin Dashboard)
  */
 export const getAllTaskSubmissions = async () => {
-  const localSubs = getLocalTaskSubmissions();
-
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -438,14 +447,22 @@ export const getAllTaskSubmissions = async () => {
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        // Merge remote and local submissions so admin sees both database truth and local queue
+        // Supabase is authoritative!
+        // Only keep local submissions that are actively pending sync (< 60s old)
+        const now = Date.now();
+        const pendingLocal = getLocalTaskSubmissions().filter((s) => {
+          if (!s._pendingSync) return false;
+          const age = now - new Date(s.updated_at || s.created_at || 0).getTime();
+          return age < 60000;
+        });
+
         const mergedMap = new Map();
         data.forEach((sub) => {
           const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
           mergedMap.set(key, { ...sub, _synced: true });
         });
 
-        localSubs.forEach((sub) => {
+        pendingLocal.forEach((sub) => {
           const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
           if (!mergedMap.has(key)) {
             mergedMap.set(key, sub);
@@ -456,6 +473,7 @@ export const getAllTaskSubmissions = async () => {
           (a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0)
         );
 
+        // Purge any submissions that were deleted from Supabase from local storage too
         try {
           setLocalTaskSubmissions(allMerged);
         } catch (e) {}
@@ -467,7 +485,7 @@ export const getAllTaskSubmissions = async () => {
     }
   }
 
-  return localSubs;
+  return getLocalTaskSubmissions();
 };
 
 /**
@@ -646,6 +664,7 @@ export const submitTaskWork = async ({
       if (!rpcError && rpcData?.success) {
         remoteSaved = true;
         newSubmission._synced = true;
+        delete newSubmission._pendingSync;
         console.log('✅ Task submission persisted via submit_candidate_task RPC');
       }
     } catch (rpcEx) {
@@ -666,6 +685,7 @@ export const submitTaskWork = async ({
         if (!upsertErr) {
           remoteSaved = true;
           newSubmission._synced = true;
+          delete newSubmission._pendingSync;
           console.log('✅ Task submission persisted via direct upsert');
         } else {
           console.warn('Supabase task direct upsert error (saved locally):', upsertErr.message);
@@ -673,6 +693,18 @@ export const submitTaskWork = async ({
       } catch (err) {
         console.warn('Supabase task submission sync note (saved locally):', err?.message || err);
       }
+    }
+
+    if (remoteSaved) {
+      try {
+        const currentSubs = getLocalTaskSubmissions();
+        const subIndex = currentSubs.findIndex(s => s.id === newSubmission.id);
+        if (subIndex >= 0) {
+          currentSubs[subIndex]._synced = true;
+          delete currentSubs[subIndex]._pendingSync;
+          setLocalTaskSubmissions(currentSubs);
+        }
+      } catch (e) {}
     }
   }
 
@@ -770,29 +802,45 @@ export const deleteTaskSubmission = async ({ submissionId, userEmail, taskId, fi
   // 1. Delete file from storage server
   await deleteStoredFile({ fileUrl, fileName });
 
-  // 2. Delete from local storage
+  // 2. Delete file from Supabase storage bucket 'task-submissions' if exists
+  if (supabase?.storage && fileUrl) {
+    try {
+      if (fileUrl.includes('task-submissions')) {
+        const parts = fileUrl.split('task-submissions/');
+        if (parts[1]) {
+          const filePath = decodeURIComponent(parts[1].split('?')[0]);
+          await supabase.storage.from('task-submissions').remove([filePath]);
+        }
+      }
+    } catch (stErr) {
+      console.warn('Supabase storage delete error:', stErr);
+    }
+  }
+
+  // 3. Delete from local storage
   const allSubs = getLocalTaskSubmissions();
+  const cleanEmail = String(userEmail || '').toLowerCase().trim();
   const filtered = allSubs.filter(
     (s) =>
       !(
-        s.id === submissionId ||
+        (submissionId && s.id === submissionId) ||
         (Number(s.task_id) === Number(taskId) &&
-          s.user_email &&
-          s.user_email.toLowerCase() === String(userEmail || '').toLowerCase())
+          (s.user_email || '').toLowerCase().trim() === cleanEmail)
       )
   );
   setLocalTaskSubmissions(filtered);
 
-  // 3. Delete from Supabase
+  // 4. Delete from Supabase
   if (supabase) {
     try {
       if (submissionId && !submissionId.startsWith('sub_')) {
         await supabase.from('daily_task_submissions').delete().eq('id', submissionId);
-      } else {
+      }
+      if (cleanEmail && taskId) {
         await supabase
           .from('daily_task_submissions')
           .delete()
-          .eq('user_email', userEmail)
+          .ilike('user_email', cleanEmail)
           .eq('task_id', Number(taskId));
       }
     } catch (err) {
@@ -803,6 +851,7 @@ export const deleteTaskSubmission = async ({ submissionId, userEmail, taskId, fi
   // Dispatch update event
   try {
     window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
+    window.dispatchEvent(new Event('bihar_ai_task_submitted'));
   } catch (e) {}
 
   return { success: true };
@@ -894,11 +943,10 @@ export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}) =>
  * Queries both daily_task_submissions and user_details from Supabase
  */
 export const fetchRealtimeLeaderboardData = async () => {
-  const localSubs = getLocalTaskSubmissions();
   let allSubs = [];
   let userDetailsMap = {};
 
-  // 1. Fetch all submissions (Remote Supabase + Local Fallback Smart Merge)
+  // 1. Fetch all submissions from Supabase with authoritative DB truth
   if (supabase) {
     try {
       const { data: subsData, error: subsError } = await supabase
@@ -906,25 +954,33 @@ export const fetchRealtimeLeaderboardData = async () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      const mergedMap = new Map();
       if (!subsError && Array.isArray(subsData)) {
+        const now = Date.now();
+        const pendingLocal = getLocalTaskSubmissions().filter((s) => {
+          if (!s._pendingSync) return false;
+          const age = now - new Date(s.updated_at || s.created_at || 0).getTime();
+          return age < 60000;
+        });
+
+        const mergedMap = new Map();
         subsData.forEach((sub) => {
           const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
           mergedMap.set(key, sub);
         });
+
+        pendingLocal.forEach((sub) => {
+          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, sub);
+          }
+        });
+
+        allSubs = Array.from(mergedMap.values());
+      } else {
+        allSubs = getLocalTaskSubmissions();
       }
-
-      // Merge local submissions so newly submitted tasks appear immediately
-      localSubs.forEach((sub) => {
-        const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
-        if (!mergedMap.has(key)) {
-          mergedMap.set(key, sub);
-        }
-      });
-
-      allSubs = Array.from(mergedMap.values());
     } catch (e) {
-      allSubs = localSubs;
+      allSubs = getLocalTaskSubmissions();
     }
 
     // 2. Fetch user profile details for rich designations & organizations

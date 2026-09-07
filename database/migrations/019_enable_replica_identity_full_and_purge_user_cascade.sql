@@ -11,10 +11,27 @@
 --    application database tables in one clean transaction.
 -- ==============================================================================
 
--- 1. Enable REPLICA IDENTITY FULL on all user-related tables
+-- 1. Enable REPLICA IDENTITY FULL on all user-related and task-related tables
 -- This ensures that PostgreSQL sends the full row (including email and id) on DELETE events
 ALTER TABLE public.user_details REPLICA IDENTITY FULL;
 ALTER TABLE public.daily_task_submissions REPLICA IDENTITY FULL;
+ALTER TABLE public.daily_tasks REPLICA IDENTITY FULL;
+
+-- 2. Ensure supabase_realtime publication broadcasts all changes for these tables
+DO $$
+BEGIN
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.user_details;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL; END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_task_submissions;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL; END;
+
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_tasks;
+    EXCEPTION WHEN duplicate_object THEN NULL; WHEN OTHERS THEN NULL; END;
+END $$;
 
 DO $$
 BEGIN
