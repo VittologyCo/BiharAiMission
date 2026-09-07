@@ -30,7 +30,9 @@
   position: relative;
   width: 100%;
   max-width: 660px;
+  height: auto;
   max-height: min(90vh, 780px);
+  max-height: min(90dvh, 780px);
   display: flex;
   flex-direction: column;
   background: var(--color-sand-50, #FBF8F3);
@@ -227,9 +229,11 @@
 /* ─── FORM BODY (SMOOTH INDEPENDENT SCROLL AREA) ─── */
 .formBody {
   flex: 1 1 auto;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
   padding: 20px 28px 24px;
   display: flex;
   flex-direction: column;
@@ -444,7 +448,7 @@
 
 /* ─── FOOTER (PINNED AT BOTTOM) ─── */
 .footer {
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -452,6 +456,8 @@
   border-top: 1px solid rgba(226, 215, 195, 0.5);
   background: var(--color-sand-50, #FBF8F3);
   box-sizing: border-box;
+  position: relative;
+  z-index: 10;
 }
 
 .footerRight {
@@ -608,18 +614,22 @@
 @media (max-width: 768px) {
   .overlay {
     padding: 12px 10px;
-    align-items: flex-start;
-    padding-top: 16px;
+    align-items: center;
+    justify-content: center;
   }
 
   .modal {
     max-width: 100%;
-    max-height: 96vh;
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
     border-radius: 18px;
+    margin: 0;
   }
 
   .header {
-    padding: 20px 20px 10px;
+    padding: 16px 20px 8px;
   }
 
   .headerTitle {
@@ -627,14 +637,20 @@
   }
 
   .formBody {
-    padding: 16px 20px 20px;
-    gap: 14px;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 14px 20px 18px;
+    gap: 13px;
   }
 
   .footer {
-    padding: 12px 20px 16px;
-    flex-wrap: wrap;
+    flex-shrink: 0 !important;
+    padding: 12px 20px 14px;
     gap: 10px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
   }
 
   .row2, .row3 {
@@ -648,7 +664,7 @@
   }
 
   .stepBar {
-    padding: 10px 16px;
+    padding: 8px 16px;
     gap: 14px;
   }
 
@@ -660,72 +676,51 @@
 /* ─── RESPONSIVE: MOBILE (≤640px) ─── */
 @media (max-width: 640px) {
   .overlay {
-    padding: 8px;
-    align-items: flex-start;
-    padding-top: 10px;
+    padding: 6px;
+    align-items: stretch;
+    justify-content: center;
+    overflow: hidden;
   }
 
   .modal {
-    max-height: 97vh;
+    width: 100%;
+    max-width: 100%;
+    height: calc(100vh - 12px);
+    height: calc(100dvh - 12px);
+    max-height: calc(100vh - 12px);
+    max-height: calc(100dvh - 12px);
     border-radius: 16px;
-    max-width: calc(100vw - 16px);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .header {
-    padding: 16px 16px 8px;
+    padding: 12px 14px 6px;
+    flex-shrink: 0;
   }
 
   .headerTitle {
-    font-size: clamp(17px, 4.5vw, 20px);
-    line-height: 1.25;
+    font-size: 19px;
+    line-height: 1.2;
+    margin: 0 0 2px;
   }
 
   .headerSub {
-    font-size: 12px;
-    line-height: 1.45;
+    font-size: 11.5px;
+    line-height: 1.35;
   }
 
   .headerBadge {
-    font-size: 9px;
-    padding: 2px 10px;
-  }
-
-  .formBody {
-    padding: 12px 16px 16px;
-    gap: 12px;
-  }
-
-  .footer {
-    padding: 10px 16px 14px;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-  }
-
-  .footerRight {
-    width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
-  }
-
-  .stepIndicatorText {
-    display: none;
-  }
-
-  .row2, .row3 {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .experienceGroup {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    font-size: 8.5px;
+    padding: 2px 8px;
+    margin-bottom: 4px;
   }
 
   .stepBar {
-    padding: 8px 14px;
+    padding: 6px 12px 8px;
     gap: 10px;
-    overflow-x: auto;
+    flex-shrink: 0;
   }
 
   .stepNum {
@@ -739,8 +734,62 @@
   }
 
   .stepLine {
-    left: 10%;
-    right: 10%;
+    top: 17px;
+    left: 12%;
+    right: 12%;
+  }
+
+  .formBody {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 10px 14px 16px;
+    gap: 11px;
+  }
+
+  .footer {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px;
+    gap: 10px;
+    background: var(--color-sand-50, #FBF8F3);
+    border-top: 1px solid rgba(226, 215, 195, 0.6);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 20;
+  }
+
+  .footerRight {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    width: auto;
+    margin: 0;
+  }
+
+  .stepIndicatorText {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-ink-muted, #5E554D);
+    display: block;
+    white-space: nowrap;
+  }
+
+  .row2, .row3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .experienceGroup {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .label {
@@ -751,7 +800,7 @@
   .select,
   .textarea {
     padding: 9px 12px;
-    font-size: 13px;
+    font-size: 14px;
     border-radius: 8px;
   }
 
@@ -764,22 +813,31 @@
     font-size: 11px;
   }
 
-  .primaryBtn {
-    padding: 9px 18px;
-    font-size: 12.5px;
-    min-height: 40px;
-  }
-
+  .primaryBtn,
   .submitBtn {
-    padding: 9px 20px;
-    font-size: 12.5px;
-    min-height: 40px;
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(193, 85, 44, 0.35);
   }
 
   .backBtn {
-    padding: 7px 14px;
-    font-size: 12px;
-    min-height: 38px;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .closeBtn {
@@ -791,15 +849,15 @@
   }
 
   .successState {
-    padding: 28px 16px;
+    padding: 24px 14px;
   }
 
   .successTitle {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .successDesc {
-    font-size: 12.5px;
+    font-size: 12px;
     max-width: 100%;
   }
 
@@ -812,20 +870,21 @@
   .successActions a {
     width: 100%;
     text-align: center;
+    min-height: 44px;
   }
 
   /* Password strength widget */
   .strengthWidget {
-    padding: 10px 12px;
-    gap: 8px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   .strengthCriteria {
-    gap: 10px;
+    gap: 8px;
   }
 
   .criteriaItem {
-    font-size: 11px;
+    font-size: 10.5px;
     gap: 4px;
   }
 
@@ -838,85 +897,50 @@
 @media (max-width: 380px) {
   .overlay {
     padding: 4px;
-    padding-top: 6px;
   }
 
   .modal {
-    max-height: 98vh;
-    border-radius: 14px;
-    max-width: calc(100vw - 8px);
+    height: calc(100vh - 8px);
+    height: calc(100dvh - 8px);
+    max-height: calc(100vh - 8px);
+    max-height: calc(100dvh - 8px);
+    border-radius: 12px;
   }
 
   .header {
-    padding: 14px 14px 6px;
+    padding: 10px 12px 4px;
   }
 
   .headerTitle {
-    font-size: 16px;
+    font-size: 17px;
   }
 
-  .headerSub {
-    font-size: 11px;
+  .stepBar {
+    padding: 4px 8px 6px;
+    gap: 8px;
   }
 
   .formBody {
-    padding: 10px 14px 14px;
-    gap: 10px;
+    padding: 8px 10px 12px;
+    gap: 9px;
   }
 
   .footer {
-    padding: 8px 14px 12px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   .primaryBtn,
   .submitBtn {
-    padding: 8px 16px;
-    font-size: 12px;
-    width: 100%;
+    min-height: 42px;
+    font-size: 13px;
+    padding: 8px 14px;
   }
 
   .backBtn {
-    padding: 6px 12px;
-    font-size: 11.5px;
-    width: 100%;
-  }
-
-  .footerRight {
-    flex-direction: column;
-    width: 100%;
-    gap: 6px;
-  }
-
-  .stepBar {
-    gap: 6px;
-    padding: 6px 10px;
-  }
-
-  .stepNum {
-    width: 20px;
-    height: 20px;
-    font-size: 9px;
-  }
-
-  .stepLabel {
-    font-size: 7.5px;
-  }
-
-  .interestChip {
-    padding: 4px 8px;
-    font-size: 10.5px;
-  }
-
-  .input,
-  .select,
-  .textarea {
+    min-height: 42px;
+    font-size: 12px;
     padding: 8px 10px;
-    font-size: 12.5px;
-  }
-
-  .strengthCriteria {
-    flex-direction: column;
-    gap: 6px;
   }
 }
 
