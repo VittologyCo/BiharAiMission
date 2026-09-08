@@ -1539,11 +1539,12 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           {/* 1. PROFILE DETAILS (UNLOCKED) */}
           <button
             type="button"
+            data-active={activeTab === 'get_involved'}
             onClick={() => setActiveTab('get_involved')}
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '10px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
               border: activeTab === 'get_involved' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -1568,11 +1569,12 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           {/* 2. LEADERBOARD (UNLOCKED) */}
           <button
             type="button"
+            data-active={activeTab === 'leaderboard'}
             onClick={() => setActiveTab('leaderboard')}
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '10px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
               border: activeTab === 'leaderboard' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -1592,17 +1594,19 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           >
             <span>🏆</span>
             <span>{isHi ? 'लीडरबोर्ड' : 'Leaderboard'}</span>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', flexShrink: 0 }} />
           </button>
 
           {/* 3. DAILY TASKS (UNLOCKED) */}
           <button
             type="button"
+            data-active={activeTab === 'daily_tasks'}
             onClick={() => setActiveTab('daily_tasks')}
+            title={`${userTaskSubmissions.length} of ${totalTasksCount} Daily Tasks Submitted`}
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '10px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
               border: activeTab === 'daily_tasks' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -1619,20 +1623,51 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               whiteSpace: 'nowrap',
               boxSizing: 'border-box'
             }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'daily_tasks') {
+                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'daily_tasks') {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+              }
+            }}
           >
-            <span>⚡</span>
+            <span style={{ fontSize: '13.5px', lineHeight: 1, flexShrink: 0 }}>⚡</span>
             <span>{isHi ? 'दैनिक कार्य' : 'Daily Tasks'}</span>
             <span style={{
-              background: activeTab === 'daily_tasks' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(232, 178, 61, 0.22)',
-              color: activeTab === 'daily_tasks' ? '#FFFFFF' : '#E8B23D',
-              padding: '2px 8px',
+              background: activeTab === 'daily_tasks'
+                ? 'rgba(255, 255, 255, 0.25)'
+                : userTaskSubmissions.length > 0
+                  ? 'rgba(245, 158, 11, 0.16)'
+                  : 'rgba(255, 255, 255, 0.08)',
+              color: activeTab === 'daily_tasks'
+                ? '#FFFFFF'
+                : userTaskSubmissions.length > 0
+                  ? '#FBBF24'
+                  : 'var(--color-sand-200, #C2B7A3)',
+              border: activeTab === 'daily_tasks'
+                ? '1px solid rgba(255, 255, 255, 0.35)'
+                : userTaskSubmissions.length > 0
+                  ? '1px solid rgba(245, 158, 11, 0.4)'
+                  : '1px solid rgba(255, 255, 255, 0.12)',
+              padding: '2px 7px',
               borderRadius: '9999px',
-              fontSize: '10.5px',
-              fontWeight: '800'
+              fontSize: '11px',
+              fontWeight: '800',
+              lineHeight: 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              letterSpacing: '0.02em',
+              flexShrink: 0
             }}>
               {userTaskSubmissions.length > 0
-                ? `${userTaskSubmissions.length}/${totalTasksCount} Submitted`
-                : `${totalTasksCount} Tasks`}
+                ? `${userTaskSubmissions.length}/${totalTasksCount}`
+                : totalTasksCount}
             </span>
           </button>
 
