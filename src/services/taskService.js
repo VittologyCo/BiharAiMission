@@ -5,6 +5,29 @@ import { classworkAssignments as defaultSeedTasks } from '../data/classworkData'
 const LOCAL_STORAGE_KEY = 'bihar_ai_task_submissions';
 const LOCAL_TASKS_KEY = 'bihar_ai_daily_tasks';
 
+/**
+ * Validates if a string matches standard RFC-4122 UUID format
+ */
+export const isValidUUID = (str) =>
+  typeof str === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+
+/**
+ * High-entropy RFC-4122 UUID v4 generator with fallbacks
+ */
+export const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID();
+    } catch (e) {}
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 let dynamicStorageUrl = null;
 
 /**
@@ -241,12 +264,31 @@ export const deleteDailyTask = async (taskNum) => {
 };
 
 /**
- * Get all local submissions cached in browser
+ * Get all local submissions cached in browser, upgrading any legacy IDs to valid UUIDs
  */
 export const getLocalTaskSubmissions = () => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        let changed = false;
+        const cleaned = parsed.map((s) => {
+          if (s && (!s.id || !isValidUUID(s.id))) {
+            changed = true;
+            return { ...s, id: generateUUID() };
+          }
+          return s;
+        });
+        if (changed) {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
+          } catch (e) {}
+        }
+        return cleaned;
+      }
+    }
+    return [];
   } catch (e) {
     console.error('Error reading local task submissions:', e);
     return [];
@@ -254,11 +296,19 @@ export const getLocalTaskSubmissions = () => {
 };
 
 /**
- * Save submissions array to localStorage
+ * Save submissions array to localStorage, ensuring all IDs are valid UUIDs
  */
 export const setLocalTaskSubmissions = (subs) => {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(subs));
+    const safeSubs = Array.isArray(subs)
+      ? subs.map((s) => {
+          if (s && (!s.id || !isValidUUID(s.id))) {
+            return { ...s, id: generateUUID() };
+          }
+          return s;
+        })
+      : [];
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(safeSubs));
   } catch (e) {
     console.error('Error saving local task submissions:', e);
   }
@@ -576,9 +626,12 @@ export const submitTaskWork = async ({
     });
   }
 
+  const submissionId = existingSub?.id && isValidUUID(existingSub.id) ? existingSub.id : generateUUID();
+  const submissionUserId = (user?.id && isValidUUID(user.id)) ? user.id : null;
+
   const newSubmission = {
-    id: existingSub?.id || `sub_${Date.now()}_${taskId}`,
-    user_id: user?.id || `user_${Date.now()}`,
+    id: submissionId,
+    user_id: submissionUserId || submissionId,
     user_email: userEmail,
     user_name: userName,
     user_district: userDistrict,
@@ -595,6 +648,7 @@ export const submitTaskWork = async ({
     admin_feedback: null,
     reviewed_by: null,
     reviewed_at: null,
+    _pendingSync: true,
     created_at: existingSub?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -622,19 +676,21 @@ export const submitTaskWork = async ({
 
   // Multi-tier Supabase Sync
   if (supabase) {
-    let authUserId = user?.id;
+    let authUserId = (user?.id && isValidUUID(user.id)) ? user.id : null;
     let authEmail = (userEmail || '').toLowerCase().trim();
     try {
       const sessionRes = await supabase.auth.getSession();
       if (sessionRes?.data?.session?.user) {
-        authUserId = authUserId || sessionRes.data.session.user.id;
+        if (sessionRes.data.session.user.id && isValidUUID(sessionRes.data.session.user.id)) {
+          authUserId = sessionRes.data.session.user.id;
+        }
         authEmail = sessionRes.data.session.user.email?.toLowerCase().trim() || authEmail;
       }
     } catch (e) {}
 
     const submissionPayload = {
-      id: newSubmission.id,
-      user_id: authUserId || `user_${authEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
+      id: submissionId,
+      ...(authUserId ? { user_id: authUserId } : {}),
       user_email: authEmail,
       user_name: userName,
       user_district: userDistrict,
@@ -665,20 +721,26 @@ export const submitTaskWork = async ({
         remoteSaved = true;
         newSubmission._synced = true;
         delete newSubmission._pendingSync;
+        if (rpcData?.submission?.id) {
+          newSubmission.id = rpcData.submission.id;
+        }
         console.log('✅ Task submission persisted via submit_candidate_task RPC');
+      } else if (rpcError) {
+        console.warn('RPC submit_candidate_task warning:', rpcError.message || rpcError);
       }
     } catch (rpcEx) {
       console.warn('RPC submit_candidate_task notice:', rpcEx?.message || rpcEx);
     }
 
-    // Strategy B: Direct public.daily_task_submissions upsert
+    // Strategy B: Direct public.daily_task_submissions upsert with resilient fallback
     if (!remoteSaved) {
       try {
-        const { error: upsertErr } = await withAuthRetry(
+        const { data: upsertData, error: upsertErr } = await withAuthRetry(
           () =>
             supabase
               .from('daily_task_submissions')
-              .upsert(submissionPayload, { onConflict: 'user_email,task_id' }),
+              .upsert(submissionPayload, { onConflict: 'user_email,task_id' })
+              .select('*'),
           { isWrite: true, idempotent: true }
         );
 
@@ -686,9 +748,33 @@ export const submitTaskWork = async ({
           remoteSaved = true;
           newSubmission._synced = true;
           delete newSubmission._pendingSync;
+          if (Array.isArray(upsertData) && upsertData[0]?.id) {
+            newSubmission.id = upsertData[0].id;
+          }
           console.log('✅ Task submission persisted via direct upsert');
         } else {
-          console.warn('Supabase task direct upsert error (saved locally):', upsertErr.message);
+          console.warn('Supabase task direct upsert with ID warning:', upsertErr.message);
+
+          // Fallback: upsert WITHOUT id property so Postgres column DEFAULT gen_random_uuid() handles it
+          const noIdPayload = { ...submissionPayload };
+          delete noIdPayload.id;
+
+          const { data: fallbackData, error: fallbackErr } = await supabase
+            .from('daily_task_submissions')
+            .upsert(noIdPayload, { onConflict: 'user_email,task_id' })
+            .select('*');
+
+          if (!fallbackErr) {
+            remoteSaved = true;
+            newSubmission._synced = true;
+            delete newSubmission._pendingSync;
+            if (Array.isArray(fallbackData) && fallbackData[0]?.id) {
+              newSubmission.id = fallbackData[0].id;
+            }
+            console.log('✅ Task submission persisted via direct fallback upsert');
+          } else {
+            console.warn('Supabase task direct fallback upsert error:', fallbackErr.message);
+          }
         }
       } catch (err) {
         console.warn('Supabase task submission sync note (saved locally):', err?.message || err);
@@ -698,12 +784,22 @@ export const submitTaskWork = async ({
     if (remoteSaved) {
       try {
         const currentSubs = getLocalTaskSubmissions();
-        const subIndex = currentSubs.findIndex(s => s.id === newSubmission.id);
+        const subIndex = currentSubs.findIndex(
+          (s) =>
+            s.id === newSubmission.id ||
+            (Number(s.task_id) === Number(taskId) &&
+              (s.user_email || '').toLowerCase() === authEmail.toLowerCase())
+        );
         if (subIndex >= 0) {
-          currentSubs[subIndex]._synced = true;
+          currentSubs[subIndex] = { ...currentSubs[subIndex], ...newSubmission, _synced: true };
           delete currentSubs[subIndex]._pendingSync;
-          setLocalTaskSubmissions(currentSubs);
+        } else {
+          currentSubs.unshift({ ...newSubmission, _synced: true });
         }
+        setLocalTaskSubmissions(currentSubs);
+
+        window.dispatchEvent(new CustomEvent('bihar_ai_task_submitted', { detail: newSubmission }));
+        window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
       } catch (e) {}
     }
   }
@@ -770,16 +866,17 @@ export const reviewTaskSubmission = async ({
   // 2. Update Supabase
   if (supabase) {
     try {
-      if (submissionId && !submissionId.startsWith('sub_')) {
+      if (submissionId && isValidUUID(submissionId)) {
         await supabase
           .from('daily_task_submissions')
           .update(updatedFields)
           .eq('id', submissionId);
-      } else {
+      }
+      if (userEmail && taskId) {
         await supabase
           .from('daily_task_submissions')
           .update(updatedFields)
-          .eq('user_email', userEmail)
+          .ilike('user_email', String(userEmail).toLowerCase().trim())
           .eq('task_id', Number(taskId));
       }
     } catch (err) {
@@ -833,7 +930,7 @@ export const deleteTaskSubmission = async ({ submissionId, userEmail, taskId, fi
   // 4. Delete from Supabase
   if (supabase) {
     try {
-      if (submissionId && !submissionId.startsWith('sub_')) {
+      if (submissionId && isValidUUID(submissionId)) {
         await supabase.from('daily_task_submissions').delete().eq('id', submissionId);
       }
       if (cleanEmail && taskId) {

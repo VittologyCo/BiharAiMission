@@ -77,7 +77,8 @@ import {
   subscribeToLeaderboardRealtime,
   deleteStoredFile,
   deleteTaskSubmission,
-  getLocalTaskSubmissions
+  getLocalTaskSubmissions,
+  isValidUUID
 } from '../../services/taskService';
 
 function getCleanCandidateName(rawName, email) {
@@ -837,10 +838,11 @@ const AdminDashboard = () => {
                 supabase.from('admin_users').delete().eq('email', cleanEmail),
               ]);
               if (sub.user_id) {
-                await Promise.allSettled([
-                  supabase.from('user_details').delete().eq('user_id', sub.user_id),
-                  supabase.from('daily_task_submissions').delete().eq('user_id', sub.user_id),
-                ]);
+                const userDeletes = [supabase.from('user_details').delete().eq('user_id', sub.user_id)];
+                if (isValidUUID(sub.user_id)) {
+                  userDeletes.push(supabase.from('daily_task_submissions').delete().eq('user_id', sub.user_id));
+                }
+                await Promise.allSettled(userDeletes);
               }
             } catch (e) {
               console.warn('Direct tables delete error:', e);
