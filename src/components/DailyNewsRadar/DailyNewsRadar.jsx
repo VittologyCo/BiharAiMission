@@ -122,7 +122,17 @@ export default function DailyNewsRadar() {
                       <span className="datePill">📅 {item.publishedDate || 'Today'}</span>
                     </div>
 
-                    <h3 className="newsCardTitle">{item.title}</h3>
+                    <h3 className="newsCardTitle">
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                        title={item.sourceName ? `Read full article on ${item.sourceName}` : 'Read full article on news site'}
+                      >
+                        {item.title}
+                      </a>
+                    </h3>
                     <p className="newsCardSummary">{item.summary}</p>
                   </div>
 
@@ -138,7 +148,7 @@ export default function DailyNewsRadar() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="sourceLinkBtn"
-                      title="Read targeted full article in new tab"
+                      title={item.sourceName ? `Read full article on ${item.sourceName}` : 'Read targeted full article in new tab'}
                     >
                       <span>{isHi ? 'पूरा लेख पढ़ें' : 'Read Full Article'}</span>
                       <span>↗</span>
