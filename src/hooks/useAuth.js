@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../utils/supabase';
 import { sendWelcomeEmailViaResend, sendPasswordResetEmailViaResend } from '../utils/resendEmail';
 import { toast } from '../context/ToastContext';
@@ -122,7 +122,7 @@ export const purgeAllUserData = (email) => {
     }
 
     // 8. Dispatch purge events for all components
-    window.dispatchEvent(new Event('bihar_ai_user_purged'));
+    window.dispatchEvent(new CustomEvent('bihar_ai_user_purged', { detail: { email: clean } }));
     window.dispatchEvent(new Event('bihar_ai_exams_updated'));
     window.dispatchEvent(new Event('bihar_ai_courses_updated'));
     window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
@@ -225,30 +225,46 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [loading, setLoading] = useState(false);
+  const isPurgingRef = useRef(false);
+  const lastPurgeTimeRef = useRef(0);
 
   // Force purge user data and terminate session immediately
   const forcePurgeAndLogout = (reason = 'Your session has ended.') => {
-    let targetEmail = (user?.email || localStorage.getItem('bihar_ai_reset_email') || '').toLowerCase().trim();
-    if (!targetEmail) {
-      try {
-        const saved = JSON.parse(localStorage.getItem('bihar_ai_user') || '{}');
-        targetEmail = (saved.email || '').toLowerCase().trim();
-      } catch (e) {}
-    }
-    purgeAllUserData(targetEmail);
-    try {
-      if (supabase && supabase.auth) {
-        supabase.auth.signOut().catch(() => {});
-      }
-    } catch (e) {}
-    setUser(null);
-    toast.error(reason);
+    if (isPurgingRef.current) return;
+    const now = Date.now();
+    if (now - lastPurgeTimeRef.current < 2000) return;
+    isPurgingRef.current = true;
+    lastPurgeTimeRef.current = now;
 
-    // If currently on a protected route, redirect to home immediately
-    const protectedPaths = ['/profile', '/admin'];
-    const currentPath = window.location.pathname;
-    if (protectedPaths.some((p) => currentPath.startsWith(p))) {
-      window.location.replace('/');
+    try {
+      let targetEmail = (user?.email || localStorage.getItem('bihar_ai_reset_email') || '').toLowerCase().trim();
+      if (!targetEmail) {
+        try {
+          const saved = JSON.parse(localStorage.getItem('bihar_ai_user') || '{}');
+          targetEmail = (saved.email || '').toLowerCase().trim();
+        } catch (e) {}
+      }
+      purgeAllUserData(targetEmail);
+      try {
+        if (supabase && supabase.auth) {
+          supabase.auth.signOut().catch(() => {});
+        }
+      } catch (e) {}
+      setUser(null);
+      if (reason) {
+        toast.error(reason);
+      }
+
+      // If currently on a protected route, redirect to home immediately
+      const protectedPaths = ['/profile', '/admin'];
+      const currentPath = window.location.pathname;
+      if (protectedPaths.some((p) => currentPath.startsWith(p))) {
+        window.location.replace('/');
+      }
+    } finally {
+      setTimeout(() => {
+        isPurgingRef.current = false;
+      }, 1000);
     }
   };
 
@@ -320,6 +336,19 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (currentEmail) {
+          // Check if registration was recently completed or in progress (< 30s)
+          const isRegInProgress = localStorage.getItem('bihar_ai_registration_in_progress') === 'true';
+          const regTime = parseInt(localStorage.getItem('bihar_ai_reg_time') || '0', 10);
+          const isRecentReg = isRegInProgress || (Date.now() - regTime < 30000);
+
+          if (isRecentReg) {
+            console.log('⏳ New registration in progress / recent grace period active. Skipping account deletion check.');
+            if (mounted && formatted) {
+              setUser(formatted);
+            }
+            return;
+          }
+
           // CRUCIAL: Verify that this user actually exists in the database!
           // If the user was deleted by an admin while the client was offline/closed,
           // user_details will NOT contain this email.
@@ -333,13 +362,7 @@ export const AuthProvider = ({ children }) => {
             if (!checkErr && !dbUser) {
               // User was deleted! Clean up everything immediately.
               console.warn('🚨 Account was deleted by admin: user does not exist in user_details.');
-              purgeAllUserData(currentEmail);
-              if (supabase?.auth) {
-                await supabase.auth.signOut().catch(() => {});
-              }
-              if (mounted) {
-                setUser(null);
-              }
+              forcePurgeAndLogout('Your account has been deleted by an administrator.');
               return;
             }
 
@@ -403,6 +426,9 @@ export const AuthProvider = ({ children }) => {
           id = id || saved.id;
         } catch (e) {}
       }
+      if (email.includes('admin@biharaimission.org')) {
+        return { email: '', id: '' };
+      }
       return { email, id };
     };
 
@@ -452,8 +478,13 @@ export const AuthProvider = ({ children }) => {
 
     // 4. Heartbeat check every 3 seconds to actively verify account integrity
     heartbeatTimer = setInterval(async () => {
+      if (isPurgingRef.current) return;
+      const isRegInProgress = localStorage.getItem('bihar_ai_registration_in_progress') === 'true';
+      const regTime = parseInt(localStorage.getItem('bihar_ai_reg_time') || '0', 10);
+      if (isRegInProgress || (Date.now() - regTime < 30000)) return;
+
       const { email: activeEmail } = getFreshUserIdentity();
-      if (!activeEmail || !supabase) return;
+      if (!activeEmail || !supabase || activeEmail.includes('admin@biharaimission.org')) return;
       try {
         const { data, error } = await supabase
           .from('user_details')
@@ -470,8 +501,13 @@ export const AuthProvider = ({ children }) => {
 
     // 5. Tab visibility change & window focus check
     const handleFocusCheck = async () => {
+      if (isPurgingRef.current) return;
+      const isRegInProgress = localStorage.getItem('bihar_ai_registration_in_progress') === 'true';
+      const regTime = parseInt(localStorage.getItem('bihar_ai_reg_time') || '0', 10);
+      if (isRegInProgress || (Date.now() - regTime < 30000)) return;
+
       const { email: activeEmail } = getFreshUserIdentity();
-      if (!activeEmail || !supabase) return;
+      if (!activeEmail || !supabase || activeEmail.includes('admin@biharaimission.org')) return;
       if (document.visibilityState === 'visible') {
         try {
           const { data, error } = await supabase
@@ -489,14 +525,16 @@ export const AuthProvider = ({ children }) => {
 
     // 6. Cross-tab and local storage signals for instantaneous same-browser force logout
     const handleLocalPurge = (e) => {
+      if (isPurgingRef.current) return;
       const deletedEmail = e?.detail?.email?.toLowerCase()?.trim();
       const { email: activeEmail } = getFreshUserIdentity();
-      if (!deletedEmail || (activeEmail && deletedEmail === activeEmail)) {
-        forcePurgeAndLogout('Your account has been deleted by an administrator.');
-      }
+      if (!activeEmail) return;
+      if (deletedEmail && activeEmail && deletedEmail !== activeEmail) return;
+      forcePurgeAndLogout('Your account has been deleted by an administrator.');
     };
 
     const handleStorageEvent = (e) => {
+      if (isPurgingRef.current) return;
       if (e.key === 'bihar_ai_purged_user') {
         try {
           const parsed = JSON.parse(e.newValue || '{}');

@@ -328,6 +328,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
     }
 
     setIsSubmitting(true);
+    localStorage.setItem('bihar_ai_registration_in_progress', 'true');
+    localStorage.setItem('bihar_ai_reg_time', String(Date.now()));
     try {
       const expVal = parseInt(form.experience, 10) || 0;
       const expFinal = form.experience_unit === 'Months'
@@ -511,6 +513,8 @@ export default function RegistrationModal({ isOpen, onClose }) {
       console.error('Registration exception:', err);
       toast?.error(err?.message || (isHi ? 'पंजीकरण त्रुटि। कृपया पुनः प्रयास करें।' : 'Registration error. Please try again.'));
     } finally {
+      localStorage.removeItem('bihar_ai_registration_in_progress');
+      localStorage.setItem('bihar_ai_reg_time', String(Date.now()));
       setIsSubmitting(false);
     }
   };

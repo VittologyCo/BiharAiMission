@@ -173,6 +173,13 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           });
           return;
         } else if (!error) {
+          // Check if user is in a recent registration grace period (< 30s)
+          const isRegInProgress = localStorage.getItem('bihar_ai_registration_in_progress') === 'true';
+          const regTime = parseInt(localStorage.getItem('bihar_ai_reg_time') || '0', 10);
+          if (isRegInProgress || (Date.now() - regTime < 30000)) {
+            return;
+          }
+
           // User was deleted by admin from database: trigger instant revocation & logout!
           console.warn('🚨 Account record missing in user_details — executing instant logout.');
           if (forcePurgeAndLogout) {
