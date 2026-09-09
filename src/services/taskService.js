@@ -1,6 +1,5 @@
 import { supabase } from '../utils/supabase';
 import { withAuthRetry } from '../utils/withAuthRetry';
-import { classworkAssignments as defaultSeedTasks } from '../data/classworkData';
 
 const LOCAL_STORAGE_KEY = 'bihar_ai_task_submissions';
 const LOCAL_TASKS_KEY = 'bihar_ai_daily_tasks';
@@ -108,9 +107,9 @@ export const getDailyTasks = async () => {
   }
 
   if (!supabase) {
-    // No DB connection: use localStorage cache, or hardcoded seeds as last resort
+    // No DB connection: use localStorage cache if available, else empty array
     if (localTasks.length > 0) return localTasks.sort((a, b) => a.num - b.num);
-    return [...defaultSeedTasks].sort((a, b) => a.num - b.num);
+    return [];
   }
 
   try {
@@ -147,12 +146,12 @@ export const getDailyTasks = async () => {
       return dbTasks;
     }
   } catch (err) {
-    console.warn('Supabase daily_tasks fetch failed, using local/default tasks:', err);
+    console.warn('Supabase daily_tasks fetch failed, using local tasks:', err);
   }
 
-  // ── Offline fallback: use localStorage cache, then hardcoded seeds ──
+  // ── Offline fallback: use localStorage cache only ──
   if (localTasks.length > 0) return localTasks.sort((a, b) => a.num - b.num);
-  return [...defaultSeedTasks].sort((a, b) => a.num - b.num);
+  return [];
 };
 
 /**

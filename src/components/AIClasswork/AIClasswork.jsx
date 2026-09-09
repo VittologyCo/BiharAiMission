@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  classworkAssignments as defaultClassworkAssignments,
   trainerNoteData,
   generateClassworkDoc
 } from '../../data/classworkData';
@@ -18,7 +17,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
   };
 
   const [isSubpageOpen, setIsSubpageOpen] = useState(true);
-  const [tasksList, setTasksList] = useState(defaultClassworkAssignments);
+  const [tasksList, setTasksList] = useState([]);
   const [taskSubmissions, setTaskSubmissions] = useState([]);
   const [activeModalTask, setActiveModalTask] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -105,7 +104,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
 
   const handleDownloadDoc = () => {
     try {
-      const docContent = generateClassworkDoc();
+      const docContent = generateClassworkDoc(tasksList);
       const blob = new Blob(['\ufeff', docContent], {
         type: 'application/msword;charset=utf-8'
       });
@@ -297,9 +296,14 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
 
           {/* DYNAMIC ASSIGNMENTS LIST */}
           <div className={styles.assignmentsList}>
-            {tasksList.map((item) => {
-              const sub = taskSubmissions.find((s) => Number(s.task_id) === Number(item.num));
-              const status = sub?.status || 'NOT_SUBMITTED';
+            {tasksList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                <span>Loading daily tasks from database...</span>
+              </div>
+            ) : (
+              tasksList.map((item) => {
+                const sub = taskSubmissions.find((s) => Number(s.task_id) === Number(item.num));
+                const status = sub?.status || 'NOT_SUBMITTED';
 
               return (
                 <div key={item.num} className={styles.assignmentCard}>
@@ -435,7 +439,8 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
           </div>
 
           {/* 3. TRAINER'S NOTE */}
