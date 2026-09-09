@@ -23,6 +23,9 @@ const getErrorMessage = (error) => {
  */
 const shouldIgnoreError = (msg, stack = '') => {
   const text = `${msg} ${stack}`.toLowerCase();
+  // Cross-origin "Script error." — browser hides real details, zero actionable info
+  if (text === 'script error.' || text === 'script error' || text.startsWith('script error')) return true;
+  // Browser extension noise
   if (text.includes('chrome-extension://')) return true;
   if (text.includes('moz-extension://')) return true;
   if (text.includes('safari-extension://')) return true;
