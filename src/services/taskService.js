@@ -235,23 +235,89 @@ export const saveDailyTask = async (taskData) => {
 };
 
 /**
- * Delete / Deactivate a Daily Task (For Admin)
+ * Delete a Daily Task AND cascade-delete all user submissions + uploaded files for it.
+ * Steps:
+ *   1. Fetch all daily_task_submissions for this task_id
+ *   2. Delete each uploaded file from storage server + Supabase bucket
+ *   3. Bulk-delete all submission rows from daily_task_submissions
+ *   4. Remove task + submissions from localStorage
+ *   5. Delete the daily_tasks row itself
+ *   6. Dispatch events so all open user/admin tabs refresh via existing realtime channels
  */
 export const deleteDailyTask = async (taskNum) => {
   const num = Number(taskNum);
 
-  // 1. Update local cache
+  // ── STEP 1: Fetch all submissions for this task ────────────────────
+  let submissionsForTask = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('daily_task_submissions')
+        .select('id, user_email, file_url, file_name')
+        .eq('task_id', num);
+      if (!error && Array.isArray(data)) {
+        submissionsForTask = data;
+      }
+    } catch (e) {
+      console.warn(`[deleteDailyTask] Could not fetch submissions for task #${num}:`, e);
+    }
+  }
+
+  // ── STEP 2: Delete uploaded files from storage server + Supabase bucket ──
+  if (submissionsForTask.length > 0) {
+    const fileDeletePromises = submissionsForTask
+      .filter((s) => s.file_url || s.file_name)
+      .map((s) =>
+        deleteStoredFile({ fileUrl: s.file_url, fileName: s.file_name }).catch((e) =>
+          console.warn(`[deleteDailyTask] File delete warning for submission ${s.id}:`, e)
+        )
+      );
+    // Also delete from Supabase Storage bucket if stored there
+    const supabaseFileRemoves = submissionsForTask
+      .filter((s) => s.file_url && s.file_url.includes('task-submissions'))
+      .map((s) => {
+        try {
+          const parts = s.file_url.split('task-submissions/');
+          if (parts[1]) {
+            const filePath = decodeURIComponent(parts[1].split('?')[0]);
+            return supabase.storage.from('task-submissions').remove([filePath]);
+          }
+        } catch (e) {}
+        return Promise.resolve();
+      });
+    await Promise.allSettled([...fileDeletePromises, ...supabaseFileRemoves]);
+  }
+
+  // ── STEP 3: Bulk-delete all submission rows from Supabase ──────────
+  if (supabase && submissionsForTask.length > 0) {
+    try {
+      await supabase
+        .from('daily_task_submissions')
+        .delete()
+        .eq('task_id', num);
+      console.log(`[deleteDailyTask] Deleted ${submissionsForTask.length} submission(s) for task #${num}`);
+    } catch (err) {
+      console.warn(`[deleteDailyTask] Bulk submission delete warning for task #${num}:`, err);
+    }
+  }
+
+  // ── STEP 4: Remove task + related submissions from localStorage ────
   try {
+    // Remove the task itself
     const raw = localStorage.getItem(LOCAL_TASKS_KEY);
     let list = raw ? JSON.parse(raw) : [...defaultSeedTasks];
     list = list.filter((t) => Number(t.num) !== num);
     localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(list));
-    window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
+
+    // Remove all submissions for this task from localStorage
+    const allLocalSubs = getLocalTaskSubmissions();
+    const filteredSubs = allLocalSubs.filter((s) => Number(s.task_id) !== num);
+    setLocalTaskSubmissions(filteredSubs);
   } catch (e) {
-    console.error('Error removing local task:', e);
+    console.error('[deleteDailyTask] Error updating localStorage:', e);
   }
 
-  // 2. Sync to Supabase
+  // ── STEP 5: Delete the daily_tasks row from Supabase ──────────────
   if (supabase) {
     try {
       await supabase.from('daily_tasks').delete().eq('num', num);
@@ -260,7 +326,14 @@ export const deleteDailyTask = async (taskNum) => {
     }
   }
 
-  return { success: true, num };
+  // ── STEP 6: Dispatch events so all open tabs refresh instantly ─────
+  // (AIClasswork + AdminDashboard already listen to these)
+  try {
+    window.dispatchEvent(new Event('bihar_ai_tasks_updated'));
+    window.dispatchEvent(new Event('bihar_ai_task_submitted'));
+  } catch (e) {}
+
+  return { success: true, num, deletedSubmissions: submissionsForTask.length };
 };
 
 /**

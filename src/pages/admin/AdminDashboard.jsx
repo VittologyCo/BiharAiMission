@@ -379,11 +379,23 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteTaskAction = async (taskNum) => {
-    if (!window.confirm(`Are you sure you want to delete Task #${taskNum}?`)) return;
+    const confirmed = window.confirm(
+      `⚠️ Delete Task #${taskNum}?\n\n` +
+      `This will PERMANENTLY delete:\n` +
+      `  • The task definition\n` +
+      `  • ALL user submissions for this task\n` +
+      `  • ALL uploaded files for this task\n\n` +
+      `This cannot be undone. Proceed?`
+    );
+    if (!confirmed) return;
     try {
-      await deleteDailyTask(taskNum);
-      toast.success(`Task #${taskNum} removed successfully.`);
+      const result = await deleteDailyTask(taskNum);
+      const subCount = result?.deletedSubmissions || 0;
+      toast.success(
+        `Task #${taskNum} deleted${subCount > 0 ? ` along with ${subCount} submission(s) and their files` : ''}.`
+      );
       await loadAdminTasksData();
+      await loadAdminTaskSubmissions();
     } catch (err) {
       toast.error('Failed to delete task.');
     }
