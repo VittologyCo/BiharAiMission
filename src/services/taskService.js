@@ -93,9 +93,12 @@ export const getStorageServerUrl = () => {
 };
 
 /**
- * Get all daily tasks (Admin created + Default 18 tasks)
+/**
+ * Get all daily tasks — Supabase is the SINGLE source of truth when online.
+ * defaultSeedTasks is ONLY used as offline fallback if Supabase is unreachable.
  */
 export const getDailyTasks = async () => {
+  // Offline fallback cache (only used if Supabase fails)
   let localTasks = [];
   try {
     const raw = localStorage.getItem(LOCAL_TASKS_KEY);
@@ -104,13 +107,10 @@ export const getDailyTasks = async () => {
     console.error('Error reading local tasks:', e);
   }
 
-  // Base list starts with default 18 assignments
-  const taskMap = new Map();
-  defaultSeedTasks.forEach((t) => taskMap.set(Number(t.num), t));
-  localTasks.forEach((t) => taskMap.set(Number(t.num), t));
-
   if (!supabase) {
-    return Array.from(taskMap.values()).sort((a, b) => a.num - b.num);
+    // No DB connection: use localStorage cache, or hardcoded seeds as last resort
+    if (localTasks.length > 0) return localTasks.sort((a, b) => a.num - b.num);
+    return [...defaultSeedTasks].sort((a, b) => a.num - b.num);
   }
 
   try {
@@ -120,48 +120,39 @@ export const getDailyTasks = async () => {
       .eq('is_active', true)
       .order('num', { ascending: true });
 
-    if (!error && Array.isArray(data) && data.length > 0) {
-      const dbMap = new Map();
-      data.forEach((t) => {
-        dbMap.set(Number(t.num), {
-          num: t.num,
-          toolName: t.tool_name,
-          title: t.title,
-          classwork: t.classwork,
-          instructions: t.instructions,
-          finalSubmission: Array.isArray(t.final_submission)
-            ? t.final_submission
-            : typeof t.final_submission === 'string'
-            ? JSON.parse(t.final_submission || '[]')
-            : [],
-          category: t.category || 'AI Practical Classwork',
-          id: t.id,
-          _synced: true,
-        });
-      });
+    if (!error && Array.isArray(data)) {
+      // ── Supabase is authoritative: use ONLY what the DB returns ──────
+      // If admin deleted tasks from DB, they must NOT reappear from seed data.
+      const dbTasks = data.map((t) => ({
+        num: t.num,
+        toolName: t.tool_name,
+        title: t.title,
+        classwork: t.classwork,
+        instructions: t.instructions,
+        finalSubmission: Array.isArray(t.final_submission)
+          ? t.final_submission
+          : typeof t.final_submission === 'string'
+          ? JSON.parse(t.final_submission || '[]')
+          : [],
+        category: t.category || 'AI Practical Classwork',
+        id: t.id,
+        _synced: true,
+      }));
 
-      // Start with default seed tasks merged with Supabase versions
-      const mergedMap = new Map();
-      defaultSeedTasks.forEach((t) => {
-        const num = Number(t.num);
-        mergedMap.set(num, dbMap.has(num) ? dbMap.get(num) : t);
-      });
-      // Add any additional tasks created in Supabase
-      dbMap.forEach((val, num) => {
-        mergedMap.set(num, val);
-      });
-
-      const merged = Array.from(mergedMap.values()).sort((a, b) => a.num - b.num);
+      // Overwrite localStorage with ONLY the current DB tasks (purges stale cache)
       try {
-        localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(merged));
+        localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(dbTasks));
       } catch (e) {}
-      return merged;
+
+      return dbTasks;
     }
   } catch (err) {
     console.warn('Supabase daily_tasks fetch failed, using local/default tasks:', err);
   }
 
-  return Array.from(taskMap.values()).sort((a, b) => a.num - b.num);
+  // ── Offline fallback: use localStorage cache, then hardcoded seeds ──
+  if (localTasks.length > 0) return localTasks.sort((a, b) => a.num - b.num);
+  return [...defaultSeedTasks].sort((a, b) => a.num - b.num);
 };
 
 /**
