@@ -5,6 +5,7 @@ import {
   getPageLabel,
   parseReferrerSource,
   parseDeviceFromUA,
+  invalidateAnalyticsCache,
 } from '../../services/visitorService';
 import {
   fetchErrorLogsSummary,
@@ -444,6 +445,7 @@ export default function AdminAnalyticsPanel() {
           <button
             type="button"
             onClick={() => {
+              invalidateAnalyticsCache();
               loadAnalytics(true);
               loadErrors();
             }}

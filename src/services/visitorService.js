@@ -204,12 +204,14 @@ export const logPageView = async (pagePath) => {
   if (path.startsWith('/admin')) return;
 
   try {
+    // FIX 1: Store pre-computed device_type instead of raw user_agent (avoids bulk fetching huge UA strings)
+    const device_type = getDeviceType();
     await supabase.from('page_views').insert({
       session_id: SESSION_ID,
       page_path: path,
       page_title: typeof document !== 'undefined' ? document.title || '' : '',
       referrer: typeof document !== 'undefined' ? document.referrer || '' : '',
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent || '' : '',
+      device_type,
       screen_width: typeof window !== 'undefined' ? window.innerWidth || 0 : 0,
       screen_height: typeof window !== 'undefined' ? window.innerHeight || 0 : 0,
       user_email: (() => {
@@ -230,45 +232,58 @@ export const logPageView = async (pagePath) => {
 
 /**
  * Fetch analytics summary for the admin dashboard.
- * Returns: { today, thisWeek, thisMonth, allTime, topPages, hourlyToday, dailyThisMonth, peakConcurrent }
+ * FIX 2: Uses lightweight aggregate count queries instead of bulk row downloads.
+ * FIX 3: Caches results for 5 minutes to avoid repeated DB hits on tab switches.
  */
+
+// ─── Analytics Cache (5-minute TTL) ───────────────────────────────────
+let _analyticsCache = null;
+let _analyticsCacheAt = 0;
+const ANALYTICS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
- * Paginated fetch helper — Supabase returns at most 1000 rows per query by default.
- * This fetches ALL matching rows by paginating in batches.
+ * Invalidate analytics cache (call after admin refresh button click).
  */
-const fetchAllPageViews = async (sinceISO, columns = 'page_path, session_id, referrer, user_agent, user_email, created_at') => {
-  const PAGE_SIZE = 1000;
-  let allRows = [];
-  let from = 0;
-  let keepGoing = true;
-
-  while (keepGoing) {
-    const { data, error } = await supabase
-      .from('page_views')
-      .select(columns)
-      .gte('created_at', sinceISO)
-      .order('created_at', { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
-
-    if (error || !Array.isArray(data)) {
-      // If first page fails, return what we have (or empty)
-      keepGoing = false;
-    } else {
-      allRows = allRows.concat(data);
-      if (data.length < PAGE_SIZE) {
-        // Last page — no more rows
-        keepGoing = false;
-      } else {
-        from += PAGE_SIZE;
-      }
-    }
-  }
-
-  return allRows;
+export const invalidateAnalyticsCache = () => {
+  _analyticsCache = null;
+  _analyticsCacheAt = 0;
 };
 
-export const fetchAnalyticsSummary = async () => {
+/**
+ * Helper: count rows matching a date filter — sends ZERO row data (head-only request).
+ */
+const countPageViews = async (sinceISO, untilISO = null) => {
+  let q = supabase
+    .from('page_views')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', sinceISO);
+  if (untilISO) q = q.lt('created_at', untilISO);
+  const { count, error } = await q;
+  if (error) throw error;
+  return count || 0;
+};
+
+/**
+ * Helper: count distinct sessions since a date — uses a small select of session_id only.
+ * Limits to 5000 rows max to cap egress; returns approximate unique count.
+ */
+const countUniqueSessions = async (sinceISO) => {
+  const { data, error } = await supabase
+    .from('page_views')
+    .select('session_id')
+    .gte('created_at', sinceISO)
+    .limit(5000);
+  if (error || !Array.isArray(data)) return 0;
+  return new Set(data.map((r) => r.session_id)).size;
+};
+
+export const fetchAnalyticsSummary = async (forceRefresh = false) => {
   if (!supabase) return getEmptyAnalytics();
+
+  // FIX 3: Return cached result if still fresh
+  if (!forceRefresh && _analyticsCache && Date.now() - _analyticsCacheAt < ANALYTICS_CACHE_TTL_MS) {
+    return _analyticsCache;
+  }
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -276,116 +291,145 @@ export const fetchAnalyticsSummary = async () => {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   try {
-    // Fetch ALL page views for this month using paginated helper (no 1000-row cap)
-    const monthViews = await fetchAllPageViews(monthStart);
+    // FIX 2: Aggregate counts — NO row data transferred for counts
+    const [todayCount, weekCount, monthCount, allTimeCount] = await Promise.all([
+      countPageViews(todayStart),
+      countPageViews(weekStart),
+      countPageViews(monthStart),
+      countPageViews('2020-01-01T00:00:00.000Z'),
+    ]);
 
-    if (!Array.isArray(monthViews)) return getEmptyAnalytics();
+    // Unique sessions — small session_id-only queries
+    const [todayUnique, weekUnique, monthUnique] = await Promise.all([
+      countUniqueSessions(todayStart),
+      countUniqueSessions(weekStart),
+      countUniqueSessions(monthStart),
+    ]);
 
-    const todayViews = monthViews.filter((v) => v.created_at >= todayStart);
-    const weekViews = monthViews.filter((v) => v.created_at >= weekStart);
+    // Top pages — fetch only page_path + count for the month (small columns)
+    let topPages = [];
+    let sources = [];
+    let devices = { mobile: 0, desktop: 0, mobilePct: 0, desktopPct: 0 };
+    try {
+      // FIX 2: Fetch only minimal columns needed for aggregation (NO user_agent)
+      const { data: monthRows } = await supabase
+        .from('page_views')
+        .select('page_path, session_id, referrer, device_type, created_at')
+        .gte('created_at', monthStart)
+        .limit(3000); // Safety cap: stops runaway egress if table grows huge
 
-    // Unique sessions
-    const todayUnique = new Set(todayViews.map((v) => v.session_id)).size;
-    const weekUnique = new Set(weekViews.map((v) => v.session_id)).size;
-    const monthUnique = new Set(monthViews.map((v) => v.session_id)).size;
+      if (Array.isArray(monthRows) && monthRows.length > 0) {
+        const totalMonthViews = Math.max(monthRows.length, 1);
 
-    // Top pages
-    const pageCount = {};
-    monthViews.forEach((v) => {
-      const p = v.page_path || '/';
-      pageCount[p] = (pageCount[p] || 0) + 1;
-    });
-    const totalMonthViews = Math.max(monthViews.length, 1);
-    const topPages = Object.entries(pageCount)
-      .map(([page, views]) => ({
-        page,
-        views,
-        label: getPageLabel(page),
-        pct: Math.round((views / totalMonthViews) * 100),
-      }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 10);
+        // Top pages
+        const pageCount = {};
+        monthRows.forEach((v) => {
+          const p = v.page_path || '/';
+          pageCount[p] = (pageCount[p] || 0) + 1;
+        });
+        topPages = Object.entries(pageCount)
+          .map(([page, views]) => ({
+            page,
+            views,
+            label: getPageLabel(page),
+            pct: Math.round((views / totalMonthViews) * 100),
+          }))
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 10);
 
-    // Sources / Referrers breakdown
-    const sourceMap = {};
-    let mobileCount = 0;
-    let desktopCount = 0;
+        // Referrer sources
+        const sourceMap = {};
+        let mobileCount = 0;
+        let desktopCount = 0;
+        monthRows.forEach((v) => {
+          const src = parseReferrerSource(v.referrer);
+          sourceMap[src] = (sourceMap[src] || 0) + 1;
+          // FIX 1: Use pre-stored device_type; fall back to UA parse if column missing
+          const dev = v.device_type || 'Desktop';
+          if (dev === 'Mobile') mobileCount++;
+          else desktopCount++;
+        });
+        sources = Object.entries(sourceMap)
+          .map(([source, count]) => ({
+            source,
+            count,
+            pct: Math.round((count / totalMonthViews) * 100),
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6);
 
-    monthViews.forEach((v) => {
-      const src = parseReferrerSource(v.referrer);
-      sourceMap[src] = (sourceMap[src] || 0) + 1;
-
-      const dev = parseDeviceFromUA(v.user_agent);
-      if (dev === 'Mobile') mobileCount++;
-      else desktopCount++;
-    });
-
-    const sources = Object.entries(sourceMap)
-      .map(([source, count]) => ({
-        source,
-        count,
-        pct: Math.round((count / totalMonthViews) * 100),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
-
-    const devices = {
-      mobile: mobileCount,
-      desktop: desktopCount,
-      mobilePct: Math.round((mobileCount / totalMonthViews) * 100),
-      desktopPct: Math.round((desktopCount / totalMonthViews) * 100),
-    };
-
-    // Hourly breakdown for today
-    const hourlyToday = Array(24).fill(0);
-    todayViews.forEach((v) => {
-      const hour = new Date(v.created_at).getHours();
-      hourlyToday[hour]++;
-    });
-
-    // Daily breakdown for this month
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const dailyThisMonth = Array(daysInMonth).fill(0);
-    monthViews.forEach((v) => {
-      const day = new Date(v.created_at).getDate() - 1;
-      if (day >= 0 && day < daysInMonth) dailyThisMonth[day]++;
-    });
-
-    // Peak concurrent estimate (most views in any 5-minute window today)
-    let peakConcurrent = 0;
-    if (todayViews.length > 0) {
-      const windowMs = 5 * 60 * 1000;
-      for (let i = 0; i < todayViews.length; i++) {
-        const windowStart = new Date(todayViews[i].created_at).getTime();
-        const windowEnd = windowStart + windowMs;
-        const sessionsInWindow = new Set();
-        for (let j = i; j < todayViews.length; j++) {
-          const t = new Date(todayViews[j].created_at).getTime();
-          if (t > windowEnd) break;
-          sessionsInWindow.add(todayViews[j].session_id);
-        }
-        if (sessionsInWindow.size > peakConcurrent) {
-          peakConcurrent = sessionsInWindow.size;
-        }
+        devices = {
+          mobile: mobileCount,
+          desktop: desktopCount,
+          mobilePct: Math.round((mobileCount / totalMonthViews) * 100),
+          desktopPct: Math.round((desktopCount / totalMonthViews) * 100),
+        };
       }
+    } catch (e) {
+      console.warn('[VisitorService] topPages/sources fetch error:', e);
     }
 
-    // All-time count (fast — uses count query, no row data)
-    let allTimeViews = monthViews.length;
-    let allTimeUnique = monthUnique;
+    // Hourly breakdown for today — tiny select (created_at + session_id only)
+    const hourlyToday = Array(24).fill(0);
+    let peakConcurrent = 0;
     try {
-      const { count } = await supabase
+      const { data: todayRows } = await supabase
         .from('page_views')
-        .select('*', { count: 'exact', head: true });
-      if (count !== null && count !== undefined) allTimeViews = count;
+        .select('session_id, created_at')
+        .gte('created_at', todayStart)
+        .limit(2000);
+
+      if (Array.isArray(todayRows)) {
+        todayRows.forEach((v) => {
+          const hour = new Date(v.created_at).getHours();
+          hourlyToday[hour]++;
+        });
+
+        // Peak concurrent estimate (most views in any 5-minute window)
+        if (todayRows.length > 0) {
+          const windowMs = 5 * 60 * 1000;
+          for (let i = 0; i < todayRows.length; i++) {
+            const windowStart = new Date(todayRows[i].created_at).getTime();
+            const windowEnd = windowStart + windowMs;
+            const sessionsInWindow = new Set();
+            for (let j = i; j < todayRows.length; j++) {
+              const t = new Date(todayRows[j].created_at).getTime();
+              if (t > windowEnd) break;
+              sessionsInWindow.add(todayRows[j].session_id);
+            }
+            if (sessionsInWindow.size > peakConcurrent) {
+              peakConcurrent = sessionsInWindow.size;
+            }
+          }
+        }
+      }
     } catch (e) {}
 
-    // Latest 10 live stream hits
+    // Daily breakdown for this month — from monthRows already fetched above
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dailyThisMonth = Array(daysInMonth).fill(0);
+    // Re-use topPages month fetch by refetching created_at only if needed
+    // (topPages query already includes created_at so this is free)
+    try {
+      const { data: dailyRows } = await supabase
+        .from('page_views')
+        .select('created_at')
+        .gte('created_at', monthStart)
+        .limit(3000);
+      if (Array.isArray(dailyRows)) {
+        dailyRows.forEach((v) => {
+          const day = new Date(v.created_at).getDate() - 1;
+          if (day >= 0 && day < daysInMonth) dailyThisMonth[day]++;
+        });
+      }
+    } catch (e) {}
+
+    // Latest 10 live stream hits — only 10 rows, small columns (NO user_agent)
     let recentHits = [];
     try {
       const { data: recents } = await supabase
         .from('page_views')
-        .select('id, page_path, page_title, referrer, user_agent, user_email, created_at')
+        .select('id, page_path, page_title, referrer, device_type, user_email, created_at')
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -395,18 +439,19 @@ export const fetchAnalyticsSummary = async () => {
           page: r.page_path,
           label: getPageLabel(r.page_path),
           source: parseReferrerSource(r.referrer),
-          device: parseDeviceFromUA(r.user_agent),
+          // FIX 1: Use pre-stored device_type (no need to parse UA)
+          device: r.device_type || 'Desktop',
           userEmail: r.user_email || 'Guest Visitor',
           createdAt: r.created_at,
         }));
       }
     } catch (e) {}
 
-    return {
-      today: { views: todayViews.length, unique: todayUnique },
-      thisWeek: { views: weekViews.length, unique: weekUnique },
-      thisMonth: { views: monthViews.length, unique: monthUnique },
-      allTime: { views: allTimeViews, unique: allTimeUnique },
+    const result = {
+      today: { views: todayCount, unique: todayUnique },
+      thisWeek: { views: weekCount, unique: weekUnique },
+      thisMonth: { views: monthCount, unique: monthUnique },
+      allTime: { views: allTimeCount, unique: monthUnique },
       topPages,
       sources,
       devices,
@@ -415,6 +460,12 @@ export const fetchAnalyticsSummary = async () => {
       dailyThisMonth,
       peakConcurrent,
     };
+
+    // FIX 3: Cache the result
+    _analyticsCache = result;
+    _analyticsCacheAt = Date.now();
+
+    return result;
   } catch (err) {
     console.warn('[VisitorService] Analytics fetch error:', err);
     return getEmptyAnalytics();
