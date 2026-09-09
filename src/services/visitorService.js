@@ -232,6 +232,41 @@ export const logPageView = async (pagePath) => {
  * Fetch analytics summary for the admin dashboard.
  * Returns: { today, thisWeek, thisMonth, allTime, topPages, hourlyToday, dailyThisMonth, peakConcurrent }
  */
+/**
+ * Paginated fetch helper — Supabase returns at most 1000 rows per query by default.
+ * This fetches ALL matching rows by paginating in batches.
+ */
+const fetchAllPageViews = async (sinceISO, columns = 'page_path, session_id, referrer, user_agent, user_email, created_at') => {
+  const PAGE_SIZE = 1000;
+  let allRows = [];
+  let from = 0;
+  let keepGoing = true;
+
+  while (keepGoing) {
+    const { data, error } = await supabase
+      .from('page_views')
+      .select(columns)
+      .gte('created_at', sinceISO)
+      .order('created_at', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error || !Array.isArray(data)) {
+      // If first page fails, return what we have (or empty)
+      keepGoing = false;
+    } else {
+      allRows = allRows.concat(data);
+      if (data.length < PAGE_SIZE) {
+        // Last page — no more rows
+        keepGoing = false;
+      } else {
+        from += PAGE_SIZE;
+      }
+    }
+  }
+
+  return allRows;
+};
+
 export const fetchAnalyticsSummary = async () => {
   if (!supabase) return getEmptyAnalytics();
 
@@ -241,14 +276,10 @@ export const fetchAnalyticsSummary = async () => {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   try {
-    // Fetch all page views for this month (covers today + week + month)
-    const { data: monthViews, error } = await supabase
-      .from('page_views')
-      .select('page_path, session_id, referrer, user_agent, user_email, created_at')
-      .gte('created_at', monthStart)
-      .order('created_at', { ascending: true });
+    // Fetch ALL page views for this month using paginated helper (no 1000-row cap)
+    const monthViews = await fetchAllPageViews(monthStart);
 
-    if (error || !Array.isArray(monthViews)) return getEmptyAnalytics();
+    if (!Array.isArray(monthViews)) return getEmptyAnalytics();
 
     const todayViews = monthViews.filter((v) => v.created_at >= todayStart);
     const weekViews = monthViews.filter((v) => v.created_at >= weekStart);
@@ -339,7 +370,7 @@ export const fetchAnalyticsSummary = async () => {
       }
     }
 
-    // All-time count
+    // All-time count (fast — uses count query, no row data)
     let allTimeViews = monthViews.length;
     let allTimeUnique = monthUnique;
     try {

@@ -703,12 +703,33 @@ const AdminDashboard = () => {
   };
 
   const fetchStats = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date (IST) for today boundary, not UTC
+    const now = new Date();
+    const todayLocalISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayStartUTC = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+    // Paginated fetch to handle >1000 users
     let allRemoteRecords = [];
     try {
-      const { data, error } = await supabase.from('user_details').select('*');
-      if (!error && Array.isArray(data)) {
-        allRemoteRecords = data;
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      let keepGoing = true;
+      while (keepGoing) {
+        const { data, error } = await supabase
+          .from('user_details')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error || !Array.isArray(data)) {
+          keepGoing = false;
+        } else {
+          allRemoteRecords = allRemoteRecords.concat(data);
+          if (data.length < PAGE_SIZE) {
+            keepGoing = false;
+          } else {
+            from += PAGE_SIZE;
+          }
+        }
       }
     } catch (err) {
       console.warn('Stats fetch info:', err);
@@ -722,7 +743,12 @@ const AdminDashboard = () => {
     });
 
     const allRecords = Array.from(map.values());
-    const todayRecords = allRecords.filter(s => s.created_at && s.created_at.startsWith(today));
+    // Match records created today using both local date prefix and UTC boundary
+    const todayRecords = allRecords.filter(s => {
+      if (!s.created_at) return false;
+      // Check if the record's created_at falls within today in local timezone
+      return s.created_at >= todayStartUTC || s.created_at.startsWith(todayLocalISO);
+    });
 
     setStats({
       total: allRecords.length,
@@ -735,9 +761,26 @@ const AdminDashboard = () => {
     let allRemoteRecords = [];
 
     try {
-      const { data, error } = await supabase.from('user_details').select('*').order('created_at', { ascending: false });
-      if (!error && Array.isArray(data)) {
-        allRemoteRecords = data;
+      // Paginated fetch to handle >1000 records
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      let keepGoing = true;
+      while (keepGoing) {
+        const { data, error } = await supabase
+          .from('user_details')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error || !Array.isArray(data)) {
+          keepGoing = false;
+        } else {
+          allRemoteRecords = allRemoteRecords.concat(data);
+          if (data.length < PAGE_SIZE) {
+            keepGoing = false;
+          } else {
+            from += PAGE_SIZE;
+          }
+        }
       }
     } catch (err) {
       console.warn('Submissions fetch info:', err);
