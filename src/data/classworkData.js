@@ -61,141 +61,149 @@ export const classworkAssignments = [
   },
   {
     num: 6,
-    toolName: "DeepSeek",
-    title: "Administrative Problem Solving",
-    classwork: "Design an AI-based solution for repetitive citizen applications received by district offices.",
-    instructions: "Structure the solution as Problem → Root Cause → AI Solution → Data Required → Implementation → Risks → KPIs.",
+    toolName: "Canva Magic Studio",
+    title: "Public Awareness Materials",
+    classwork: "Create public awareness creatives for a government campaign.",
+    instructions: "Design an infographic, WhatsApp poster and social media post with clear, culturally appropriate language.",
     finalSubmission: [
-      "1-page AI Solution Concept Note"
+      "1 Infographic",
+      "1 WhatsApp poster",
+      "1 Social media post"
     ]
   },
   {
     num: 7,
-    toolName: "QuillBot",
-    title: "Simplify Government Language",
-    classwork: "Convert a difficult official paragraph into citizen-friendly language.",
-    instructions: "Prepare three versions: official language, simple English and citizen-friendly language. Preserve the original meaning.",
+    toolName: "DeepSeek",
+    title: "Quick Policy Query Assistant",
+    classwork: "Use DeepSeek to rapidly answer routine departmental queries and cross-check facts against ChatGPT/Gemini outputs.",
+    instructions: "Pose 5 common administrative queries (RTI process, leave rules, scheme eligibility, file movement, grievance timelines). Compare DeepSeek's answers with another chatbot's answers and note factual differences.",
     finalSubmission: [
-      "Before/after comparison",
-      "Citizen-friendly version"
+      "5 Q&A pairs",
+      "Comparison note (DeepSeek vs other chatbot)"
     ]
   },
   {
     num: 8,
-    toolName: "Copy.ai",
-    title: "Government Campaign",
-    classwork: "Create a complete public-awareness communication kit.",
-    instructions: "Choose cyber fraud, Swachhata, road safety, digital literacy, girl child education or voter awareness. Create campaign name, tagline, 3 social posts, SMS, WhatsApp message and 30-second announcement.",
+    toolName: "ElevenLabs",
+    title: "Multilingual Voice Broadcast",
+    classwork: "Create a 60-second official audio announcement in Hindi and English.",
+    instructions: "Generate high-clarity voice output in both languages with professional tone suitable for public distribution.",
     finalSubmission: [
-      "Government Communication Kit"
+      "60-second Hindi audio",
+      "60-second English audio",
+      "Script document"
     ]
   },
   {
     num: 9,
-    toolName: "Superhuman (Grammarly)",
-    title: "Official Communication",
-    classwork: "Improve a poorly written official email or letter.",
-    instructions: "Correct grammar, improve clarity and professionalism, remove unnecessary words and preserve factual meaning.",
+    toolName: "Gamma App",
+    title: "Presentation Creation",
+    classwork: "Create an 8-slide presentation on “AI Tools in Public Administration”.",
+    instructions: "Include title, agenda, administrative challenges, 5 AI tools with use cases, ethics & risks, and conclusion.",
     finalSubmission: [
-      "Original",
-      "AI-improved version",
-      "Final officer-approved version"
+      "8-slide presentation link/export"
     ]
   },
   {
     num: 10,
-    toolName: "Canva Magic Media",
-    title: "Awareness Poster",
-    classwork: "Create a professional government awareness poster.",
-    instructions: "Suggested theme: “Cyber Fraud Se Savdhan”. Include a strong headline, 3 precautions, government/public-service tone, helpline placeholder and suitable visual.",
+    toolName: "QuillBot",
+    title: "Official Circular Proofreading",
+    classwork: "Proofread and paraphrase a draft government circular/office order for clarity and tone.",
+    instructions: "Take a rough draft circular, run it through QuillBot's grammar and paraphrasing tools, and produce a polished, formal final version without changing factual content.",
     finalSubmission: [
-      "1 poster in PNG/PDF"
+      "Original draft",
+      "Polished final circular",
+      "List of key edits made"
     ]
   },
   {
     num: 11,
-    toolName: "Adobe Firefly",
-    title: "Future Governance Visuals",
-    classwork: "Generate two AI visuals showing future-facing government services.",
-    instructions: "Create one visual of a modern Indian district government office using AI and one of an AI-enabled rural public-service centre in Bihar.",
+    toolName: "Copy.ai",
+    title: "Scheme Launch Promotional Copy",
+    classwork: "Draft promotional copy announcing the launch of a new government scheme or service.",
+    instructions: "Generate a short announcement, a longer press-note style paragraph, and 3 social media captions publicising the scheme, in citizen-friendly language.",
     finalSubmission: [
-      "2 AI-generated visuals",
-      "2-line explanation for each"
+      "Short announcement",
+      "Press-note paragraph",
+      "3 social media captions"
     ]
   },
   {
     num: 12,
-    toolName: "Leonardo.ai",
-    title: "Smart Agriculture Visual Assets",
-    classwork: "Create a visual asset set for a hypothetical “Smart Agriculture Bihar” campaign.",
-    instructions: "Generate: (1) AI-enabled farmer, (2) drone monitoring an agricultural field, (3) smart agriculture command centre.",
+    toolName: "Grammarly",
+    title: "Official Email Correspondence",
+    classwork: "Draft and refine formal email correspondence with a citizen or another department.",
+    instructions: "Write a reply to a citizen grievance email and an inter-departmental coordination email. Use AI writing assistance to improve tone, grammar and professionalism.",
     finalSubmission: [
-      "3-image campaign visual set"
+      "Citizen reply email",
+      "Inter-departmental email",
+      "Before/after comparison"
     ]
   },
   {
     num: 13,
-    toolName: "Gamma",
-    title: "Government Presentation Generator",
-    classwork: "Create an 8-slide presentation titled “AI for Better District Administration”.",
-    instructions: "Slides: Problem, Current Challenges, AI Opportunity, 5 Use Cases, Case Example, Implementation Roadmap, Risks & Ethics, Conclusion.",
+    toolName: "Adobe Firefly",
+    title: "Campaign Visual Assets",
+    classwork: "Generate visual assets for a public awareness campaign (e.g. cleanliness, digital literacy, voter awareness).",
+    instructions: "Create 3 campaign images/graphics appropriate for public display, ensuring content is culturally appropriate and free of copyrighted material.",
     finalSubmission: [
-      "8-slide presentation"
+      "3 campaign images",
+      "Prompts used"
     ]
   },
   {
     num: 14,
-    toolName: "Figma AI",
-    title: "Citizen Service UI",
-    classwork: "Design a simple Citizen Grievance Portal.",
-    instructions: "Create 3 screens: Login/Register, Submit Complaint, Track Complaint. Improve the UI for an elderly citizen with limited digital literacy.",
+    toolName: "Leonardo.ai",
+    title: "Portal Icon & Asset Set",
+    classwork: "Design a small icon/illustration set for a District Citizen Service Portal.",
+    instructions: "Generate a consistent set of 6 icons/illustrations (e.g. grievance, tracking, login, services, feedback, helpdesk) suitable for a government web portal.",
     finalSubmission: [
-      "3-screen UI prototype"
+      "6 icons/illustrations",
+      "Style notes"
     ]
   },
   {
     num: 15,
-    toolName: "Tome",
-    title: "Governance Storytelling",
-    classwork: "Create a storytelling presentation: “A Citizen's Journey Through Government Services”.",
-    instructions: "Structure the story as Problem → Frustration → Digital Intervention → AI → Better Service → Outcome. Use 6–8 slides.",
+    toolName: "Zapier",
+    title: "Process Automation",
+    classwork: "Design and build an automated workflow for citizen grievance or feedback handling.",
+    instructions: "Create trigger-action sequence routing submissions to email, Google Sheet, or Telegram.",
     finalSubmission: [
-      "6–8 slide story deck"
+      "Workflow diagram/screenshot",
+      "Live Zap link or test log",
+      "1-page process documentation"
     ]
   },
   {
     num: 16,
-    toolName: "Google AI Studio",
-    title: "Government Office Drafting Assistant",
-    classwork: "Create a simple AI assistant prototype for government drafting.",
-    instructions: "Input: Department + Subject + Key Facts. Output: Official Draft / Note / Citizen Communication. Test the assistant with 3 different inputs.",
+    toolName: "Figma AI",
+    title: "Service Portal UI Mockup",
+    classwork: "Design a UI mockup for a departmental citizen service page using Figma AI.",
+    instructions: "Create a mockup with a header, service list, application status tracker and feedback form. Focus on clarity and accessibility for citizens.",
     finalSubmission: [
-      "System instruction",
-      "3 test cases",
-      "Best output"
+      "Figma mockup link/export",
+      "Screenshot"
     ]
   },
   {
     num: 17,
-    toolName: "Zapier",
-    title: "Office Automation",
-    classwork: "Create a simple AI-enabled office workflow.",
-    instructions: "Example: Citizen complaint received → AI categorises complaint → identifies department → generates summary → sends notification. Build and test one workflow.",
+    toolName: "Tome",
+    title: "Department Overview Storytelling Deck",
+    classwork: "Create a narrative-style deck introducing a department's mandate, schemes and achievements.",
+    instructions: "Build a storytelling deck (6-8 slides/sections) covering department mandate, key schemes, achievements and future roadmap.",
     finalSubmission: [
-      "Workflow screenshot",
-      "Workflow diagram",
-      "One successful test"
+      "Deck link/export"
     ]
   },
   {
     num: 18,
-    toolName: "ElevenLabs",
-    title: "Voice for Governance",
-    classwork: "Create a 30–60 second Hindi public announcement.",
-    instructions: "Choose heatwave precautions, dengue awareness, cyber fraud, road safety, Swachhata or disaster preparedness. Generate the audio and discuss approvals and safeguards required for official use.",
+    toolName: "Google AI Studio",
+    title: "Gemini-Powered Prototype",
+    classwork: "Build a simple Gemini-powered chatbot prototype for citizen FAQ handling.",
+    instructions: "Use Google AI Studio to configure a Gemini-based prompt/agent that answers basic citizen queries about a chosen government service, and test it with 5 sample questions.",
     finalSubmission: [
-      "30–60 second Hindi AI audio",
-      "Short responsible-AI note"
+      "Prototype link/export",
+      "5 sample Q&A test results"
     ]
   }
 ];
