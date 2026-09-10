@@ -1,42 +1,41 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchRealtimeLeaderboardData, subscribeToLeaderboardRealtime } from '../../services/taskService';
 import './TaskLeaderboard.css';
 
 export default function TaskLeaderboard({ isHi = false, title = null, limit = null, showPodium = true }) {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const loadData = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const data = await fetchRealtimeLeaderboardData();
+      setLeaderboard(data || []);
+      setLoading(false);
+    } catch (err) {
+      console.warn('Leaderboard load error:', err);
+      setLoading(false);
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  }, []);
+
   useEffect(() => {
-    let isMounted = true;
-
-    const loadData = async () => {
-      try {
-        const data = await fetchRealtimeLeaderboardData();
-        if (isMounted) {
-          setLeaderboard(data || []);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.warn('Leaderboard load error:', err);
-        if (isMounted) setLoading(false);
-      }
-    };
-
     loadData();
 
     // Real-time updates subscription from Supabase & window events
     const unsubscribe = subscribeToLeaderboardRealtime((updatedList) => {
-      if (isMounted && Array.isArray(updatedList)) {
+      if (Array.isArray(updatedList)) {
         setLeaderboard(updatedList);
       }
     });
 
     return () => {
-      isMounted = false;
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, []);
+  }, [loadData]);
 
   // Filter based on search query (Name, Designation, District)
   const filteredList = useMemo(() => {
@@ -76,10 +75,16 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
           </div>
         </div>
 
-        <div className="liveBadge">
-          <span className="liveDot" />
-          <span>{isHi ? 'लाइव अपडेट' : 'Real-Time Sync'}</span>
-        </div>
+        <button
+          type="button"
+          onClick={loadData}
+          className="liveBadge"
+          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+          title={isHi ? 'ताज़ा करने के लिए क्लिक करें' : 'Click to refresh leaderboard'}
+        >
+          <span className={`liveDot ${refreshing ? 'spinning' : ''}`} />
+          <span>{refreshing ? (isHi ? 'सिंक हो रहा है...' : 'Syncing...') : (isHi ? 'लाइव अपडेट' : 'Real-Time Sync')}</span>
+        </button>
       </div>
 
       {/* CONTROLS (SEARCH & TOTAL STATS) */}

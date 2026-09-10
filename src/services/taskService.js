@@ -295,7 +295,7 @@ export const deleteDailyTask = async (taskNum) => {
   try {
     // Remove the task itself
     const raw = localStorage.getItem(LOCAL_TASKS_KEY);
-    let list = raw ? JSON.parse(raw) : [...defaultSeedTasks];
+    let list = raw ? JSON.parse(raw) : [];
     list = list.filter((t) => Number(t.num) !== num);
     localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(list));
 
@@ -498,6 +498,18 @@ export const getUserTaskSubmissions = async (userEmail) => {
   // 2. Fetch remote submissions from Supabase if online
   if (supabase) {
     try {
+      // Fetch currently active tasks so deleted tasks are never shown
+      let activeTaskNums = null;
+      try {
+        const { data: activeTasks } = await supabase
+          .from('daily_tasks')
+          .select('num')
+          .eq('is_active', true);
+        if (Array.isArray(activeTasks) && activeTasks.length > 0) {
+          activeTaskNums = new Set(activeTasks.map((t) => Number(t.num)));
+        }
+      } catch (e) {}
+
       const { data, error } = await supabase
         .from('daily_task_submissions')
         .select('*')
@@ -516,11 +528,15 @@ export const getUserTaskSubmissions = async (userEmail) => {
 
         const mergedMap = new Map();
         data.forEach((sub) => {
-          mergedMap.set(Number(sub.task_id), { ...sub, _synced: true });
+          const tId = Number(sub.task_id);
+          // If activeTaskNums is known, ignore submissions for deleted tasks
+          if (activeTaskNums && !activeTaskNums.has(tId)) return;
+          mergedMap.set(tId, { ...sub, _synced: true });
         });
 
         pendingLocal.forEach((localSub) => {
           const tId = Number(localSub.task_id);
+          if (activeTaskNums && !activeTaskNums.has(tId)) return;
           if (!mergedMap.has(tId)) {
             mergedMap.set(tId, localSub);
           }
@@ -554,6 +570,20 @@ export const getUserTaskSubmissions = async (userEmail) => {
 export const getAllTaskSubmissions = async () => {
   if (supabase) {
     try {
+      // 1. Fetch currently active tasks to filter out deleted tasks
+      let activeTaskNums = null;
+      let taskTitleMap = new Map();
+      try {
+        const { data: activeTasks } = await supabase
+          .from('daily_tasks')
+          .select('num, title, tool_name')
+          .eq('is_active', true);
+        if (Array.isArray(activeTasks) && activeTasks.length > 0) {
+          activeTaskNums = new Set(activeTasks.map((t) => Number(t.num)));
+          activeTasks.forEach((t) => taskTitleMap.set(Number(t.num), t.title));
+        }
+      } catch (e) {}
+
       const { data, error } = await supabase
         .from('daily_task_submissions')
         .select('*')
@@ -561,7 +591,6 @@ export const getAllTaskSubmissions = async () => {
 
       if (!error && Array.isArray(data)) {
         // Supabase is authoritative!
-        // Only keep local submissions that are actively pending sync (< 60s old)
         const now = Date.now();
         const pendingLocal = getLocalTaskSubmissions().filter((s) => {
           if (!s._pendingSync) return false;
@@ -571,14 +600,23 @@ export const getAllTaskSubmissions = async () => {
 
         const mergedMap = new Map();
         data.forEach((sub) => {
-          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
-          mergedMap.set(key, { ...sub, _synced: true });
+          const tId = Number(sub.task_id);
+          // Omit deleted tasks
+          if (activeTaskNums && !activeTaskNums.has(tId)) return;
+
+          const key = `${(sub.user_email || '').toLowerCase()}_${tId}`;
+          const currentTitle = taskTitleMap.get(tId) || sub.task_title;
+          mergedMap.set(key, { ...sub, task_title: currentTitle, _synced: true });
         });
 
         pendingLocal.forEach((sub) => {
-          const key = `${(sub.user_email || '').toLowerCase()}_${sub.task_id}`;
+          const tId = Number(sub.task_id);
+          if (activeTaskNums && !activeTaskNums.has(tId)) return;
+
+          const key = `${(sub.user_email || '').toLowerCase()}_${tId}`;
           if (!mergedMap.has(key)) {
-            mergedMap.set(key, sub);
+            const currentTitle = taskTitleMap.get(tId) || sub.task_title;
+            mergedMap.set(key, { ...sub, task_title: currentTitle });
           }
         });
 
@@ -1018,20 +1056,56 @@ export const deleteTaskSubmission = async ({ submissionId, userEmail, taskId, fi
 };
 
 /**
- * Get Submission Leaderboard — aggregated by user, sorted by most submissions
+ * Get Submission Leaderboard — aggregated by user, sorted by most active tasks submitted
+ * Ensures only active tasks are counted and each task is counted at most once per user.
  * Returns: [{ rank, email, name, designation, organization, district, total, approved, pending, rejected, tasks, latestTask, lastSubmission }]
  */
-export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}) => {
-  const userMap = new Map();
+export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}, activeTasksList = null) => {
+  // 1. Resolve set of active task numbers
+  let activeNumSet = null;
+  let activeTaskTitleMap = new Map();
+
+  if (Array.isArray(activeTasksList) && activeTasksList.length > 0) {
+    activeNumSet = new Set(activeTasksList.map((t) => Number(t.num !== undefined ? t.num : t.id)));
+    activeTasksList.forEach((t) => {
+      const num = Number(t.num !== undefined ? t.num : t.id);
+      if (t.title) activeTaskTitleMap.set(num, t.title);
+    });
+  } else {
+    try {
+      const raw = localStorage.getItem(LOCAL_TASKS_KEY);
+      const cached = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(cached) && cached.length > 0) {
+        activeNumSet = new Set(cached.map((t) => Number(t.num !== undefined ? t.num : t.id)));
+        cached.forEach((t) => {
+          const num = Number(t.num !== undefined ? t.num : t.id);
+          if (t.title) activeTaskTitleMap.set(num, t.title);
+        });
+      }
+    } catch (e) {}
+  }
+
+  // Map: email -> Map of taskId -> latest submission
+  const userSubmissionsMap = new Map();
+  const userProfileMap = new Map();
 
   (allSubmissions || []).forEach((sub) => {
     const email = (sub.user_email || '').toLowerCase().trim();
     if (!email) return;
 
+    const taskId = Number(sub.task_id);
+    if (isNaN(taskId) || taskId <= 0) return;
+
+    // Filter out submissions for deleted or inactive tasks
+    if (activeNumSet && !activeNumSet.has(taskId)) {
+      return;
+    }
+
     const uDet = userDetailsMap[email] || {};
 
-    if (!userMap.has(email)) {
-      userMap.set(email, {
+    if (!userSubmissionsMap.has(email)) {
+      userSubmissionsMap.set(email, new Map());
+      userProfileMap.set(email, {
         email,
         name: sub.user_name || uDet.full_name || email.split('@')[0],
         designation:
@@ -1041,72 +1115,119 @@ export const getSubmissionLeaderboard = (allSubmissions, userDetailsMap = {}) =>
           'Civic Participant',
         organization: uDet.organization || uDet.department || '',
         district: sub.user_district || uDet.district || 'Bihar',
-        total: 0,
-        approved: 0,
-        pending: 0,
-        rejected: 0,
-        tasks: [],
-        latestTask: null,
         lastSubmission: sub.updated_at || sub.created_at || '',
       });
     }
 
-    const entry = userMap.get(email);
-    entry.total += 1;
+    const taskMap = userSubmissionsMap.get(email);
+    const existing = taskMap.get(taskId);
+    const subDate = new Date(sub.updated_at || sub.created_at || 0).getTime();
+    const existingDate = existing ? new Date(existing.updated_at || existing.created_at || 0).getTime() : 0;
 
-    const status = (sub.status || 'PENDING').toUpperCase();
-    if (status === 'APPROVED') entry.approved += 1;
-    else if (status === 'REJECTED') entry.rejected += 1;
-    else entry.pending += 1;
-
-    // Track detailed task uploaded
-    const taskItem = {
-      taskId: Number(sub.task_id),
-      taskTitle: sub.task_title || `Task #${sub.task_id}`,
-      status,
-      fileName: sub.file_name || null,
-      fileUrl: sub.file_url || null,
-      submittedAt: sub.updated_at || sub.created_at || '',
-    };
-    entry.tasks.push(taskItem);
-
-    // Track most recent submission
-    const subDate = sub.updated_at || sub.created_at || '';
-    if (!entry.latestTask || subDate >= entry.lastSubmission) {
-      entry.lastSubmission = subDate;
-      entry.latestTask = taskItem;
+    // Deduplicate: keep ONLY the latest submission for this task
+    if (!existing || subDate >= existingDate) {
+      taskMap.set(taskId, sub);
     }
 
-    // Refresh name/district/designation if better data available
+    // Refresh profile details if newer / more complete
+    const profile = userProfileMap.get(email);
     if (sub.user_name && sub.user_name !== email.split('@')[0]) {
-      entry.name = sub.user_name;
+      profile.name = sub.user_name;
     }
     if (sub.user_designation && sub.user_designation !== 'Civic Participant') {
-      entry.designation = sub.user_designation;
-    } else if (uDet.designation) {
-      entry.designation = uDet.designation;
+      profile.designation = sub.user_designation;
     }
     if (sub.user_district && sub.user_district !== 'Bihar') {
-      entry.district = sub.user_district;
-    } else if (uDet.district) {
-      entry.district = uDet.district;
+      profile.district = sub.user_district;
+    }
+    const currentLast = new Date(profile.lastSubmission || 0).getTime();
+    if (subDate > currentLast) {
+      profile.lastSubmission = sub.updated_at || sub.created_at || '';
     }
   });
 
-  return Array.from(userMap.values())
-    .sort((a, b) => (b.total - a.total) || (b.approved - a.approved) || (new Date(b.lastSubmission || 0) - new Date(a.lastSubmission || 0)))
+  // Construct final aggregated leaderboard array
+  const leaderboard = [];
+  userSubmissionsMap.forEach((taskMap, email) => {
+    const profile = userProfileMap.get(email);
+    const tasks = Array.from(taskMap.values())
+      .map((sub) => {
+        const tId = Number(sub.task_id);
+        const resolvedTitle = activeTaskTitleMap.get(tId) || sub.task_title || `Task #${tId}`;
+        return {
+          taskId: tId,
+          taskTitle: resolvedTitle,
+          status: (sub.status || 'PENDING').toUpperCase(),
+          fileName: sub.file_name || null,
+          fileUrl: sub.file_url || null,
+          submittedAt: sub.updated_at || sub.created_at || '',
+        };
+      })
+      .sort((a, b) => a.taskId - b.taskId);
+
+    const approved = tasks.filter((t) => t.status === 'APPROVED').length;
+    const rejected = tasks.filter((t) => t.status === 'REJECTED').length;
+    const pending = tasks.filter((t) => t.status === 'PENDING').length;
+
+    leaderboard.push({
+      ...profile,
+      total: tasks.length,
+      approved,
+      pending,
+      rejected,
+      tasks,
+      latestTask: tasks.length > 0 ? tasks[tasks.length - 1] : null,
+    });
+  });
+
+  return leaderboard
+    .sort(
+      (a, b) =>
+        b.total - a.total ||
+        b.approved - a.approved ||
+        new Date(b.lastSubmission || 0) - new Date(a.lastSubmission || 0)
+    )
     .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
 };
 
 /**
  * Fetch Real-time Leaderboard with Candidate Designations and Task Details
- * Queries both daily_task_submissions and user_details from Supabase
+ * Authoritative: Uses database RPC if available, or synchronizes active daily_tasks + submissions.
  */
 export const fetchRealtimeLeaderboardData = async () => {
+  // 1. Try authoritative Postgres RPC first (sub-millisecond & perfectly deduplicated)
+  if (supabase) {
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_daily_task_leaderboard');
+      if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+        return rpcData;
+      }
+    } catch (e) {
+      // RPC not yet migrated or offline, smoothly fallback to query-level sync below
+    }
+  }
+
   let allSubs = [];
   let userDetailsMap = {};
+  let activeTasks = [];
 
-  // 1. Fetch all submissions from Supabase with authoritative DB truth
+  // 2. Fetch active daily tasks so deleted tasks are never counted
+  if (supabase) {
+    try {
+      const { data: tasksData } = await supabase
+        .from('daily_tasks')
+        .select('num, title, tool_name')
+        .eq('is_active', true)
+        .order('num', { ascending: true });
+      if (Array.isArray(tasksData)) {
+        activeTasks = tasksData;
+      }
+    } catch (e) {
+      console.warn('Error fetching active tasks for leaderboard:', e);
+    }
+  }
+
+  // 3. Fetch all submissions from Supabase with authoritative DB truth
   if (supabase) {
     try {
       const { data: subsData, error: subsError } = await supabase
@@ -1143,7 +1264,7 @@ export const fetchRealtimeLeaderboardData = async () => {
       allSubs = getLocalTaskSubmissions();
     }
 
-    // 2. Fetch user profile details for rich designations & organizations
+    // 4. Fetch user profile details for rich designations & organizations
     try {
       const { data: usersData, error: usersError } = await supabase
         .from('user_details')
@@ -1177,12 +1298,12 @@ export const fetchRealtimeLeaderboardData = async () => {
     }
   } catch (e) {}
 
-  return getSubmissionLeaderboard(allSubs, userDetailsMap);
+  return getSubmissionLeaderboard(allSubs, userDetailsMap, activeTasks);
 };
 
 /**
  * Realtime Subscription for Leaderboard
- * Listens to Supabase postgres_changes on daily_task_submissions & user_details
+ * Listens to Supabase postgres_changes on daily_task_submissions, daily_tasks, & user_details
  * Returns an unsubscribe callback function
  */
 export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
@@ -1202,10 +1323,15 @@ export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
   if (supabase) {
     try {
       channel = supabase
-        .channel('public:daily_task_submissions_realtime')
+        .channel('public:leaderboard_realtime_sync')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'daily_task_submissions' },
+          () => refreshAndNotify()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'daily_tasks' },
           () => refreshAndNotify()
         )
         .on(
@@ -1221,7 +1347,7 @@ export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
 
   // Also listen to local window & storage events
   const handleStorageChange = (e) => {
-    if (!e || !e.key || e.key === LOCAL_STORAGE_KEY || e.key === 'bihar_ai_user') {
+    if (!e || !e.key || e.key === LOCAL_STORAGE_KEY || e.key === LOCAL_TASKS_KEY || e.key === 'bihar_ai_user') {
       refreshAndNotify();
     }
   };
@@ -1231,8 +1357,8 @@ export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
   window.addEventListener('bihar_ai_profile_updated', refreshAndNotify);
   window.addEventListener('storage', handleStorageChange);
 
-  // Periodic heartbeat poll every 10s for rock-solid live update
-  const pollTimer = setInterval(refreshAndNotify, 10000);
+  // Periodic heartbeat poll every 8s for rock-solid live update
+  const pollTimer = setInterval(refreshAndNotify, 8000);
 
   // Return unsubscribe cleanup handler
   return () => {

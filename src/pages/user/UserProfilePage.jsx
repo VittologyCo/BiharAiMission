@@ -299,6 +299,17 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         {
           event: '*',
           schema: 'public',
+          table: 'daily_tasks'
+        },
+        () => {
+          loadTaskSubmissions();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'masterclass_enrollments',
           filter: `user_email=eq.${cleanEmail}`
         },

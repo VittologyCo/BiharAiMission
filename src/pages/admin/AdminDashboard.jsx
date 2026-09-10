@@ -531,6 +531,7 @@ const AdminDashboard = () => {
             { event: '*', schema: 'public', table: 'daily_tasks' },
             () => {
               loadAdminTasksData();
+              loadAdminTaskSubmissions();
             }
           )
           .on(
@@ -6450,7 +6451,7 @@ const AdminDashboard = () => {
           const pendingCount = adminTaskSubmissions.filter((s) => s.status === 'PENDING').length;
           const approvedCount = adminTaskSubmissions.filter((s) => s.status === 'APPROVED').length;
           const rejectedCount = adminTaskSubmissions.filter((s) => s.status === 'REJECTED').length;
-          const leaderboardList = getSubmissionLeaderboard(adminTaskSubmissions, adminUserDetailsMap);
+          const leaderboardList = getSubmissionLeaderboard(adminTaskSubmissions, adminUserDetailsMap, adminDailyTasks);
 
           const filtered = adminTaskSubmissions.filter((s) => {
             if (taskSubFilter !== 'ALL' && s.status !== taskSubFilter) return false;
