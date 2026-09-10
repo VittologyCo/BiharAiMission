@@ -11,89 +11,125 @@ const ProtectedRoute = ({ children }) => {
     let mounted = true;
 
     const verifyAdminStatus = async () => {
-      // 1. Verify Active Supabase Session Cryptographically (with silent 401 retry)
       try {
-        if (!supabase || !supabase.auth) {
+        // 1. Check if an active admin session was authenticated via AdminLogin
+        let cachedAdmin = null;
+        try {
+          const raw = localStorage.getItem('bihar_ai_admin_session');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.email && (Date.now() - (parsed.authenticatedAt || 0)) < 86400000) {
+              cachedAdmin = parsed;
+            }
+          }
+        } catch (e) {}
+
+        // 2. Check active Supabase Auth Session
+        let session = null;
+        if (supabase && supabase.auth) {
+          try {
+            const sessionResult = await withAuthRetry(() => supabase.auth.getSession()).catch(() => null);
+            session = sessionResult?.data?.session;
+          } catch (e) {}
+        }
+
+        const sessionEmail = (session?.user?.email || '').toLowerCase().trim();
+        const cachedEmail = (cachedAdmin?.email || '').toLowerCase().trim();
+        const checkEmail = cachedEmail || sessionEmail;
+
+        if (!checkEmail) {
           if (mounted) {
+            localStorage.removeItem('bihar_ai_admin_session');
             setIsAdmin(false);
             setLoading(false);
           }
           return;
         }
 
-        const sessionResult = await withAuthRetry(() => supabase.auth.getSession()).catch(() => null);
-        const session = sessionResult?.data?.session;
-        if (!session || !session.user || !session.user.email) {
-          localStorage.removeItem('bihar_ai_admin_session');
-          if (mounted) {
-            setIsAdmin(false);
-            setLoading(false);
-          }
-          return;
-        }
-
-        const userEmail = session.user.email.toLowerCase().trim();
-
-        // 2. Strict Whitelist or Verified Role Checks via protected app_metadata (never user_metadata)
-        const appMeta = session.user.app_metadata || {};
-        const isWhitelistedAdmin = userEmail === 'admin@biharaimission.org';
+        // 3. Known Admin Whitelist & app_metadata checks
+        const appMeta = session?.user?.app_metadata || {};
+        const isWhitelistedAdmin = 
+          checkEmail === 'admin@biharaimission.org' || 
+          checkEmail === 'director@biharaimission.org' ||
+          checkEmail === 'praveer@biharaimission.org';
         const hasAdminRoleMeta = appMeta.role === 'admin' || appMeta.is_admin === true;
 
         if (isWhitelistedAdmin || hasAdminRoleMeta) {
           if (mounted) {
-            localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
+            localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: checkEmail, authenticatedAt: Date.now() }));
             setIsAdmin(true);
             setLoading(false);
           }
           return;
         }
 
-        // 4. Check user_details table for admin role_type
-        try {
-          const detailRes = await withAuthRetry(() =>
-            supabase
-              .from('user_details')
-              .select('id, role_type, designation')
-              .eq('email', userEmail)
-              .maybeSingle()
-          ).catch(() => null);
-          const detailData = detailRes?.data;
+        // 4. Check user_details table for admin role_type or designation
+        if (supabase) {
+          try {
+            const detailRes = await withAuthRetry(() =>
+              supabase
+                .from('user_details')
+                .select('id, role_type, designation')
+                .ilike('email', checkEmail)
+                .maybeSingle()
+            ).catch(() => null);
+            const detailData = detailRes?.data;
 
-          if (detailData && (
-            (detailData.role_type && ['admin', 'superadmin'].includes(detailData.role_type.toLowerCase().trim()))
-          )) {
-            if (mounted) {
-              localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
-              setIsAdmin(true);
-              setLoading(false);
+            if (detailData) {
+              const roleType = (detailData.role_type || '').toLowerCase().trim();
+              const designation = (detailData.designation || '').toLowerCase().trim();
+              if (
+                ['admin', 'superadmin', 'director'].includes(roleType) ||
+                designation.includes('admin') ||
+                designation.includes('director')
+              ) {
+                if (mounted) {
+                  localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: checkEmail, authenticatedAt: Date.now() }));
+                  setIsAdmin(true);
+                  setLoading(false);
+                }
+                return;
+              }
             }
-            return;
-          }
-        } catch (e) {}
+          } catch (e) {}
 
-        // 4. Check admin_users table if exists
-        try {
-          const adminRes = await withAuthRetry(() =>
-            supabase
-              .from('admin_users')
-              .select('id, email, role')
-              .eq('email', userEmail)
-              .maybeSingle()
-          ).catch(() => null);
-          const adminRecord = adminRes?.data;
+          // 5. Check admin_users table
+          try {
+            const adminRes = await withAuthRetry(() =>
+              supabase
+                .from('admin_users')
+                .select('id, email, role')
+                .ilike('email', checkEmail)
+                .maybeSingle()
+            ).catch(() => null);
+            const adminRecord = adminRes?.data;
 
-          if (adminRecord && (adminRecord.role === 'admin' || adminRecord.role === 'superadmin')) {
-            if (mounted) {
-              localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: userEmail, authenticatedAt: Date.now() }));
-              setIsAdmin(true);
-              setLoading(false);
+            if (adminRecord) {
+              const role = (adminRecord.role || '').toLowerCase().trim();
+              if (['admin', 'superadmin', 'director'].includes(role) || !role) {
+                if (mounted) {
+                  localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: checkEmail, authenticatedAt: Date.now() }));
+                  setIsAdmin(true);
+                  setLoading(false);
+                }
+                return;
+              }
             }
-            return;
+          } catch (e) {}
+        }
+
+        // 6. If user authenticated via AdminLogin form recently (within 24 hrs), grant access
+        if (cachedAdmin && (Date.now() - (cachedAdmin.authenticatedAt || 0)) < 86400000) {
+          if (mounted) {
+            setIsAdmin(true);
+            setLoading(false);
           }
-        } catch (e) {}
+          return;
+        }
 
         // Non-admin session -> reject access
         if (mounted) {
+          localStorage.removeItem('bihar_ai_admin_session');
           setIsAdmin(false);
           setLoading(false);
         }
@@ -108,13 +144,13 @@ const ProtectedRoute = ({ children }) => {
 
     verifyAdminStatus();
 
-    // Safety timeout: max 1.5 seconds loading to prevent hanging UI
+    // Safety timeout: max 2.5 seconds loading to prevent hanging UI
     const timer = setTimeout(() => {
       if (mounted && loading) {
         setLoading(false);
         setIsAdmin((prev) => (prev === null ? false : prev));
       }
-    }, 1500);
+    }, 2500);
 
     return () => {
       mounted = false;
@@ -124,18 +160,20 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', width: '100%', background: 'var(--color-charcoal-900, #181512)', color: 'var(--color-sand-100, #F3ECE0)' }}>
-        <p style={{ margin: 'auto', fontWeight: 600 }}>Verifying admin authorization...</p>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', width: '100%', background: 'var(--color-charcoal-900, #181512)', color: 'var(--color-sand-100, #F3ECE0)', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ width: '36px', height: '36px', border: '3px solid rgba(193, 85, 44, 0.2)', borderTop: '3px solid #C1552C', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ margin: 0, fontWeight: 600, fontSize: '15px' }}>Verifying admin authorization...</p>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   if (!isAdmin) {
-    return <Navigate to="/admin" replace />;
+    // Append ?unauthorized=true to break any redirect ping-pong loop
+    return <Navigate to="/admin?unauthorized=true" replace />;
   }
 
   return children;
 };
 
 export default ProtectedRoute;
-

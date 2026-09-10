@@ -2663,9 +2663,6 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   <span>{formSubmitting ? 'Saving to Database…' : 'Save & Update Profile Details'}</span>
                 </button>
               </form>
-
-              {/* REAL-TIME CANDIDATES TASK LEADERBOARD (JUST AFTER PROFILE DETAILS) */}
-              <TaskLeaderboard isHi={isHi} />
             </div>
           );
         })()}

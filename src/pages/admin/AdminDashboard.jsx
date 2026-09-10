@@ -1086,8 +1086,11 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
+    try {
+      localStorage.removeItem('bihar_ai_admin_session');
+    } catch (e) {}
     await supabase.auth.signOut();
-    navigate('/admin');
+    navigate('/admin?logout=true');
   };
 
   const exportCSV = async () => {

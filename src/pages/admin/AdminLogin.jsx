@@ -12,19 +12,49 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only auto-redirect if a verified admin session exists
+    const params = new URLSearchParams(window.location.search);
+    const isUnauthorized = params.get('unauthorized') === 'true';
+    const isLogout = params.get('logout') === 'true';
+
+    if (isUnauthorized) {
+      try {
+        localStorage.removeItem('bihar_ai_admin_session');
+      } catch (e) {}
+      setError('Access restricted. Please sign in with an authorized Administrator account.');
+      return;
+    }
+
+    if (isLogout) {
+      try {
+        localStorage.removeItem('bihar_ai_admin_session');
+      } catch (e) {}
+      return;
+    }
+
+    // Only auto-redirect if an active admin session (< 24h old) exists
     try {
-      const localAdmin = localStorage.getItem('bihar_ai_admin_session');
-      if (localAdmin) {
-        navigate('/admin/dashboard');
-        return;
+      const raw = localStorage.getItem('bihar_ai_admin_session');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.email && (Date.now() - (parsed.authenticatedAt || 0)) < 86400000) {
+          navigate('/admin/dashboard');
+          return;
+        } else {
+          localStorage.removeItem('bihar_ai_admin_session');
+        }
       }
     } catch (e) {}
 
+    // Check active Supabase Auth session, strictly whitelisted to known admin emails
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && session.user && session.user.email) {
-        const emailLower = session.user.email.toLowerCase();
-        if (emailLower.includes('admin') || emailLower === 'admin@biharaimission.org') {
+        const emailLower = session.user.email.toLowerCase().trim();
+        const WHITELISTED_ADMINS = [
+          'admin@biharaimission.org',
+          'director@biharaimission.org',
+          'praveer@biharaimission.org'
+        ];
+        if (WHITELISTED_ADMINS.includes(emailLower) || session.user.app_metadata?.role === 'admin') {
           localStorage.setItem('bihar_ai_admin_session', JSON.stringify({ email: emailLower, authenticatedAt: Date.now() }));
           navigate('/admin/dashboard');
         }
@@ -66,6 +96,53 @@ const AdminLogin = () => {
       }
 
       if (authOk) {
+        // Authorize admin email before granting dashboard access
+        const WHITELISTED_ADMINS = [
+          'admin@biharaimission.org',
+          'director@biharaimission.org',
+          'praveer@biharaimission.org'
+        ];
+        let isAuthorized = WHITELISTED_ADMINS.includes(cleanEmail);
+
+        if (!isAuthorized) {
+          try {
+            const { data: ud } = await supabase
+              .from('user_details')
+              .select('role_type, designation')
+              .ilike('email', cleanEmail)
+              .maybeSingle();
+            if (ud) {
+              const roleType = (ud.role_type || '').toLowerCase().trim();
+              const designation = (ud.designation || '').toLowerCase().trim();
+              if (
+                ['admin', 'superadmin', 'director'].includes(roleType) ||
+                designation.includes('admin') ||
+                designation.includes('director')
+              ) {
+                isAuthorized = true;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (!isAuthorized) {
+          try {
+            const { data: au } = await supabase
+              .from('admin_users')
+              .select('id, role')
+              .ilike('email', cleanEmail)
+              .maybeSingle();
+            if (au) {
+              isAuthorized = true;
+            }
+          } catch (e) {}
+        }
+
+        if (!isAuthorized) {
+          setError('Access restricted. This account does not have administrator privileges.');
+          return;
+        }
+
         localStorage.setItem('bihar_ai_admin_session', JSON.stringify({
           email: cleanEmail,
           authenticatedAt: Date.now()
