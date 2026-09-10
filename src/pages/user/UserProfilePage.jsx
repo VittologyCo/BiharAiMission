@@ -126,31 +126,55 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
   const isBiharState = !formData.state || formData.state === 'Bihar';
 
+  const forcePurgeRef = useRef(forcePurgeAndLogout);
+  useEffect(() => {
+    forcePurgeRef.current = forcePurgeAndLogout;
+  }, [forcePurgeAndLogout]);
+
   useEffect(() => {
     if (currentUser) {
-      setFormData(prev => ({
-        ...prev,
-        full_name: currentUser.fullName || prev.full_name,
-        email: currentUser.email || prev.email,
-        mobile: (currentUser.phone && currentUser.phone !== 'N/A') ? currentUser.phone : prev.mobile,
-        designation: (currentUser.designation && currentUser.designation !== 'Member' && currentUser.designation !== 'Officer / Citizen') ? currentUser.designation : prev.designation,
-        district: (currentUser.district && currentUser.district !== 'Bihar') ? currentUser.district : prev.district
-      }));
+      setFormData(prev => {
+        const nextFullName = currentUser.fullName || prev.full_name;
+        const nextEmail = currentUser.email || prev.email;
+        const nextMobile = (currentUser.phone && currentUser.phone !== 'N/A') ? currentUser.phone : prev.mobile;
+        const nextDesignation = (currentUser.designation && currentUser.designation !== 'Member' && currentUser.designation !== 'Officer / Citizen') ? currentUser.designation : prev.designation;
+        const nextDistrict = (currentUser.district && currentUser.district !== 'Bihar') ? currentUser.district : prev.district;
+
+        if (
+          prev.full_name === nextFullName &&
+          prev.email === nextEmail &&
+          prev.mobile === nextMobile &&
+          prev.designation === nextDesignation &&
+          prev.district === nextDistrict
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          full_name: nextFullName,
+          email: nextEmail,
+          mobile: nextMobile,
+          designation: nextDesignation,
+          district: nextDistrict
+        };
+      });
     }
-  }, [currentUser]);
+  }, [currentUser?.email, currentUser?.fullName, currentUser?.phone, currentUser?.designation, currentUser?.district]);
 
   // Check for existing saved submission in Supabase or localStorage
   const checkExisting = useCallback(async () => {
-    if (!currentUser || !currentUser.email) return;
+    const userEmail = currentUser?.email;
+    if (!userEmail) return;
 
     let isSavedLocally = false;
     let localSub = null;
     try {
-      if (localStorage.getItem(`bihar_ai_profile_saved_${currentUser.email.toLowerCase().trim()}`) === 'true') {
+      if (localStorage.getItem(`bihar_ai_profile_saved_${userEmail.toLowerCase().trim()}`) === 'true') {
         isSavedLocally = true;
       }
       const localSubs = JSON.parse(localStorage.getItem('bihar_ai_local_submissions') || '[]');
-      localSub = localSubs.find(s => s.email && s.email.toLowerCase() === currentUser.email.toLowerCase());
+      localSub = localSubs.find(s => s.email && s.email.toLowerCase() === userEmail.toLowerCase());
       if (localSub && (localSub.is_profile_locked || localSub.is_profile_saved)) {
         isSavedLocally = true;
       }
@@ -161,15 +185,26 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         const { data, error } = await supabase
           .from('user_details')
           .select('*')
-          .eq('email', currentUser.email.trim())
+          .eq('email', userEmail.trim())
           .order('created_at', { ascending: false })
           .limit(1);
 
         if (data && data.length > 0) {
-          setExistingSubmission({
-            ...data[0],
-            is_profile_locked: data[0].is_profile_locked || isSavedLocally || Boolean(localSub?.is_profile_locked),
-            is_profile_saved: data[0].is_profile_saved || isSavedLocally || Boolean(localSub?.is_profile_saved)
+          setExistingSubmission(prev => {
+            if (
+              prev &&
+              prev.id === data[0].id &&
+              prev.updated_at === data[0].updated_at &&
+              prev.full_name === data[0].full_name &&
+              prev.designation === data[0].designation
+            ) {
+              return prev;
+            }
+            return {
+              ...data[0],
+              is_profile_locked: data[0].is_profile_locked || isSavedLocally || Boolean(localSub?.is_profile_locked),
+              is_profile_saved: data[0].is_profile_saved || isSavedLocally || Boolean(localSub?.is_profile_saved)
+            };
           });
           return;
         } else if (!error) {
@@ -182,8 +217,8 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
           // User was deleted by admin from database: trigger instant revocation & logout!
           console.warn('🚨 Account record missing in user_details — executing instant logout.');
-          if (forcePurgeAndLogout) {
-            forcePurgeAndLogout('Your account has been deleted by an administrator.');
+          if (forcePurgeRef.current) {
+            forcePurgeRef.current('Your account has been deleted by an administrator.');
           }
           return;
         }
@@ -191,17 +226,28 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     } catch (err) {}
 
     if (localSub) {
-      setExistingSubmission({
-        ...localSub,
-        is_profile_locked: localSub.is_profile_locked || isSavedLocally,
-        is_profile_saved: localSub.is_profile_saved || isSavedLocally
+      setExistingSubmission(prev => {
+        if (
+          prev &&
+          prev.email === localSub.email &&
+          prev.updated_at === localSub.updated_at
+        ) {
+          return prev;
+        }
+        return {
+          ...localSub,
+          is_profile_locked: localSub.is_profile_locked || isSavedLocally,
+          is_profile_saved: localSub.is_profile_saved || isSavedLocally
+        };
       });
     }
-  }, [currentUser, forcePurgeAndLogout]);
+  }, [currentUser?.email]);
 
   useEffect(() => {
-    checkExisting();
-  }, [checkExisting]);
+    if (currentUser?.email) {
+      checkExisting();
+    }
+  }, [currentUser?.email, checkExisting]);
 
   const [remoteEnrolledClassIds, setRemoteEnrolledClassIds] = useState([]);
   const [remoteEnrollments, setRemoteEnrollments] = useState([]);
@@ -369,29 +415,43 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
       const selectedPredefined = subInterests.filter((i) => knownInterestValues.includes(i));
       const customInterests = subInterests.filter((i) => !knownInterestValues.includes(i));
 
-      setFormData(prev => ({
-        ...prev,
-        full_name: existingSubmission.full_name || prev.full_name,
-        email: existingSubmission.email || prev.email,
-        mobile: cleanMobile || prev.mobile,
-        gender: existingSubmission.gender || prev.gender,
-        age: existingSubmission.age || prev.age,
-        role_type: cleanRoleType || prev.role_type,
-        designation: cleanDesignation || prev.designation,
-        department: existingSubmission.department || prev.department,
-        organization: existingSubmission.organization || prev.organization,
-        experience_val: parsedExp.val || prev.experience_val,
-        experience_unit: parsedExp.unit || prev.experience_unit,
-        state: existingSubmission.state || prev.state || 'Bihar',
-        district: cleanDistrict || prev.district,
-        block_city: existingSubmission.block_city || prev.block_city,
-        interests: selectedPredefined.length > 0 ? selectedPredefined : prev.interests,
-        custom_interest: customInterests.length > 0 ? customInterests.join(', ') : prev.custom_interest,
-        intent: existingSubmission.intent || prev.intent,
-        contribution: existingSubmission.contribution || prev.contribution,
-        linkedin: existingSubmission.linkedin || prev.linkedin,
-        portfolio: existingSubmission.portfolio || prev.portfolio,
-      }));
+      setFormData(prev => {
+        if (
+          prev.full_name === (existingSubmission.full_name || prev.full_name) &&
+          prev.email === (existingSubmission.email || prev.email) &&
+          prev.role_type === (cleanRoleType || prev.role_type) &&
+          prev.designation === (cleanDesignation || prev.designation) &&
+          prev.district === (cleanDistrict || prev.district) &&
+          prev.department === (existingSubmission.department || prev.department) &&
+          prev.organization === (existingSubmission.organization || prev.organization)
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          full_name: existingSubmission.full_name || prev.full_name,
+          email: existingSubmission.email || prev.email,
+          mobile: cleanMobile || prev.mobile,
+          gender: existingSubmission.gender || prev.gender,
+          age: existingSubmission.age || prev.age,
+          role_type: cleanRoleType || prev.role_type,
+          designation: cleanDesignation || prev.designation,
+          department: existingSubmission.department || prev.department,
+          organization: existingSubmission.organization || prev.organization,
+          experience_val: parsedExp.val || prev.experience_val,
+          experience_unit: parsedExp.unit || prev.experience_unit,
+          state: existingSubmission.state || prev.state || 'Bihar',
+          district: cleanDistrict || prev.district,
+          block_city: existingSubmission.block_city || prev.block_city,
+          interests: selectedPredefined.length > 0 ? selectedPredefined : prev.interests,
+          custom_interest: customInterests.length > 0 ? customInterests.join(', ') : prev.custom_interest,
+          intent: existingSubmission.intent || prev.intent,
+          contribution: existingSubmission.contribution || prev.contribution,
+          linkedin: existingSubmission.linkedin || prev.linkedin,
+          portfolio: existingSubmission.portfolio || prev.portfolio,
+        };
+      });
     }
   }, [existingSubmission]);
 
@@ -411,16 +471,17 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
   const [userSubmissions, setUserSubmissions] = useState([]);
 
   const syncUserExams = useCallback(async () => {
-    const targetEmail = currentUser?.email || user?.email;
+    const targetEmail = currentUser?.email;
     if (!targetEmail) return;
     try {
       const all = await fetchExamSubmissionsFromSupabase();
       if (all && Array.isArray(all)) {
+        const userName = (currentUser?.fullName || '').toLowerCase();
         const filtered = all.filter((sub) => {
           if (!sub.candidateEmail && !sub.candidateName) return false;
           return (
             (sub.candidateEmail && sub.candidateEmail.toLowerCase() === targetEmail.toLowerCase()) ||
-            (sub.candidateName && user?.fullName && sub.candidateName.toLowerCase().includes(user.fullName.toLowerCase()))
+            (sub.candidateName && userName && sub.candidateName.toLowerCase().includes(userName))
           );
         });
         setUserSubmissions(filtered);
@@ -428,15 +489,17 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     } catch (err) {
       console.warn('Error syncing user exams:', err);
     }
-  }, [currentUser?.email, user]);
+  }, [currentUser?.email, currentUser?.fullName]);
 
   useEffect(() => {
-    syncUserExams();
+    if (currentUser?.email) {
+      syncUserExams();
+    }
 
     const handleUpdate = () => syncUserExams();
     window.addEventListener('bihar_ai_exams_updated', handleUpdate);
     return () => window.removeEventListener('bihar_ai_exams_updated', handleUpdate);
-  }, [syncUserExams]);
+  }, [currentUser?.email, syncUserExams]);
 
   // Candidate Dashboard live refresh from Supabase (Profile, Tasks, Enrollments, Exams)
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -43,7 +43,7 @@ const UserProtectedRoute = ({ children, onOpenAuth }) => {
     return () => {
       mounted = false;
     };
-  }, [user, authLoading, onOpenAuth]);
+  }, [user?.email, authLoading, onOpenAuth]);
 
   if (checking || authLoading) {
     return (

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
 import { sendWelcomeEmailViaResend, sendPasswordResetEmailViaResend } from '../utils/resendEmail';
 import { toast } from '../context/ToastContext';
@@ -229,7 +229,7 @@ export const AuthProvider = ({ children }) => {
   const lastPurgeTimeRef = useRef(0);
 
   // Force purge user data and terminate session immediately
-  const forcePurgeAndLogout = (reason = 'Your session has ended.') => {
+  const forcePurgeAndLogout = useCallback((reason = 'Your session has ended.') => {
     if (isPurgingRef.current) return;
     const now = Date.now();
     if (now - lastPurgeTimeRef.current < 2000) return;
@@ -266,7 +266,7 @@ export const AuthProvider = ({ children }) => {
         isPurgingRef.current = false;
       }, 1000);
     }
-  };
+  }, [user?.email]);
 
   // Helper to extract clean user metadata (excludes admin@biharaimission.org)
   const formatUserData = (sbUser, customMeta = {}) => {
@@ -1019,21 +1019,21 @@ const resetCooldownMap = new Map();
     }
   };
 
+  const authContextValue = useMemo(() => ({
+    user,
+    loading,
+    login,
+    signup,
+    logout,
+    forcePurgeAndLogout,
+    purgeAllUserData,
+    resetPassword,
+    updatePassword,
+    loginWithGoogle,
+  }), [user, loading, login, signup, logout, forcePurgeAndLogout, resetPassword, updatePassword, loginWithGoogle]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        signup,
-        logout,
-        forcePurgeAndLogout,
-        purgeAllUserData,
-        resetPassword,
-        updatePassword,
-        loginWithGoogle,
-      }}
-    >
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );
