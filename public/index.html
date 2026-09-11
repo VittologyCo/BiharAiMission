@@ -10,6 +10,33 @@
         console.info = function() {};
         console.debug = function() {};
       }
+      // DOM Reconciliation Resilience Patch (Google Translate / Browser Extension protection)
+      if (typeof Node === 'function' && Node.prototype) {
+        var origInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function (newNode, refNode) {
+          if (refNode && refNode.parentNode !== this) {
+            if (refNode.parentNode) {
+              return refNode.parentNode.insertBefore(newNode, refNode);
+            }
+            return this.appendChild(newNode);
+          }
+          return origInsertBefore.call(this, newNode, refNode);
+        };
+        var origRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function (child) {
+          if (child && child.parentNode !== this) {
+            if (child.parentNode) {
+              return child.parentNode.removeChild(child);
+            }
+            if (typeof child.remove === 'function') {
+              child.remove();
+              return child;
+            }
+            return child;
+          }
+          return origRemoveChild.call(this, child);
+        };
+      }
     </script>
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />

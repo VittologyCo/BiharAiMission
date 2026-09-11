@@ -20,6 +20,20 @@ class ErrorBoundary extends React.Component {
         metadata: errorInfo || {},
       });
     } catch (e) {}
+
+    // Auto-recover once from external DOM mutation / translator conflicts
+    const msg = String(error?.message || '').toLowerCase();
+    if (msg.includes('insertbefore') || msg.includes('removechild')) {
+      try {
+        const reloadKey = 'dom_mutation_recovery_ts';
+        const lastReload = parseInt(sessionStorage.getItem(reloadKey) || '0', 10);
+        const now = Date.now();
+        if (now - lastReload > 15000) {
+          sessionStorage.setItem(reloadKey, String(now));
+          window.location.reload();
+        }
+      } catch (storageErr) {}
+    }
   }
 
   handleReload = () => {

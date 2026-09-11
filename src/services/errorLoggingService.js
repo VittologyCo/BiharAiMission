@@ -30,6 +30,8 @@ const shouldIgnoreError = (msg, stack = '') => {
   if (text.includes('moz-extension://')) return true;
   if (text.includes('safari-extension://')) return true;
   if (text.includes('resizeobserver loop')) return true;
+  // External DOM mutations (Google Translate, Grammarly, browser auto-translate)
+  if (text.includes("failed to execute 'insertbefore' on 'node'") || text.includes("failed to execute 'removechild' on 'node'")) return true;
   if (text.includes('loading chunk') && text.includes('failed')) return false; // Important chunk load failure
   return false;
 };
