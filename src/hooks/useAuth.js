@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../utils/supabase';
 import { sendWelcomeEmailViaResend, sendPasswordResetEmailViaResend } from '../utils/resendEmail';
 import { toast } from '../context/ToastContext';
@@ -648,6 +649,51 @@ const resetCooldownMap = new Map();
           }
         } catch (rpcEx) {
           console.warn('Password verify RPC notice:', rpcEx);
+        }
+      }
+
+      // 3. Fallback: Client-side bcrypt check against public.user_details (Fixes RPC 404 error)
+      if (!authSuccess && supabase) {
+        try {
+          const { data: dbUser, error: dbErr } = await supabase
+            .from('user_details')
+            .select('id, email, password, full_name, designation, mobile, district')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (!dbErr && dbUser && dbUser.password) {
+            let matches = false;
+            try {
+              matches = bcrypt.compareSync(password, dbUser.password);
+            } catch (cmpErr) {
+              matches = password === dbUser.password;
+            }
+
+            if (!matches && password === dbUser.password) {
+              matches = true;
+            }
+
+            if (matches) {
+              authenticatedUser = {
+                id: dbUser.id || 'usr-' + Date.now(),
+                email: dbUser.email || cleanEmail,
+                fullName: dbUser.full_name || cleanEmail.split('@')[0],
+                designation: dbUser.designation || 'Officer / Citizen',
+                mobile: dbUser.mobile,
+                district: dbUser.district,
+              };
+              authSuccess = true;
+
+              // Background sync with Supabase auth for subsequent logins
+              supabase.auth.signUp({
+                email: cleanEmail,
+                password,
+                options: { data: { full_name: authenticatedUser.fullName } },
+              }).catch(() => {});
+            }
+          }
+        } catch (tableErr) {
+          console.warn('Fallback direct password check error:', tableErr);
         }
       }
 

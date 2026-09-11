@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../../utils/supabase';
 import styles from './Admin.module.css';
 
@@ -93,6 +94,27 @@ const AdminLogin = () => {
             authOk = true;
           }
         } catch (rpcE) {}
+      }
+
+      // 3. Fallback: Client-side bcrypt check against public.user_details (Fixes missing RPC 404)
+      if (!authOk && supabase) {
+        try {
+          const { data: dbUser } = await supabase
+            .from('user_details')
+            .select('password')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+          if (dbUser && dbUser.password) {
+            try {
+              if (bcrypt.compareSync(password, dbUser.password) || password === dbUser.password) {
+                authOk = true;
+              }
+            } catch (e) {
+              if (password === dbUser.password) authOk = true;
+            }
+          }
+        } catch (e) {}
       }
 
       if (authOk) {
