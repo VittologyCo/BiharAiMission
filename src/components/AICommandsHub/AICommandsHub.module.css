@@ -71,6 +71,51 @@
   margin-bottom: 0;
 }
 
+/* BOTTOM TRENDING BANNER AFTER CLUSTER 05 */
+.bottomTrendingSection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 0 8px 0;
+  margin-top: 8px;
+}
+
+.bottomTrendingBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(28, 20, 10, 0.88);
+  border: 1.5px solid rgba(245, 158, 11, 0.65);
+  color: #fbbf24;
+  padding: 13px 30px;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.22), inset 0 0 12px rgba(245, 158, 11, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: -0.01em;
+}
+
+.bottomTrendingBtn:hover {
+  background: rgba(45, 28, 12, 0.98);
+  border-color: #f59e0b;
+  color: #ffffff;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4), inset 0 0 16px rgba(245, 158, 11, 0.18);
+}
+
+.bottomFlameIcon {
+  font-size: 1.25rem;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.7));
+}
+
+.bottomBtnText {
+  font-weight: 800;
+}
+
 /* 5 CATEGORY CLUSTERS */
 .categoryCluster {
   margin-bottom: 52px;

@@ -185,7 +185,7 @@ export const saveDailyTask = async (taskData) => {
   // 1. Update local cache
   try {
     const raw = localStorage.getItem(LOCAL_TASKS_KEY);
-    const existingList = raw ? JSON.parse(raw) : [...defaultSeedTasks];
+    const existingList = raw ? JSON.parse(raw) : [];
     const idx = existingList.findIndex((t) => Number(t.num) === num);
     if (idx >= 0) {
       existingList[idx] = { ...existingList[idx], ...cleanTask };

@@ -358,7 +358,7 @@ Step 4: FINAL DECISION MATRIX: Provide a weighted comparative scorecard (100 Poi
   }
 ];
 
-export default function AICommandsHub() {
+export default function AICommandsHub({ onToggleTrendingPrompts, isTrendingOpen }) {
   const { lang } = useLanguage();
   const toast = useToast();
   const isHi = lang === 'hi';
@@ -583,6 +583,37 @@ export default function AICommandsHub() {
             </div>
           </div>
         ))}
+
+        {/* PROMINENT ACTION LINK AFTER CLUSTER 05: AI FUN ZONE */}
+        <div className={styles.bottomTrendingSection}>
+          <button
+            type="button"
+            className={styles.bottomTrendingBtn}
+            onClick={(e) => {
+              e.preventDefault();
+              if (onToggleTrendingPrompts) {
+                onToggleTrendingPrompts();
+              } else {
+                const el = document.getElementById('ai-fun-zone') || document.getElementById('trending-retro-prompts');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }
+            }}
+            aria-expanded={Boolean(isTrendingOpen)}
+          >
+            <span className={styles.bottomFlameIcon}>🎉</span>
+            <span className={styles.bottomBtnText}>
+              {isTrendingOpen
+                ? isHi
+                  ? 'AI फन ज़ोन छुपाएं ▲'
+                  : 'Hide AI Fun Zone ▲'
+                : isHi
+                ? 'AI फन ज़ोन (AI Fun Zone) ↓'
+                : 'AI Fun Zone ↓'}
+            </span>
+          </button>
+        </div>
       </div>
     </section>
   );
