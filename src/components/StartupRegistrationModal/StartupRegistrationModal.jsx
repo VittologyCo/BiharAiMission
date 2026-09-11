@@ -172,7 +172,7 @@ export default function StartupRegistrationModal({ isOpen, onClose }) {
         {/* Modal Header */}
         <div className={styles.headerRow}>
           <div className={styles.iconBadge}>🚀</div>
-          <div>
+          <div className={styles.headerText}>
             <div className={styles.eyebrow}>
               {isHi ? 'बिहार AI मिशन · स्टार्टअप नवाचार हब' : 'BIHAR AI MISSION · STARTUP INCUBATION'}
             </div>

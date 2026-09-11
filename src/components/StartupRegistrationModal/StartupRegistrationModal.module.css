@@ -2,6 +2,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .headerRow {
@@ -24,6 +27,11 @@
   flex-shrink: 0;
 }
 
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
 .eyebrow {
   font-size: 11px;
   font-weight: 800;
@@ -34,24 +42,27 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: clamp(1.2rem, 3.5vw, 1.45rem);
   font-weight: 900;
   color: var(--color-ink, #181512);
   margin: 0;
   line-height: 1.25;
+  word-break: break-word;
 }
 
 .subtitle {
   font-size: 13.5px;
   color: var(--color-ink-muted, #5E554D);
   line-height: 1.55;
-  margin: 0;
+  margin: 4px 0 0 0;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section {
@@ -62,6 +73,7 @@
   background: rgba(243, 236, 224, 0.45);
   border: 1px solid var(--color-line, #E2D7C3);
   border-radius: var(--radius-md, 14px);
+  box-sizing: border-box;
 }
 
 .sectionHeader {
@@ -75,6 +87,7 @@
   letter-spacing: 0.06em;
   border-bottom: 1px solid rgba(226, 215, 195, 0.6);
   padding-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .sectionIcon {
@@ -85,19 +98,15 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-}
-
-@media (max-width: 640px) {
-  .grid2 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .fieldGroup {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .fieldGroupFull {
@@ -105,6 +114,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .label {
@@ -114,6 +124,7 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--color-ink, #181512);
+  flex-wrap: wrap;
 }
 
 .requiredStar {
@@ -125,7 +136,7 @@
   font-size: 11px;
   color: var(--color-ink-muted, #8A7E72);
   font-weight: 500;
-  margin-left: 4px;
+  margin-left: 2px;
 }
 
 .input,
@@ -143,6 +154,7 @@
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
+  min-height: 44px;
 }
 
 .input:focus,
@@ -160,7 +172,8 @@
 
 .textarea {
   resize: vertical;
-  min-height: 75px;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
 .noticeBox {
@@ -174,6 +187,7 @@
   font-size: 12.5px;
   color: var(--color-ink-muted, #5E554D);
   line-height: 1.5;
+  box-sizing: border-box;
 }
 
 .noticeIcon {
@@ -184,4 +198,108 @@
 
 .submitWrapper {
   margin-top: 4px;
+  width: 100%;
+}
+
+/* TABLET & MOBILE RESPONSIVE RULES (<= 768px) */
+@media (max-width: 768px) {
+  .modalContainer {
+    gap: 16px;
+  }
+
+  .grid2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Prevent iOS automatic zoom by using at least 16px font */
+  .input,
+  .select,
+  .textarea {
+    font-size: 16px;
+    padding: 12px 14px;
+    min-height: 46px;
+  }
+
+  .section {
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .iconBadge {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+}
+
+/* SMALL MOBILE SCREENS (<= 480px) */
+@media (max-width: 480px) {
+  .headerRow {
+    gap: 10px;
+  }
+
+  .iconBadge {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: 10px;
+  }
+
+  .title {
+    font-size: 1.15rem;
+  }
+
+  .subtitle {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
+  .noticeBox {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .section {
+    padding: 12px 10px;
+  }
+
+  .label {
+    font-size: 12.5px;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    padding: 10px 12px;
+  }
+}
+
+/* EXTRA SMALL SCREENS (<= 360px) */
+@media (max-width: 360px) {
+  .headerRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .iconBadge {
+    margin-bottom: 2px;
+  }
+
+  .title {
+    font-size: 1.05rem;
+  }
+
+  .sectionHeader {
+    font-size: 12px;
+  }
 }
