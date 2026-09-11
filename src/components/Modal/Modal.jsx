@@ -58,9 +58,12 @@ const Modal = ({
     }
   }, [onClose]);
 
-  // Lock body scroll and set up focus management
+  // Lock body scroll, pause Lenis smooth scroll, and set up focus management
   useEffect(() => {
     if (isOpen) {
+      if (window.__lenis) {
+        window.__lenis.stop();
+      }
       previousActiveElement.current = document.activeElement;
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
@@ -77,6 +80,9 @@ const Modal = ({
     }
 
     return () => {
+      if (window.__lenis) {
+        window.__lenis.start();
+      }
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
       if (previousActiveElement.current && previousActiveElement.current.focus) {
@@ -90,11 +96,19 @@ const Modal = ({
   const sizeClass = styles[size] || styles.md;
 
   const modalContent = (
-    <div className={styles.backdrop} onClick={closeOnBackdrop ? onClose : undefined}>
+    <div
+      className={styles.backdrop}
+      onClick={closeOnBackdrop ? onClose : undefined}
+      data-lenis-prevent="true"
+      onWheel={(e) => e.stopPropagation()}
+    >
       <div
         className={`${styles.container} ${sizeClass} ${className}`}
         style={maxWidth ? { maxWidth } : undefined}
         onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        data-lenis-prevent="true"
         ref={modalRef}
         role="dialog"
         aria-modal="true"
@@ -122,7 +136,7 @@ const Modal = ({
         )}
 
         {/* BODY CONTENT */}
-        <div className={`${styles.body} ${contentClassName}`}>
+        <div className={`${styles.body} ${contentClassName}`} data-lenis-prevent="true">
           {children}
         </div>
       </div>

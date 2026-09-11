@@ -164,7 +164,11 @@ export default function StartupRegistrationModal({ isOpen, onClose }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <div className={styles.modalContainer}>
+      <div
+        className={styles.modalContainer}
+        data-lenis-prevent="true"
+        onWheel={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className={styles.headerRow}>
           <div className={styles.iconBadge}>🚀</div>
@@ -194,7 +198,13 @@ export default function StartupRegistrationModal({ isOpen, onClose }) {
         </div>
 
         {/* Application Form */}
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+        <form
+          onSubmit={handleSubmit}
+          className={styles.form}
+          autoComplete="off"
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {/* SECTION 1: STARTUP & COMPANY DETAILS */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>

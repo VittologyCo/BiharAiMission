@@ -22,6 +22,8 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background-color: var(--color-sand-50, #FBF8F3);
   color: var(--color-ink, #181512);
   border: 1.5px solid var(--color-line, #E2D7C3);
@@ -29,6 +31,22 @@
   box-shadow: 0 24px 60px -12px rgba(24, 21, 18, 0.28);
   padding: 28px 32px;
   animation: modalSlideUp 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modal container scrollbar styling */
+.container::-webkit-scrollbar {
+  width: 6px;
+}
+.container::-webkit-scrollbar-track {
+  background: rgba(226, 215, 195, 0.25);
+  border-radius: 9999px;
+}
+.container::-webkit-scrollbar-thumb {
+  background: rgba(193, 85, 44, 0.38);
+  border-radius: 9999px;
+}
+.container::-webkit-scrollbar-thumb:hover {
+  background: rgba(193, 85, 44, 0.7);
 }
 
 /* SIZES */
