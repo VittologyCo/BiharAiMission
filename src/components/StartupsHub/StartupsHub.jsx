@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../hooks/useLanguage';
 import styles from './StartupsHub.module.css';
 
-export default function StartupsHub({ onOpenRegistration, onOpenContact }) {
+export default function StartupsHub({ onOpenRegistration, onOpenContact, onOpenStartupRegistration }) {
   const { lang } = useLanguage();
   const isHi = lang === 'hi';
   const [activeCategory, setActiveCategory] = useState('ALL');
@@ -282,7 +282,13 @@ export default function StartupsHub({ onOpenRegistration, onOpenContact }) {
 
           <div className={styles.heroActions}>
             <button
-              onClick={() => onOpenRegistration && onOpenRegistration('startup_founder')}
+              onClick={() => {
+                if (onOpenStartupRegistration) {
+                  onOpenStartupRegistration();
+                } else if (onOpenRegistration) {
+                  onOpenRegistration('startup_founder');
+                }
+              }}
               className={styles.primaryBtn}
             >
               <span>🚀 {isHi ? 'स्टार्टअप के रूप में रजिस्टर करें' : 'Register Your AI Startup'}</span>
@@ -467,7 +473,13 @@ export default function StartupsHub({ onOpenRegistration, onOpenContact }) {
               : 'Join the Bihar AI Mission founder registry and unlock direct access to state grant pipelines, compute subsidies, and departmental pilots.'}
           </p>
           <button
-            onClick={() => onOpenRegistration && onOpenRegistration('startup_founder')}
+            onClick={() => {
+              if (onOpenStartupRegistration) {
+                onOpenStartupRegistration();
+              } else if (onOpenRegistration) {
+                onOpenRegistration('startup_founder');
+              }
+            }}
             className={styles.actionBannerBtn}
           >
             <span>🚀 {isHi ? 'संस्थापक पंजीकरण शुरू करें' : 'Join Bihar AI Startup Network'}</span>

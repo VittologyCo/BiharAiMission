@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StartupsHub from '../../components/StartupsHub/StartupsHub';
 import StatsPanel from '../../components/StatsPanel/StatsPanel';
 import CTA from '../../components/CTA/CTA';
 import SEO from '../../components/SEO/SEO';
+import StartupRegistrationModal from '../../components/StartupRegistrationModal/StartupRegistrationModal';
 import { useLanguage } from '../../hooks/useLanguage';
 
 const StartupsPage = ({ onOpenContact, onOpenRegistration }) => {
   const { lang } = useLanguage();
   const isHi = lang === 'hi';
+  const [isStartupModalOpen, setIsStartupModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setIsStartupModalOpen(true);
+    window.addEventListener('bihar_ai_open_startup_modal', handleOpen);
+    return () => window.removeEventListener('bihar_ai_open_startup_modal', handleOpen);
+  }, []);
 
   const startupsSchema = {
     '@context': 'https://schema.org',
@@ -27,13 +35,22 @@ const StartupsPage = ({ onOpenContact, onOpenRegistration }) => {
         schema={startupsSchema}
       />
       
-      <StartupsHub onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />
+      <StartupsHub
+        onOpenContact={onOpenContact}
+        onOpenRegistration={onOpenRegistration}
+        onOpenStartupRegistration={() => setIsStartupModalOpen(true)}
+      />
 
       <div style={{ maxWidth: '1200px', margin: '20px auto 40px', padding: '0 24px' }}>
         <StatsPanel />
       </div>
 
       <CTA onOpenContact={onOpenContact} onOpenRegistration={onOpenRegistration} />
+
+      <StartupRegistrationModal
+        isOpen={isStartupModalOpen}
+        onClose={() => setIsStartupModalOpen(false)}
+      />
     </>
   );
 };
