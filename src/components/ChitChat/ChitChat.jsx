@@ -414,6 +414,9 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   };
 
   // ─── 6. @ MENTIONS AUTOCOMPLETE & FORMATTING ───
+  const mentionSearchTimerRef = useRef(null);
+  const [isMentionSearching, setIsMentionSearching] = useState(false);
+
   const handleInputChange = (e) => {
     const val = e.target.value;
     setMessageInput(val);
@@ -426,39 +429,79 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
       const q = match[1].toLowerCase();
       const userMap = new Map();
 
-      // Friends candidates
+      // 1. Local candidates (friends + recent message participants + DM recipient) — instant
       friendsList.forEach((f) => {
         if (f.friend_username) {
           userMap.set(f.friend_username.toLowerCase(), {
             name: f.friend_name || `@${f.friend_username}`,
-            username: f.friend_username
+            username: f.friend_username,
+            designation: f.friend_designation || ''
           });
         }
       });
 
-      // Recent participants candidates
       messages.forEach((m) => {
         if (m.sender_username && m.sender_username.toLowerCase() !== myUsername.toLowerCase()) {
           userMap.set(m.sender_username.toLowerCase(), {
             name: m.sender_name || `@${m.sender_username}`,
-            username: m.sender_username
+            username: m.sender_username,
+            designation: m.sender_designation || ''
           });
         }
       });
 
-      // Direct recipient candidate
       if (activeChannel?.username) {
         userMap.set(activeChannel.username.toLowerCase(), {
           name: activeChannel.name,
-          username: activeChannel.username
+          username: activeChannel.username,
+          designation: ''
         });
       }
 
       const pool = Array.from(userMap.values());
-      const filtered = pool.filter((u) => !q || u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q));
-      setMentionCandidates(filtered);
+      const localFiltered = pool.filter((u) => !q || u.username.toLowerCase().includes(q) || u.name.toLowerCase().includes(q));
+      setMentionCandidates(localFiltered);
+
+      // 2. Database search — debounced 250ms, only if query has >= 1 char
+      if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
+
+      if (q.length >= 1) {
+        setIsMentionSearching(true);
+        mentionSearchTimerRef.current = setTimeout(async () => {
+          try {
+            const dbResults = await searchRegisteredUsers(q, myEmail);
+            if (Array.isArray(dbResults) && dbResults.length > 0) {
+              setMentionCandidates((prev) => {
+                const merged = new Map();
+                // Keep existing local results
+                prev.forEach((u) => merged.set(u.username.toLowerCase(), u));
+                // Add DB results (won't overwrite local if same key)
+                dbResults.forEach((u) => {
+                  const uname = (u.username || '').toLowerCase();
+                  if (uname && !merged.has(uname)) {
+                    merged.set(uname, {
+                      name: u.full_name || `@${u.username}`,
+                      username: u.username,
+                      designation: u.designation || u.department || ''
+                    });
+                  }
+                });
+                return Array.from(merged.values());
+              });
+            }
+          } catch (err) {
+            console.warn('Mention search error:', err);
+          } finally {
+            setIsMentionSearching(false);
+          }
+        }, 250);
+      } else {
+        setIsMentionSearching(false);
+      }
     } else {
       setMentionCandidates([]);
+      setIsMentionSearching(false);
+      if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
     }
   };
 
@@ -469,6 +512,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     const replaced = textBefore.replace(/@([a-zA-Z0-9_]*)$/, `@${user.username} `);
     setMessageInput(replaced + textAfter);
     setMentionCandidates([]);
+    setIsMentionSearching(false);
     textInputRef.current?.focus();
   };
 
@@ -1138,12 +1182,17 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
         {/* COMPOSER / INPUT AREA */}
         <div className={styles.composer} style={{ position: 'relative' }}>
           {/* MENTION SUGGESTIONS DROPDOWN (WHATSAPP STYLE) */}
-          {mentionCandidates.length > 0 && (
+          {(mentionCandidates.length > 0 || isMentionSearching) && (
             <div className={styles.mentionPopover}>
               <div className={styles.mentionPopoverHeader}>
                 <span>{isHi ? 'टैग करने के लिए सदस्य चुनें' : 'Mention a member'} (@)</span>
+                {isMentionSearching && (
+                  <span style={{ fontSize: '10px', color: 'var(--color-terracotta-500, #C1552C)', fontWeight: '700', marginLeft: 'auto' }}>
+                    {isHi ? 'खोज रहे हैं…' : 'Searching…'}
+                  </span>
+                )}
               </div>
-              {mentionCandidates.slice(0, 6).map((u) => (
+              {mentionCandidates.slice(0, 8).map((u) => (
                 <button
                   key={u.username}
                   type="button"
@@ -1156,9 +1205,19 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                   <div className={styles.mentionItemMeta}>
                     <span className={styles.mentionItemName}>{u.name}</span>
                     <span className={styles.mentionItemTag}>@{u.username}</span>
+                    {u.designation && (
+                      <span style={{ fontSize: '10.5px', color: 'var(--color-ink-muted, #5E554D)', fontWeight: '600', marginLeft: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+                        · {u.designation}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}
+              {mentionCandidates.length === 0 && isMentionSearching && (
+                <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--color-ink-muted, #5E554D)', textAlign: 'center' }}>
+                  {isHi ? 'डेटाबेस में खोज रहे हैं…' : 'Searching registered users…'}
+                </div>
+              )}
             </div>
           )}
 
