@@ -1,4 +1,4 @@
-/* CTA.module.css — Bihar AI Mission Agency-Grade CTA Design System */
+/* CTA.module.css — Bihar AI Mission Official Tactile Retro Action Band */
 
 .ctaSection {
   padding: 32px 24px 80px 24px;
@@ -12,53 +12,22 @@
   margin: 0 auto;
 }
 
-/* ═════ DOUBLE-BEZEL CARD WITH AMBIENT RADIAL LIGHT ═════ */
+/* ═════ TACTILE RETRO CALLOUT CARD ═════ */
 .ctaCard {
-  background-color: #FBF8F3;
-  border: 1.5px solid rgba(226, 215, 195, 0.95);
-  border-radius: var(--radius-lg, 30px);
+  background-color: var(--color-sand-100, #F3ECE0);
+  border: 3px solid #181512;
+  border-radius: 2px;
   padding: 56px 40px;
   text-align: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.38),
-              inset 0 1px 2px rgba(255, 255, 255, 0.9);
-  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 320ms ease,
-              border-color 320ms ease;
+  box-shadow: 6px 6px 0px #181512;
 }
 
-.ctaCard:hover {
-  transform: translateY(-4px);
-  border-color: rgba(193, 85, 44, 0.5);
-  box-shadow: 0 32px 70px -15px rgba(0, 0, 0, 0.48), 0 0 40px -8px rgba(193, 85, 44, 0.22);
-}
-
-/* Ambient Radial Glows */
-.topLightGlow {
-  position: absolute;
-  top: -120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 550px;
-  height: 250px;
-  background: radial-gradient(ellipse at center, rgba(193, 85, 44, 0.16) 0%, rgba(217, 155, 38, 0.06) 50%, transparent 75%);
-  pointer-events: none;
-  filter: blur(30px);
-  z-index: 0;
-}
-
+/* Ambient Radial Glows (Disabled in Gazette) */
+.topLightGlow,
 .bottomLightGlow {
-  position: absolute;
-  bottom: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 480px;
-  height: 200px;
-  background: radial-gradient(ellipse at center, rgba(217, 155, 38, 0.12) 0%, transparent 70%);
-  pointer-events: none;
-  filter: blur(30px);
-  z-index: 0;
+  display: none !important;
 }
 
 .contentWrapper {
@@ -75,13 +44,14 @@
   align-items: center;
   gap: 8px;
   padding: 5px 14px;
-  border-radius: 9999px;
-  background: rgba(193, 85, 44, 0.09);
-  border: 1px solid rgba(193, 85, 44, 0.24);
-  color: var(--color-terracotta-500, #C1552C);
-  font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.75rem;
-  font-weight: 700;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
+  color: var(--color-ink, #181512);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 20px;
@@ -90,38 +60,34 @@
 .beaconDot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 8px #10B981;
-  animation: pulseBeacon 2s infinite ease-in-out;
-}
-
-@keyframes pulseBeacon {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+  border-radius: 0;
+  background: #16A34A;
+  border: 1px solid #181512;
+  box-shadow: none;
 }
 
 .badgeSparkle {
-  color: var(--color-ochre-400, #D99B26);
+  color: var(--color-terracotta-500, #C1552C);
   font-size: 0.8rem;
 }
 
 /* ═════ HEADLINE & SUBTITLE ═════ */
 .title {
   font-family: var(--font-display, 'Fraunces', serif);
-  font-size: clamp(2rem, 4.2vw, 2.9rem);
+  font-size: clamp(2rem, 4.2vw, 2.8rem);
   font-weight: 700;
   color: var(--color-charcoal-900, #181512);
   margin: 0 0 14px 0;
   letter-spacing: -0.025em;
-  line-height: 1.16;
+  line-height: 1.2;
 }
 
 .accentText {
-  background: linear-gradient(135deg, #C1552C 0%, #D99B26 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-style: italic;
+  color: var(--color-terracotta-500, #C1552C);
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: initial;
+  font-style: normal;
 }
 
 .subtitle {
@@ -142,18 +108,19 @@
   flex-wrap: wrap;
   margin-bottom: 36px;
   padding: 8px 18px;
-  background: rgba(24, 21, 18, 0.04);
-  border: 1px solid rgba(226, 215, 195, 0.7);
-  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2.5px 2.5px 0px #181512;
+  border-radius: 2px;
 }
 
 .trustChip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.813rem;
-  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.781rem;
+  font-weight: 700;
   color: var(--color-charcoal-900, #181512);
 }
 
@@ -162,9 +129,9 @@
 }
 
 .trustDivider {
-  width: 1px;
+  width: 2px;
   height: 14px;
-  background: rgba(24, 21, 18, 0.15);
+  background: #181512;
 }
 
 /* ═════ ACTION BUTTONS GROUP ═════ */
@@ -176,59 +143,41 @@
   flex-wrap: wrap;
 }
 
-/* BUTTON 1: MULTI-STOP TERRACOTTA PILL */
+/* BUTTON 1: TERRACOTTA BUTTON */
 .primaryBtn {
-  background: linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%);
+  background: var(--color-terracotta-500, #C1552C);
   color: #FFFFFF;
   padding: 12px 24px;
-  border-radius: 9999px;
-  font-size: 0.938rem;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  border-radius: 2px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  border: 2px solid #181512;
+  box-shadow: 3.5px 3.5px 0px #181512;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
-              0 6px 20px -3px rgba(193, 85, 44, 0.45),
-              0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .primaryBtn:hover {
-  transform: translateY(-2.5px) scale(1.02);
-  background: linear-gradient(135deg, #DE6739 0%, #C45125 60%, #A83E16 100%);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6),
-              0 12px 30px -4px rgba(193, 85, 44, 0.58);
+  transform: translate(-1.5px, -1.5px);
+  background: var(--color-terracotta-600, #A2421E);
+  box-shadow: 5px 5px 0px #181512;
 }
 
 .primaryBtn:active {
-  transform: translateY(0.5px) scale(0.975);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #181512;
 }
 
 .btnShimmer {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.22) 50%,
-    transparent 100%
-  );
-  transform: skewX(-20deg);
-  pointer-events: none;
-  transition: left 0.6s ease;
-}
-
-.primaryBtn:hover .btnShimmer {
-  left: 150%;
+  display: none !important;
 }
 
 .actionBadge {
@@ -237,96 +186,90 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.22s ease;
+  border-radius: 2px;
+  background: #181512;
+  color: #FFFFFF;
+  border: 1px solid #181512;
+  transition: background 0.18s ease;
 }
 
 .primaryBtn:hover .actionBadge {
-  transform: translateX(3px) scale(1.08);
-  background: rgba(255, 255, 255, 0.35);
+  background: #181512;
 }
 
-/* BUTTON 2: FROSTED OBSIDIAN PILL */
+/* BUTTON 2: LIGHT BUTTON */
 .secondaryBtn {
-  background: rgba(24, 21, 18, 0.88);
-  color: #FFFFFF;
+  background: #FFFFFF;
+  color: var(--color-ink, #181512);
   padding: 12px 24px;
-  border-radius: 9999px;
-  font-size: 0.938rem;
-  font-weight: 700;
-  border: 1px solid rgba(226, 215, 195, 0.28);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  border-radius: 2px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  border: 2px solid #181512;
+  box-shadow: 3.5px 3.5px 0px #181512;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease, color 0.1s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
-              0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .secondaryBtn:hover {
   background: #181512;
-  border-color: rgba(226, 139, 92, 0.7);
+  border-color: #181512;
   color: #FFFFFF;
-  transform: translateY(-2.5px) scale(1.02);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25),
-              0 0 20px rgba(193, 85, 44, 0.25),
-              0 8px 24px rgba(0, 0, 0, 0.35);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5px 5px 0px #181512;
 }
 
 .secondaryBtn:active {
-  transform: translateY(0.5px) scale(0.975);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #181512;
 }
 
-.lockIcon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-ochre-400, #D99B26);
-}
-
+.lockIcon,
 .contactIcon {
   display: inline-flex;
   align-items: center;
-  color: var(--color-ochre-400, #D99B26);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.22s ease;
+  color: inherit;
 }
 
 .secondaryBtn:hover .contactIcon {
-  transform: scale(1.18);
+  transform: none;
   color: #FFFFFF;
 }
 
-/* BUTTON 3: AMBIENT PARTNER PILL */
+/* BUTTON 3: CITIZEN / PARTNER BUTTON */
 .partnerBtn {
-  background: rgba(193, 85, 44, 0.1);
-  color: var(--color-terracotta-500, #C1552C);
+  background: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   padding: 12px 24px;
-  border-radius: 9999px;
+  border-radius: var(--radius-sm, 2px);
   font-size: 0.938rem;
   font-weight: 700;
-  border: 1px solid rgba(193, 85, 44, 0.35);
+  border: 1px solid var(--color-line, #E2D7C3);
   font-family: var(--font-body, 'General Sans', sans-serif);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.18s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  box-shadow: none;
 }
 
 .partnerBtn:hover {
-  background: rgba(193, 85, 44, 0.2);
-  border-color: var(--color-terracotta-500, #C1552C);
+  background: var(--color-sand-200, #EAE0D0);
+  border-color: var(--color-ink, #181512);
   color: var(--color-charcoal-900, #181512);
-  transform: translateY(-2.5px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(193, 85, 44, 0.22);
+  transform: none;
+  box-shadow: none;
 }
 
 .partnerBtn:active {
-  transform: translateY(0.5px) scale(0.975);
+  transform: none;
 }
 
 .partnerBadge {
@@ -335,25 +278,25 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: rgba(193, 85, 44, 0.15);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-sm, 2px);
+  background: rgba(193, 85, 44, 0.12);
 }
 
 .partnerBtn:hover .partnerBadge {
-  transform: translate(2px, -2px);
-  background: rgba(193, 85, 44, 0.28);
+  transform: none;
+  background: rgba(193, 85, 44, 0.2);
 }
 
 /* ═════ RESPONSIVE BREAKPOINTS ═════ */
 @media (max-width: 768px) {
   .ctaCard {
     padding: 36px 20px;
+    border-radius: var(--radius-sm, 2px);
   }
   .trustStrip {
     flex-direction: column;
     gap: 8px;
-    border-radius: 16px;
+    border-radius: var(--radius-sm, 2px);
     padding: 12px 16px;
   }
   .trustDivider {
@@ -370,3 +313,25 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .ctaSection {
+    padding: 24px 12px 50px 12px;
+  }
+  .ctaCard {
+    padding: 28px 14px;
+  }
+  .title {
+    font-size: clamp(1.4rem, 5.5vw, 1.85rem);
+  }
+  .subtitle {
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+  }
+  .badgeWrapper {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+

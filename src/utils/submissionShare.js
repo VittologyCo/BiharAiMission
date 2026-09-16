@@ -9,6 +9,7 @@ export const encodeSubmissionForShare = (sub) => {
   try {
     const compactObj = {
       n: sub.full_name || sub.name || '',
+      u: sub.username || '',
       e: sub.email || '',
       m: sub.mobile || '',
       g: sub.gender || '',
@@ -53,6 +54,7 @@ export const decodeSubmissionFromShare = (encodedStr) => {
     const compact = JSON.parse(jsonStr);
     return {
       full_name: compact.n || '',
+      username: compact.u || '',
       email: compact.e || '',
       mobile: compact.m || '',
       gender: compact.g || '',
@@ -101,7 +103,7 @@ export const generateWhatsAppShareText = (sub) => {
   const lines = [
     `📋 *BIHAR AI MISSION — CANDIDATE SUBMISSION*`,
     `━━━━━━━━━━━━━━━━━━━━━━━━`,
-    `👤 *Name:* ${sub.full_name || sub.name || 'N/A'}`,
+    `👤 *Name:* ${sub.full_name || sub.name || 'N/A'}${sub.username ? ` (@${sub.username.replace(/^@/, '')})` : ''}`,
     `📧 *Email:* ${sub.email || 'N/A'}`,
     `📱 *Mobile:* ${sub.mobile || 'N/A'}`,
     `⚧ *Gender:* ${sub.gender || 'N/A'} | *Age:* ${sub.age || 'N/A'}`,

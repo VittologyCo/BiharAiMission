@@ -156,8 +156,8 @@ export default function LockedCurtain({ type = 'learning' }) {
           >
             <UseAnimations
               animation={lock}
-              size={48}
-              strokeColor="#FBE6A2"
+              size={44}
+              strokeColor="#181512"
               autoplay={true}
               loop={true}
             />

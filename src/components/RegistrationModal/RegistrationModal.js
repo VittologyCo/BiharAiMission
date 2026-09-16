@@ -69,6 +69,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
   const [form, setForm] = useState({
     full_name: '',
+    username: '',
     email: '',
     mobile: '',
     password: '',
@@ -95,6 +96,79 @@ export default function RegistrationModal({ isOpen, onClose }) {
   // Email availability check state: null | 'checking' | 'available' | 'taken'
   const [emailRegStatus, setEmailRegStatus] = useState(null);
   const regEmailCache = useRef({});
+
+  // Username availability check state: null | 'checking' | 'available' | 'taken' | 'invalid'
+  const [usernameRegStatus, setUsernameRegStatus] = useState(null);
+  const regUsernameCache = useRef({});
+  const usernameDebounceTimer = useRef(null);
+
+  const cleanUsername = (str) => (str || '').replace(/^@+/, '').trim().toLowerCase();
+
+  // Username availability check — debounced or on blur, cached, validated first
+  const checkUsernameAvailability = useCallback(async (usernameValue) => {
+    if (usernameDebounceTimer.current) clearTimeout(usernameDebounceTimer.current);
+    const clean = cleanUsername(usernameValue);
+    if (!clean) {
+      setUsernameRegStatus(null);
+      return;
+    }
+    if (!/^[a-z0-9_]{5,10}$/.test(clean)) {
+      setUsernameRegStatus('invalid');
+      return;
+    }
+    if (regUsernameCache.current[clean] !== undefined) {
+      setUsernameRegStatus(regUsernameCache.current[clean] ? 'taken' : 'available');
+      return;
+    }
+    setUsernameRegStatus('checking');
+    try {
+      // 1. Try secure RPC first (bypasses RLS safely)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('check_username_exists', { username_input: clean });
+      if (!rpcErr && typeof rpcData === 'boolean') {
+        regUsernameCache.current[clean] = rpcData;
+        setUsernameRegStatus(rpcData ? 'taken' : 'available');
+        return;
+      }
+
+      // 2. Direct query fallback
+      const { data, error } = await supabase
+        .from('user_details')
+        .select('id')
+        .ilike('username', clean)
+        .limit(1);
+
+      const exists = !error && data && data.length > 0;
+      regUsernameCache.current[clean] = exists;
+      setUsernameRegStatus(exists ? 'taken' : 'available');
+    } catch {
+      setUsernameRegStatus(null);
+    }
+  }, []);
+
+  const handleUsernameChange = (val) => {
+    const rawClean = (val || '').replace(/^@+/, '').replace(/\s+/g, '').toLowerCase().slice(0, 10);
+    handleChange('username', rawClean);
+
+    if (usernameDebounceTimer.current) clearTimeout(usernameDebounceTimer.current);
+    if (!rawClean) {
+      setUsernameRegStatus(null);
+      return;
+    }
+    if (rawClean.length < 5 || !/^[a-z0-9_]{5,10}$/.test(rawClean)) {
+      setUsernameRegStatus('invalid');
+      return;
+    }
+    // Instant cache check
+    if (regUsernameCache.current[rawClean] !== undefined) {
+      setUsernameRegStatus(regUsernameCache.current[rawClean] ? 'taken' : 'available');
+      return;
+    }
+    // Immediate checking status feedback
+    setUsernameRegStatus('checking');
+    usernameDebounceTimer.current = setTimeout(() => {
+      checkUsernameAvailability(rawClean);
+    }, 200);
+  };
 
   // Lightweight email availability check — on blur only, cached, client-validated first
   const checkEmailAvailability = useCallback(async (emailValue) => {
@@ -189,8 +263,12 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
   /* ─── Step Validation ─── */
   const isStep1Valid = () => {
+    const cleanUser = cleanUsername(form.username);
     return (
       form.full_name.trim() &&
+      cleanUser &&
+      /^[a-z0-9_]{5,10}$/.test(cleanUser) &&
+      usernameRegStatus !== 'taken' &&
       form.email.trim() &&
       form.mobile.trim().length === 10 &&
       form.password &&
@@ -249,6 +327,19 @@ export default function RegistrationModal({ isOpen, onClose }) {
     if (step === 1) {
       if (!form.full_name.trim()) {
         toast?.warning(isHi ? 'कृपया अपना पूरा नाम दर्ज करें।' : 'Please enter your full name.');
+        return;
+      }
+      const cleanUser = cleanUsername(form.username);
+      if (!cleanUser) {
+        toast?.warning(isHi ? 'कृपया एक अनूठा यूज़रनेम (@) चुनें।' : 'Please choose a unique username (@).');
+        return;
+      }
+      if (!/^[a-z0-9_]{5,10}$/.test(cleanUser)) {
+        toast?.warning(isHi ? 'यूज़रनेम 5-10 वर्णों का होना चाहिए (केवल अक्षर, संख्या और अंडरस्कोर)।' : 'Username must be 5-10 characters (letters, numbers, underscores only).');
+        return;
+      }
+      if (usernameRegStatus === 'taken') {
+        toast?.error(isHi ? 'यह यूज़रनेम पहले से लिया जा चुका है। कृपया दूसरा चुनें।' : 'This username is already taken. Please choose another.');
         return;
       }
       if (!form.email.trim() || !form.email.includes('@')) {
@@ -344,6 +435,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
 
       const payload = {
         full_name: form.full_name.trim(),
+        username: cleanUsername(form.username) || null,
         email: form.email.trim().toLowerCase(),
         mobile: form.mobile.trim(),
         password: form.password || null,
@@ -375,6 +467,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
               data: {
                 full_name: payload.full_name,
                 fullName: payload.full_name,
+                username: payload.username,
                 name: payload.full_name,
                 mobile: payload.mobile,
                 phone: payload.mobile,
@@ -478,6 +571,7 @@ export default function RegistrationModal({ isOpen, onClose }) {
         const sessionUser = {
           id: authUser?.id || 'usr-' + Date.now(),
           email: payload.email,
+          username: payload.username,
           fullName: payload.full_name,
           designation: payload.designation || 'Officer / Citizen',
           mobile: payload.mobile,
@@ -675,6 +769,75 @@ export default function RegistrationModal({ isOpen, onClose }) {
                   spellCheck="false"
                 />
               </div>
+            </div>
+
+            {/* UNIQUE USERNAME (@) FIELD */}
+            <div className={styles.fieldGroup}>
+              <label className={styles.label}>
+                {isHi ? 'यूनीक यूज़रनेम (@)' : 'Unique Username (@)'} <span className={styles.req}>*</span>
+              </label>
+              <div className={styles.usernameInputWrapper}>
+                <span className={styles.usernamePrefix}>@</span>
+                <input
+                  className={`${styles.input} ${styles.usernameInput} ${
+                    usernameRegStatus === 'available'
+                      ? styles.inputMatch
+                      : usernameRegStatus === 'taken' || usernameRegStatus === 'invalid'
+                      ? styles.inputMismatch
+                      : ''
+                  }`}
+                  type="text"
+                  name="reg_user_username"
+                  id="reg_user_username"
+                  placeholder={isHi ? 'apna_username (उदा. rahul_ai)' : 'choose_username (e.g. rahul_kumar)'}
+                  value={form.username}
+                  maxLength={10}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  onBlur={() => checkUsernameAvailability(form.username)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck="false"
+                />
+
+                {/* INSIDE INPUT INDICATOR: GREEN TICK / RED CROSS / SPINNER */}
+                {usernameRegStatus && (
+                  <span className={styles.usernameInsideIndicator} aria-hidden="true">
+                    {usernameRegStatus === 'checking' && (
+                      <span className={styles.insideTickChecking} title="Checking availability…"></span>
+                    )}
+                    {usernameRegStatus === 'available' && (
+                      <span className={styles.insideTickSuccess} title="Username is available">
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    )}
+                    {(usernameRegStatus === 'taken' || usernameRegStatus === 'invalid') && (
+                      <span className={styles.insideTickError} title={usernameRegStatus === 'taken' ? 'Username already taken' : 'Invalid username'}>
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+              {usernameRegStatus === 'checking' && (
+                <span className={styles.usernameChecking}>⏳ {isHi ? 'यूज़रनेम की उपलब्धता जाँची जा रही है…' : 'Checking username availability…'}</span>
+              )}
+              {usernameRegStatus === 'available' && (
+                <span className={styles.usernameAvailable}>✅ {isHi ? `@${cleanUsername(form.username)} उपलब्ध है!` : `@${cleanUsername(form.username)} is available!`}</span>
+              )}
+              {usernameRegStatus === 'taken' && (
+                <span className={styles.usernameTaken}>❌ {isHi ? `यह यूज़रनेम @${cleanUsername(form.username)} पहले से किसी ने ले लिया है। कृपया दूसरा चुनें।` : `Username @${cleanUsername(form.username)} is already taken. Please choose another.`}</span>
+              )}
+              {usernameRegStatus === 'invalid' && (
+                <span className={styles.usernameWarning}>⚠️ {isHi ? '5-10 वर्ण: केवल अक्षर, संख्या और अंडरस्कोर (_)' : 'Must be 5-10 characters (lowercase letters, numbers, and underscore _ only)'}</span>
+              )}
+              <span className={styles.usernamePermanentNote}>
+                🔒 {isHi ? 'यूज़रनेम केवल एक बार बनाया जा सकता है — पंजीकरण के बाद बदला नहीं जा सकता।' : 'Note: You can only set your username once. After registration, it cannot be changed.'}
+              </span>
             </div>
 
             {/* PASSWORD CREATION FIELDS */}

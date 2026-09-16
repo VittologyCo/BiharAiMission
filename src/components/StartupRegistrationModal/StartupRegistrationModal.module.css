@@ -17,9 +17,10 @@
 .iconBadge {
   width: 46px;
   height: 46px;
-  border-radius: 12px;
-  background: rgba(193, 85, 44, 0.1);
-  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: 2px;
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -33,6 +34,7 @@
 }
 
 .eyebrow {
+  font-family: var(--font-mono, monospace);
   font-size: 11px;
   font-weight: 800;
   color: var(--color-terracotta-500, #C1552C);
@@ -42,6 +44,7 @@
 }
 
 .title {
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
   font-size: clamp(1.2rem, 3.5vw, 1.45rem);
   font-weight: 900;
   color: var(--color-ink, #181512);
@@ -70,9 +73,10 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  background: rgba(243, 236, 224, 0.45);
-  border: 1px solid var(--color-line, #E2D7C3);
-  border-radius: var(--radius-md, 14px);
+  background: var(--color-sand-50, #FBF8F3);
+  border: 2px solid #181512;
+  border-radius: 2px;
+  box-shadow: 2.5px 2.5px 0px #181512;
   box-sizing: border-box;
 }
 
@@ -80,12 +84,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
   font-weight: 800;
   color: var(--color-ink, #181512);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(226, 215, 195, 0.6);
+  border-bottom: 2px solid #181512;
   padding-bottom: 8px;
   flex-wrap: wrap;
 }
@@ -121,8 +126,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
-  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--color-ink, #181512);
   flex-wrap: wrap;
 }
@@ -144,15 +151,15 @@
 .textarea {
   width: 100%;
   padding: 11px 14px;
-  border-radius: var(--radius-sm, 10px);
-  border: 1.5px solid var(--color-line, #E2D7C3);
+  border-radius: 2px;
+  border: 2px solid #181512;
   font-size: 14px;
   font-weight: 600;
   color: var(--color-ink, #181512);
   background: #FFFFFF;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.15s ease;
   font-family: inherit;
   min-height: 44px;
 }
@@ -160,8 +167,8 @@
 .input:focus,
 .select:focus,
 .textarea:focus {
-  border-color: var(--color-terracotta-500, #C1552C);
-  box-shadow: 0 0 0 3px rgba(193, 85, 44, 0.12);
+  border-color: #181512;
+  box-shadow: 2px 2px 0px #181512;
 }
 
 .input::placeholder,
@@ -181,9 +188,10 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  background: rgba(217, 155, 38, 0.08);
-  border: 1px solid rgba(217, 155, 38, 0.3);
-  border-radius: 10px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2.5px 2.5px 0px #181512;
+  border-radius: 2px;
   font-size: 12.5px;
   color: var(--color-ink-muted, #5E554D);
   line-height: 1.5;
@@ -224,7 +232,7 @@
   .section {
     padding: 14px 12px;
     gap: 12px;
-    border-radius: 12px;
+    border-radius: var(--radius-sm, 2px);
   }
 
   .title {
@@ -252,7 +260,7 @@
     width: 36px;
     height: 36px;
     font-size: 18px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm, 2px);
   }
 
   .title {

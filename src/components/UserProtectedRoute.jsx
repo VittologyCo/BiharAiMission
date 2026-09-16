@@ -53,8 +53,8 @@ const UserProtectedRoute = ({ children, onOpenAuth }) => {
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
-        background: 'var(--color-charcoal-900, #181512)',
-        color: 'var(--color-sand-100, #F3ECE0)',
+        background: 'var(--color-sand-50, #FBF8F3)',
+        color: 'var(--color-ink, #181512)',
         fontFamily: "'Space Grotesk', sans-serif"
       }}>
         <p style={{ margin: 'auto', fontWeight: 600, fontSize: '16px' }}>Verifying authorization...</p>

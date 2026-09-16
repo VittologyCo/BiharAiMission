@@ -931,21 +931,22 @@ export default function ExamDetailPage({ onGetInvolved }) {
   // STATE 1: DISMISSED OVERLAY
   if (examState === 'DISMISSED') {
     return (
-      <div style={{ background: 'transparent', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', color: 'var(--color-sand-50, #FBF8F3)', fontFamily: "'General Sans', sans-serif" }}>
+      <div className="examPage examDismissedWrapper" style={{ background: 'transparent', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', color: 'var(--color-ink, #181512)', fontFamily: "'General Sans', sans-serif" }}>
         <div
+          className="examDismissedCard"
           style={{
             background: '#FFFFFF',
             color: '#111827',
-            borderRadius: '32px',
+            borderRadius: '2px',
             maxWidth: '560px',
             width: '100%',
             padding: '40px 36px',
             textAlign: 'center',
-            border: '2px solid #000000',
-            boxShadow: '0 12px 40px rgba(24, 21, 18, 0.14)',
+            border: '2px solid #181512',
+            boxShadow: '6px 6px 0px #181512',
           }}
         >
-          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#FEF2F2', color: '#EF4444', border: '2px solid #FCA5A5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', margin: '0 auto 20px' }}>
+          <div style={{ width: '70px', height: '70px', borderRadius: '2px', background: '#FEF2F2', color: '#EF4444', border: '2px solid #181512', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', margin: '0 auto 20px' }}>
             ⚠️
           </div>
           <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#DC2626', marginBottom: '12px' }}>
@@ -955,25 +956,26 @@ export default function ExamDetailPage({ onGetInvolved }) {
             {dismissalReason || (isHi ? '3 से अधिक सुरक्षा चेतावनियाँ (टैब स्विच / फुलस्क्रीन एग्जिट) प्राप्त होने के कारण आपकी परीक्षा निरस्त कर दी गई है।' : 'Exceeded the 3-warning security threshold (tab switching, window blur, or fullscreen exit). Your exam attempt has been automatically terminated.')}
           </p>
 
-          <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', padding: '16px', borderRadius: '12px', fontSize: '13.5px', color: '#991B1B', marginBottom: '32px', textAlign: 'left', lineHeight: '1.55' }}>
+          <div style={{ background: '#FEF2F2', border: '2px solid #181512', padding: '16px', borderRadius: '2px', fontSize: '13.5px', color: '#991B1B', marginBottom: '32px', textAlign: 'left', lineHeight: '1.55' }}>
             <strong>📌 Policy Note:</strong> Each warning incurs a <strong>0.5 marks penalty</strong>. Exceeding 3 warnings invalidates the exam session to uphold credential integrity under Bihar AI Mission guidelines.
           </div>
 
           <button
+            className="examRetryBtn"
             onClick={() => {
               setWarningCount(0);
               setExamState('INSTRUCTIONS');
             }}
             style={{
-              background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+              background: '#181512',
               color: '#FFFFFF',
-              border: 'none',
+              border: '2px solid #181512',
               padding: '14px 32px',
-              borderRadius: '10px',
+              borderRadius: '2px',
               fontWeight: '900',
               fontSize: '15px',
               cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(24, 21, 18, 0.3)',
+              boxShadow: '3px 3px 0px #181512',
             }}
           >
             🔄 {isHi ? 'निर्देशों पर वापस जाएं' : 'Return to Instructions & Retry'}
@@ -1001,8 +1003,8 @@ export default function ExamDetailPage({ onGetInvolved }) {
           right: 0,
           bottom: 0,
           zIndex: 999999,
-          background: '#F4F8FA',
-          color: '#111827',
+          background: '#FBF8F3',
+          color: '#181512',
           overflowY: 'auto',
           padding: '24px 20px',
           fontFamily: "'Manrope', system-ui, -apple-system, sans-serif",
@@ -1015,53 +1017,54 @@ export default function ExamDetailPage({ onGetInvolved }) {
           style={{
             maxWidth: '1140px',
             margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-            color: '#FFFFFF',
-            borderRadius: '32px',
+            background: '#FFFFFF',
+            color: '#181512',
+            borderRadius: '2px',
             padding: isMobile ? '16px 16px' : '20px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '16px',
-            boxShadow: '0 10px 30px rgba(24, 21, 18, 0.22)',
+            border: '2px solid #181512',
+            boxShadow: '4px 4px 0px #181512',
           }}
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '6px' }}>
-              <span style={{ fontSize: '11.5px', background: 'rgba(255, 255, 255, 0.15)', color: '#FFFFFF', fontWeight: '800', padding: '3px 10px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <span style={{ fontSize: '11.5px', background: '#F3ECE0', color: '#181512', fontWeight: '800', padding: '3px 10px', borderRadius: '2px', border: '2px solid #181512', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 🔒 SECURE EXAM SESSION
               </span>
-              <span style={{ fontSize: isMobile ? '11.5px' : '13px', color: 'rgba(17, 24, 39, 0.06)', fontWeight: '700' }}>
+              <span style={{ fontSize: isMobile ? '11.5px' : '13px', color: '#181512', fontWeight: '700' }}>
                 👤 <strong>{candidateName}</strong> ({candidateEmail})
               </span>
               <span
                 style={{
-                  background: warningCount > 0 ? '#FEF2F2' : 'rgba(255, 255, 255, 0.15)',
-                  color: warningCount > 0 ? '#F87171' : '#FFFFFF',
+                  background: warningCount > 0 ? '#FEF2F2' : '#F3ECE0',
+                  color: warningCount > 0 ? '#DC2626' : '#181512',
                   fontWeight: '800',
                   fontSize: '11.5px',
                   padding: '3px 10px',
-                  borderRadius: '12px',
-                  border: warningCount > 0 ? '1px solid #FCA5A5' : '1px solid rgba(255, 255, 255, 0.25)',
+                  borderRadius: '2px',
+                  border: warningCount > 0 ? '2px solid #DC2626' : '2px solid #181512',
                 }}
               >
                 ⚠️ Warnings: {warningCount} / 3 (-{(warningCount * 0.5).toFixed(1)} pts penalty)
               </span>
             </div>
-            <h2 style={{ fontSize: isMobile ? '17px' : '21px', fontWeight: '900', color: '#FFFFFF', margin: 0 }}>
+            <h2 style={{ fontSize: isMobile ? '17px' : '21px', fontWeight: '900', color: '#181512', margin: 0 }}>
               📘 {isHi ? (exam.titleHi || 'AI प्रमाणन परीक्षा') : exam.title}
             </h2>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-            <div style={{ textAlign: 'right', background: 'rgba(255, 255, 255, 0.12)', padding: '8px 18px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              <div style={{ fontSize: '10.5px', color: 'rgba(255, 255, 255, 0.8)', fontWeight: '800', textTransform: 'uppercase' }}>{isHi ? 'शेष समय' : 'TIME REMAINING'}</div>
+            <div className="examTimerBadge" style={{ textAlign: 'right', background: '#F3ECE0', padding: '8px 18px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <div style={{ fontSize: '10.5px', color: '#181512', fontWeight: '800', textTransform: 'uppercase' }}>{isHi ? 'शेष समय' : 'TIME REMAINING'}</div>
               <div
                 style={{
                   fontSize: '22px',
                   fontWeight: '900',
-                  color: timeLeftSeconds < 300 ? '#F87171' : '#FFFFFF',
+                  color: timeLeftSeconds < 300 ? '#DC2626' : '#181512',
                   fontFamily: 'monospace',
                 }}
               >
@@ -1070,17 +1073,18 @@ export default function ExamDetailPage({ onGetInvolved }) {
             </div>
 
             <button
+              className="examSubmitBtn"
               onClick={handleCalculateScore}
               style={{
-                background: '#FFFFFF',
-                color: '#1a1a1a',
-                border: 'none',
+                background: '#181512',
+                color: '#FFFFFF',
+                border: '2px solid #181512',
                 padding: '12px 24px',
-                borderRadius: '10px',
+                borderRadius: '2px',
                 fontWeight: '900',
                 fontSize: '14px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                boxShadow: '3px 3px 0px #181512',
               }}
             >
               {isHi ? 'परीक्षा सबमिट करें ✓' : 'Submit Exam ✓'}
@@ -1089,8 +1093,8 @@ export default function ExamDetailPage({ onGetInvolved }) {
         </div>
 
         {/* PROGRESS BAR */}
-        <div style={{ maxWidth: '1140px', margin: '0 auto 20px', background: 'rgba(17, 24, 39, 0.08)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #000000 0%, #1a1a1a 100%)', transition: 'width 0.3s' }}></div>
+        <div className="examProgressBar" style={{ maxWidth: '1140px', margin: '0 auto 20px', background: '#F3ECE0', height: '10px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512', overflow: 'hidden' }}>
+          <div style={{ width: `${progressPercent}%`, height: '100%', background: '#C1552C', transition: 'width 0.3s' }}></div>
         </div>
 
         {/* MAIN QUESTION DISPLAY & PALETTE GRID */}
@@ -1101,18 +1105,18 @@ export default function ExamDetailPage({ onGetInvolved }) {
             style={{
               background: '#FFFFFF',
               color: '#111827',
-              borderRadius: '32px',
+              borderRadius: '2px',
               padding: '36px',
-              border: '1.5px solid rgba(24, 21, 18, 0.15)',
-              boxShadow: '0 8px 30px rgba(24, 21, 18, 0.08)',
+              border: '2px solid #181512',
+              boxShadow: '6px 6px 0px #181512',
               display: 'flex',
               flexDirection: 'column',
-              justify: 'space-between',
+              justifyContent: 'space-between',
             }}
           >
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <span style={{ background: '#EFEAE5', color: '#000000', fontWeight: '800', fontSize: '13px', padding: '6px 16px', borderRadius: '32px', border: '1px solid rgba(24, 21, 18, 0.2)' }}>
+                <span style={{ background: '#F3ECE0', color: '#181512', fontWeight: '800', fontSize: '13px', padding: '6px 16px', borderRadius: '2px', border: '2px solid #181512' }}>
                   Question {currentQuestionIdx + 1} of {questions.length}
                 </span>
                 <span style={{ fontSize: '13.5px', color: '#6B7280', fontWeight: '700' }}>
@@ -1135,35 +1139,37 @@ export default function ExamDetailPage({ onGetInvolved }) {
                   return (
                     <div
                       key={optIdx}
+                      className={`optionBtn ${isSelected ? 'selected' : ''}`}
+                      data-selected={isSelected}
                       onClick={() => {
                         setUserAnswers((prev) => ({ ...prev, [currentQuestionIdx]: optIdx }));
                         setVisitedQuestions((prev) => ({ ...prev, [currentQuestionIdx]: true }));
                       }}
                       style={{
-                        border: isSelected ? '2.5px solid #000000' : '1.5px solid rgba(17, 24, 39, 0.06)',
-                        background: isSelected ? 'var(--color-sand-50, #FBF8F3)' : '#FFFFFF',
+                        border: '2px solid #181512',
+                        background: isSelected ? '#F3ECE0' : '#FFFFFF',
                         padding: '16px 20px',
-                        borderRadius: '12px',
+                        borderRadius: '2px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '14px',
                         transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? '0 4px 14px rgba(24, 21, 18, 0.15)' : 'none',
+                        boxShadow: isSelected ? '4px 4px 0px #181512' : '3px 3px 0px #181512',
                       }}
                     >
                       <div
                         style={{
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          border: isSelected ? '6px solid #000000' : '2px solid #9CA3AF',
-                          background: '#FFFFFF',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '2px',
+                          border: isSelected ? '5px solid #181512' : '2px solid #181512',
+                          background: isSelected ? '#C1552C' : '#FFFFFF',
                           flexShrink: 0,
                           transition: 'all 0.15s ease',
                         }}
                       ></div>
-                      <span style={{ fontSize: '15px', fontWeight: isSelected ? '700' : '500', color: isSelected ? '#1a1a1a' : '#374151' }}>
+                      <span style={{ fontSize: '15px', fontWeight: isSelected ? '800' : '600', color: '#181512' }}>
                         {optionText}
                       </span>
                     </div>
@@ -1173,7 +1179,7 @@ export default function ExamDetailPage({ onGetInvolved }) {
             </div>
 
             {/* PREV / NEXT NAVIGATION BUTTONS */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '20px', borderTop: '1px solid #EFEAE5' }}>
+            <div className="examNavButtons" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '20px', borderTop: '2px solid #181512' }}>
               <button
                 disabled={currentQuestionIdx === 0}
                 onClick={() => {
@@ -1181,14 +1187,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                     setVisitedQuestions((prev) => ({ ...prev, [currentQuestionIdx - 1]: true }));
                 }}
                 style={{
-                  background: currentQuestionIdx === 0 ? '#EFEAE5' : '#111827',
+                  background: currentQuestionIdx === 0 ? '#EFEAE5' : '#181512',
                   color: currentQuestionIdx === 0 ? '#9CA3AF' : '#FFFFFF',
-                  border: 'none',
+                  border: '2px solid #181512',
                   padding: '12px 24px',
-                  borderRadius: '10px',
+                  borderRadius: '2px',
                   fontWeight: '800',
                   fontSize: '14px',
                   cursor: currentQuestionIdx === 0 ? 'not-allowed' : 'pointer',
+                  boxShadow: currentQuestionIdx === 0 ? 'none' : '3px 3px 0px #181512',
                 }}
               >
                 ← Previous
@@ -1201,15 +1208,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                       setVisitedQuestions((prev) => ({ ...prev, [currentQuestionIdx + 1]: true }));
                   }}
                   style={{
-                    background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                    background: '#181512',
                     color: '#FFFFFF',
-                    border: 'none',
+                    border: '2px solid #181512',
                     padding: '12px 28px',
-                    borderRadius: '10px',
+                    borderRadius: '2px',
                     fontWeight: '800',
                     fontSize: '14px',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(24, 21, 18, 0.25)',
+                    boxShadow: '3px 3px 0px #181512',
                   }}
                 >
                   Next Question →
@@ -1218,15 +1225,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                 <button
                   onClick={handleCalculateScore}
                   style={{
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    background: '#C1552C',
                     color: '#FFFFFF',
-                    border: 'none',
+                    border: '2px solid #181512',
                     padding: '12px 28px',
-                    borderRadius: '10px',
+                    borderRadius: '2px',
                     fontWeight: '900',
                     fontSize: '14px',
                     cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                    boxShadow: '4px 4px 0px #181512',
                   }}
                 >
                   Finish & Submit ✓
@@ -1240,15 +1247,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
             className="examPalette"
             style={{
               background: '#FFFFFF',
-              border: '1.5px solid rgba(24, 21, 18, 0.15)',
-              borderRadius: '32px',
+              border: '2px solid #181512',
+              borderRadius: '2px',
               padding: '20px',
               height: 'fit-content',
-              boxShadow: '0 8px 30px rgba(24, 21, 18, 0.08)',
+              boxShadow: '4px 4px 0px #181512',
               boxSizing: 'border-box',
             }}
           >
-            <h4 style={{ fontSize: '13.5px', fontWeight: '800', color: '#1a1a1a', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <h4 style={{ fontSize: '13.5px', fontWeight: '800', color: '#181512', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Question Palette ({questions.length})
             </h4>
 
@@ -1286,22 +1293,22 @@ export default function ExamDetailPage({ onGetInvolved }) {
             </div>
 
             {/* PALETTE LEGEND */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '14px', borderTop: '1px solid #EFEAE5', fontSize: '12px', color: '#9CA3AF', fontWeight: '600' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '14px', borderTop: '2px solid #181512', fontSize: '12px', color: '#181512', fontWeight: '700' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#000000', border: '2px solid var(--color-charcoal-900, #181512)' }}></div>
-                <span>Current Active Question (Blue)</span>
+                <div style={{ width: '14px', height: '14px', borderRadius: '2px', background: '#C1552C', border: '2px solid #181512' }}></div>
+                <span>Current Active (Terracotta)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#059669' }}></div>
-                <span>Answered Question (Green)</span>
+                <div style={{ width: '14px', height: '14px', borderRadius: '2px', background: '#181512', border: '2px solid #181512' }}></div>
+                <span>Answered Question (Ink)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#FEF3C7', border: '1.5px solid #F59E0B' }}></div>
-                <span>Left Blank / Skipped (Amber)</span>
+                <div style={{ width: '14px', height: '14px', borderRadius: '2px', background: '#F3ECE0', border: '2px solid #181512' }}></div>
+                <span>Left Blank / Skipped (Sand)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: '#EFEAE5', border: '1px solid rgba(17, 24, 39, 0.06)' }}></div>
-                <span>Unvisited Question (Grey)</span>
+                <div style={{ width: '14px', height: '14px', borderRadius: '2px', background: '#FFFFFF', border: '2px solid #181512' }}></div>
+                <span>Unvisited Question (White)</span>
               </div>
             </div>
           </div>
@@ -1316,8 +1323,7 @@ export default function ExamDetailPage({ onGetInvolved }) {
               left: 0,
               right: 0,
               bottom: 0,
-              background: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(8px)',
+              background: 'rgba(24, 21, 18, 0.75)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1326,29 +1332,30 @@ export default function ExamDetailPage({ onGetInvolved }) {
             }}
           >
             <div
+              className="examWarningModal"
               style={{
                 background: '#FFFFFF',
-                borderRadius: '24px',
+                borderRadius: '2px',
                 maxWidth: '520px',
                 width: '100%',
                 padding: '36px',
                 textAlign: 'center',
-                border: '3px solid #DC2626',
-                boxShadow: '0 20px 50px rgba(220, 38, 38, 0.3)',
+                border: '3px solid #181512',
+                boxShadow: '8px 8px 0px #181512',
               }}
             >
               <div
                 style={{
-                  width: '72px',
-                  height: '72px',
-                  borderRadius: '50%',
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '2px',
                   background: '#FEF2F2',
                   color: '#DC2626',
-                  border: '3px solid #FCA5A5',
+                  border: '2px solid #181512',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '36px',
+                  fontSize: '32px',
                   margin: '0 auto 20px',
                 }}
               >
@@ -1369,9 +1376,9 @@ export default function ExamDetailPage({ onGetInvolved }) {
               <div
                 style={{
                   background: '#FEF2F2',
-                  border: '1.5px solid #FCA5A5',
+                  border: '2px solid #181512',
                   padding: '14px 18px',
-                  borderRadius: '12px',
+                  borderRadius: '2px',
                   fontSize: '14px',
                   color: '#991B1B',
                   fontWeight: '700',
@@ -1391,15 +1398,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                   safeRequestFullscreen();
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
+                  background: '#C1552C',
                   color: '#FFFFFF',
-                  border: 'none',
+                  border: '2px solid #181512',
                   padding: '16px 32px',
-                  borderRadius: '12px',
+                  borderRadius: '2px',
                   fontWeight: '900',
                   fontSize: '15.5px',
                   cursor: 'pointer',
-                  boxShadow: '0 6px 20px rgba(220, 38, 38, 0.35)',
+                  boxShadow: '4px 4px 0px #181512',
                   width: '100%',
                 }}
               >
@@ -1417,17 +1424,19 @@ export default function ExamDetailPage({ onGetInvolved }) {
     const isApproved = scoreResult.isApproved !== false;
 
     return (
-      <div className="examPage examResults" style={{ background: 'transparent', minHeight: '100vh', padding: '40px 20px', color: 'var(--color-sand-50, #FBF8F3)', fontFamily: "'General Sans', sans-serif" }}>
+      <div className="examPage examResults" style={{ background: 'transparent', minHeight: '100vh', padding: '40px 20px', color: 'var(--color-ink, #181512)', fontFamily: "'General Sans', sans-serif" }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           {/* RESULT HEADER CARD */}
           <div
+            className="resultHeaderCard"
             style={{
-              background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-              borderRadius: '32px',
+              background: '#FFFFFF',
+              borderRadius: '2px',
               padding: '40px 32px',
-              color: '#FFFFFF',
+              color: '#181512',
               textAlign: 'center',
-              boxShadow: '0 12px 35px rgba(24, 21, 18, 0.2)',
+              border: '2px solid #181512',
+              boxShadow: '6px 6px 0px #181512',
               marginBottom: '28px',
             }}
           >
@@ -1435,43 +1444,45 @@ export default function ExamDetailPage({ onGetInvolved }) {
               {scoreResult.isPassed ? '🎉' : '📊'}
             </div>
 
-            <h2 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#181512', marginBottom: '8px' }}>
               {scoreResult.isPassed
                 ? (isHi ? 'बधाई हो! आप उत्तीर्ण हुए' : 'Congratulations! You Passed')
                 : (isHi ? 'परीक्षा परिणाम' : 'Exam Results')}
             </h2>
 
-            <p style={{ fontSize: '15px', opacity: 0.9, marginBottom: '24px' }}>
+            <p style={{ fontSize: '15px', color: '#374151', marginBottom: '24px' }}>
               {candidateName} ({candidateDesignation || 'Candidate'})
             </p>
 
             <div
+              className="resultScoreBadge"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '16px',
-                background: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(8px)',
+                background: '#F3ECE0',
                 padding: '16px 32px',
-                borderRadius: '32px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '2px',
+                border: '2px solid #181512',
+                boxShadow: '3px 3px 0px #181512',
                 marginBottom: '28px',
+                color: '#181512',
               }}
             >
               <div>
-                <div style={{ fontSize: '36px', fontWeight: '900' }}>{scoreResult.percentage}%</div>
-                <div style={{ fontSize: '12px', opacity: 0.8, textTransform: 'uppercase', fontWeight: '700' }}>
+                <div style={{ fontSize: '36px', fontWeight: '900', color: '#181512', fontFamily: 'monospace' }}>{scoreResult.percentage}%</div>
+                <div style={{ fontSize: '12px', color: '#181512', textTransform: 'uppercase', fontWeight: '800' }}>
                   {scoreResult.score} / {scoreResult.total} {isHi ? 'सही' : 'Correct'}
                 </div>
               </div>
 
-              <div style={{ width: '1px', height: '40px', background: 'rgba(255, 255, 255, 0.3)' }}></div>
+              <div style={{ width: '2px', height: '40px', background: '#181512' }}></div>
 
               <div>
-                <div style={{ fontSize: '16px', fontWeight: '800' }}>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: scoreResult.isPassed ? '#059669' : '#DC2626' }}>
                   {scoreResult.isPassed ? (isHi ? 'PASSED (उत्तीर्ण)' : 'PASSED') : (isHi ? 'NEEDS IMPROVEMENT' : 'NEEDS IMPROVEMENT')}
                 </div>
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                <div style={{ fontSize: '12px', color: '#374151', fontWeight: '600' }}>
                   {isHi ? 'कटऑफ: 75% (23/30)' : 'Passing Cutoff: 75% (23/30)'}
                 </div>
               </div>
@@ -1480,44 +1491,47 @@ export default function ExamDetailPage({ onGetInvolved }) {
             {/* VERIFIED CREDENTIAL ID BADGE */}
             {scoreResult.isPassed && scoreResult.credentialId ? (
             <div
+              className="resultCredentialBadge scoreGrid"
               style={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 background: '#FFFFFF',
-                border: '1.5px solid rgba(24, 21, 18, 0.2)',
-                borderRadius: '12px',
+                border: '2px solid #181512',
+                borderRadius: '2px',
+                boxShadow: '3px 3px 0px #181512',
                 padding: '16px 24px',
                 flexWrap: 'wrap',
                 gap: '24px',
-                color: '#111827',
+                color: '#181512',
                 maxWidth: '600px',
                 margin: '0 auto 28px',
               }}
             >
               <div>
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' }}>VERIFIED CREDENTIAL ID</div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#000000', fontFamily: 'monospace' }}>{scoreResult.credentialId}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>VERIFIED CREDENTIAL ID</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#C1552C', fontFamily: 'monospace' }}>{scoreResult.credentialId}</div>
               </div>
               <div>
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' }}>CANDIDATE</div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#111827' }}>{candidateName}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>CANDIDATE</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#181512' }}>{candidateName}</div>
               </div>
               <div>
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' }}>ISSUE DATE</div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#111827' }}>{scoreResult.issueDate}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>ISSUE DATE</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#181512' }}>{scoreResult.issueDate}</div>
               </div>
               <div>
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' }}>SCORE</div>
-                <div style={{ fontSize: '14px', fontWeight: '800', color: '#000000' }}>{scoreResult.percentage}%</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '700', textTransform: 'uppercase' }}>SCORE</div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#181512' }}>{scoreResult.percentage}%</div>
               </div>
             </div>
             ) : (
               <div
                 style={{
                   background: '#FEF2F2',
-                  border: '1.5px solid #FCA5A5',
-                  borderRadius: '12px',
+                  border: '2px solid #181512',
+                  borderRadius: '2px',
+                  boxShadow: '3px 3px 0px #181512',
                   padding: '16px 24px',
                   color: '#991B1B',
                   maxWidth: '600px',
@@ -1533,19 +1547,20 @@ export default function ExamDetailPage({ onGetInvolved }) {
             )}
 
             {/* ACTION BUTTONS */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <div className="resultActionButtons" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap', width: '100%' }}>
                 <button
                   onClick={() => setExamState('EVALUATION')}
                   style={{
-                    background: '#000000',
+                    background: '#181512',
                     color: '#FFFFFF',
-                    border: 'none',
+                    border: '2px solid #181512',
                     padding: '14px 28px',
-                    borderRadius: '8px',
+                    borderRadius: '2px',
                     fontWeight: '800',
                     fontSize: '14.5px',
                     cursor: 'pointer',
+                    boxShadow: '3px 3px 0px #181512',
                   }}
                 >
                   📖 {isHi ? 'उत्तर एवं विस्तृत व्याख्या देखें' : 'Evaluate Results & Answer Key'}
@@ -1555,14 +1570,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                   <button
                     onClick={handleStartExam}
                     style={{
-                      background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                      background: '#181512',
                       color: '#FFFFFF',
-                      border: 'none',
+                      border: '2px solid #181512',
                       padding: '14px 28px',
-                      borderRadius: '8px',
+                      borderRadius: '2px',
                       fontWeight: '800',
                       fontSize: '14.5px',
                       cursor: 'pointer',
+                      boxShadow: '3px 3px 0px #181512',
                     }}
                   >
                     🔄 {isHi ? 'पुनः परीक्षा दें' : 'Retake Exam'}
@@ -1573,15 +1589,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                   <button
                     onClick={() => setExamState('CERTIFICATE')}
                     style={{
-                      background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                      background: '#C1552C',
                       color: '#FFFFFF',
-                      border: 'none',
+                      border: '2px solid #181512',
                       padding: '14px 32px',
-                      borderRadius: '8px',
+                      borderRadius: '2px',
                       fontWeight: '900',
                       fontSize: '15px',
                       cursor: 'pointer',
-                      boxShadow: '0 6px 20px rgba(5, 150, 105, 0.35)',
+                      boxShadow: '4px 4px 0px #181512',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '8px',
@@ -1594,14 +1610,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
                 <button
                   onClick={() => navigate('/learning')}
                   style={{
-                    background: 'transparent',
-                    color: '#FFFFFF',
-                    border: '1.5px solid rgba(255, 255, 255, 0.6)',
+                    background: '#FFFFFF',
+                    color: '#181512',
+                    border: '2px solid #181512',
                     padding: '14px 28px',
-                    borderRadius: '8px',
+                    borderRadius: '2px',
                     fontWeight: '800',
                     fontSize: '14.5px',
                     cursor: 'pointer',
+                    boxShadow: '3px 3px 0px #181512',
                   }}
                 >
                   ← {isHi ? 'लर्निंग हब पर लौटें' : 'Back to Learning Hub'}
@@ -1669,22 +1686,23 @@ export default function ExamDetailPage({ onGetInvolved }) {
   // -------------------------------------------------------------
   if (examState === 'CERTIFICATE' && scoreResult) {
     return (
-      <div style={{ background: 'transparent', minHeight: '100vh', padding: '40px 20px', color: 'var(--color-sand-50, #FBF8F3)', fontFamily: "'General Sans', sans-serif" }}>
+      <div className="examPage examCertificatePage" style={{ background: 'transparent', minHeight: '100vh', padding: '40px 20px', color: 'var(--color-ink, #181512)', fontFamily: "'General Sans', sans-serif" }}>
         <div style={{ maxWidth: '960px', margin: '0 auto', textAlign: 'center' }}>
           <div
+            className="certificateCard"
             style={{
               background: '#FFFFFF',
-              borderRadius: '32px',
+              borderRadius: '2px',
               padding: '36px',
-              boxShadow: '0 12px 35px rgba(24, 21, 18, 0.12)',
-              border: '2px solid #000000',
+              boxShadow: '6px 6px 0px #181512',
+              border: '2px solid #181512',
               marginBottom: '28px',
             }}
           >
-            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1a1a1a', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#181512', marginBottom: '8px' }}>
               📜 {isHi ? 'आधिकारिक डिजिटल प्रमाण पत्र' : 'Official Bihar AI Mission Digital Credential'}
             </h2>
-            <p style={{ color: '#6B7280', fontSize: '14.5px', marginBottom: '24px' }}>
+            <p style={{ color: '#374151', fontSize: '14.5px', marginBottom: '24px' }}>
               {isHi
                 ? 'आपका प्रमाण पत्र सफलतापूर्वक जनरेट हो गया है। आप इसे उच्च-गुणवत्ता वाले PNG के रूप में डाउनलोड कर सकते हैं।'
                 : 'Your verified digital certificate has been generated. You can download and print it for official records.'}
@@ -1697,9 +1715,9 @@ export default function ExamDetailPage({ onGetInvolved }) {
                 style={{
                   width: '100%',
                   maxWidth: '850px',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(17, 24, 39, 0.08)',
+                  borderRadius: '2px',
+                  boxShadow: '4px 4px 0px #181512',
+                  border: '2px solid #181512',
                   marginBottom: '28px',
                 }}
               />
@@ -1709,20 +1727,20 @@ export default function ExamDetailPage({ onGetInvolved }) {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div className="certActionButtons" style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
               <button
                 onClick={handleDownloadCertificate}
                 disabled={!certImageUrl}
                 style={{
-                  background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                  background: '#C1552C',
                   color: '#FFFFFF',
-                  border: 'none',
+                  border: '2px solid #181512',
                   padding: '14px 36px',
-                  borderRadius: '10px',
+                  borderRadius: '2px',
                   fontWeight: '900',
                   fontSize: '15px',
                   cursor: certImageUrl ? 'pointer' : 'not-allowed',
-                  boxShadow: '0 6px 20px rgba(24, 21, 18, 0.25)',
+                  boxShadow: '4px 4px 0px #181512',
                 }}
               >
                 ⬇️ {isHi ? 'प्रमाण पत्र डाउनलोड करें (PNG)' : 'Download Certificate (PNG)'}
@@ -1732,13 +1750,14 @@ export default function ExamDetailPage({ onGetInvolved }) {
                 onClick={() => setExamState('RESULT')}
                 style={{
                   background: '#FFFFFF',
-                  color: '#111827',
-                  border: '1.5px solid rgba(17, 24, 39, 0.08)',
+                  color: '#181512',
+                  border: '2px solid #181512',
                   padding: '14px 28px',
-                  borderRadius: '10px',
+                  borderRadius: '2px',
                   fontWeight: '800',
                   fontSize: '14.5px',
                   cursor: 'pointer',
+                  boxShadow: '3px 3px 0px #181512',
                 }}
               >
                 ← {isHi ? 'परिणाम सारांश पर वापस जाएं' : 'Back to Result Summary'}
@@ -1746,104 +1765,43 @@ export default function ExamDetailPage({ onGetInvolved }) {
             </div>
           </div>
 
-          {/* HIGHLIGHTED INSTRUCTIONS WARNING ALERT BEFORE EXAM LAUNCH */}
-          <div
-            style={{
-              background: '#FFFBEB',
-              border: '2px solid #FCD34D',
-              borderRadius: '32px',
-              padding: '22px 26px',
-              marginTop: '28px',
-              marginBottom: '24px',
-              textAlign: 'left',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '16px',
-              boxShadow: '0 6px 20px rgba(217, 119, 6, 0.12)',
-            }}
-          >
-            <span style={{ fontSize: '32px', lineHeight: 1 }}>⚠️</span>
-            <div>
-              <h4 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '900', color: '#92400E' }}>
-                {isHi ? 'महत्वपूर्ण सूचना: परीक्षा शुरू करने से पहले ध्यान दें' : 'Important Notice: Read Instructions Carefully'}
-              </h4>
-              <p style={{ margin: 0, fontSize: '14.5px', color: '#B45309', lineHeight: '1.6', fontWeight: '600' }}>
-                {isHi
-                  ? 'कृपया परीक्षा शुरू करने से पहले ऊपर दिए गए सभी आधिकारिक नियमों और दिशानिर्देशों को ध्यानपूर्वक पढ़ें। परीक्षा के दौरान 3 सुरक्षा चेतावनियों के उपरांत सत्र निरस्त कर दिया जाएगा।'
-                  : 'Please read all official guidelines and exam rules above carefully before launching your exam. Exceeding 3 security warnings during the proctored session will automatically terminate your exam.'}
-              </p>
-            </div>
-          </div>
-
-          {/* LAUNCH EXAM ACTION BUTTON */}
-          <div
-            id="registration-box"
-            style={{
-              textAlign: 'center',
-              padding: '12px 0 24px 0',
-              marginBottom: '36px',
-            }}
-          >
-            <button
-              onClick={handleStartExam}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-                color: '#FFFFFF',
-                border: 'none',
-                padding: '16px 42px',
-                borderRadius: '12px',
-                fontWeight: '900',
-                fontSize: '17px',
-                cursor: 'pointer',
-                boxShadow: '0 8px 25px rgba(24, 21, 18, 0.35)',
-                letterSpacing: '0.02em',
-                transition: 'transform 0.2s, boxShadow 0.2s',
-              }}
-            >
-              🚀 {isHi ? 'परीक्षा शुरू करें' : 'Launch Exam'}
-            </button>
-          </div>
         </div>
       </div>
     );
   }
 
-  // -------------------------------------------------------------
   // STATE 0: PRE-EXAM INSTRUCTIONS & CANDIDATE REGISTRATION
   // -------------------------------------------------------------
   return (
-    <div style={{ background: 'transparent', minHeight: '100vh', paddingBottom: '60px', color: 'var(--color-sand-50, #FBF8F3)' }}>
+    <div className="examPage examIntro" style={{ background: 'transparent', minHeight: '100vh', paddingBottom: '60px', color: 'var(--color-ink, #181512)' }}>
       {/* Breadcrumb Navigation Header */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid rgba(24, 21, 18, 0.2)', padding: '16px 24px' }}>
+      <div className="examBreadcrumb" style={{ background: '#FFFFFF', borderBottom: '2px solid #181512', boxShadow: '0 3px 0px #181512', padding: '16px 24px' }}>
         <div style={{ maxWidth: '1140px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13.5px', color: '#6B7280' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <Link to="/" style={{ color: '#000000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+            <Link to="/" style={{ color: '#181512', textDecoration: 'none', fontWeight: '700' }}>Home</Link>
             <span>/</span>
-            <Link to="/learning" style={{ color: '#000000', textDecoration: 'none', fontWeight: '600' }}>
+            <Link to="/learning" style={{ color: '#181512', textDecoration: 'none', fontWeight: '700' }}>
               {isHi ? 'लर्निंग हब' : 'Learning Hub'}
             </Link>
             <span>/</span>
-            <span style={{ color: '#111827', fontWeight: '700' }}>{exam.title}</span>
+            <span style={{ color: '#C1552C', fontWeight: '800' }}>{exam.title}</span>
           </div>
 
           <button
             onClick={() => navigate(-1)}
             style={{
-              background: '#EFEAE5',
-              border: '1px solid rgba(17, 24, 39, 0.08)',
-              color: '#1a1a1a',
+              background: '#F3ECE0',
+              border: '2px solid #181512',
+              color: '#181512',
               padding: '6px 16px',
-              borderRadius: '8px',
-              fontWeight: '700',
+              borderRadius: '2px',
+              fontWeight: '800',
               cursor: 'pointer',
               fontSize: '12.5px',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              boxShadow: '2px 2px 0px #181512',
             }}
           >
             ← Back
@@ -1854,39 +1812,43 @@ export default function ExamDetailPage({ onGetInvolved }) {
       <div style={{ maxWidth: '1140px', margin: '30px auto', padding: '0 20px' }}>
         {/* HERO BANNER SECTION (Site Default Colors) */}
         <div
+          className="examHero"
           style={{
-            background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-            borderRadius: '32px',
+            background: '#FFFFFF',
+            borderRadius: '2px',
             padding: '44px 36px',
-            color: '#FFFFFF',
-            boxShadow: '0 12px 35px rgba(24, 21, 18, 0.25)',
+            color: '#181512',
+            border: '2px solid #181512',
+            boxShadow: '6px 6px 0px #181512',
             marginBottom: '32px',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
           <div
+            className="examHeroChip"
             style={{
               display: 'inline-block',
-              background: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(8px)',
+              background: '#F3ECE0',
               padding: '6px 16px',
-              borderRadius: '32px',
+              borderRadius: '2px',
               fontWeight: '800',
               fontSize: '12px',
               letterSpacing: '0.05em',
               marginBottom: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
+              border: '2px solid #181512',
+              boxShadow: '2px 2px 0px #181512',
+              color: '#181512',
             }}
           >
             {exam.level} · BIHAR AI MISSION CERTIFICATION
           </div>
 
-          <h1 style={{ fontSize: '32px', fontWeight: '900', marginBottom: '14px', lineHeight: '1.25' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#181512', marginBottom: '14px', lineHeight: '1.25' }}>
             {isHi ? exam.titleHi : exam.title}
           </h1>
 
-          <p style={{ fontSize: '16px', opacity: 0.95, maxWidth: '780px', lineHeight: '1.65', marginBottom: '28px' }}>
+          <p style={{ fontSize: '16px', color: '#374151', maxWidth: '780px', lineHeight: '1.65', marginBottom: '28px' }}>
             {isHi ? exam.descHi : exam.desc}
           </p>
 
@@ -1894,14 +1856,15 @@ export default function ExamDetailPage({ onGetInvolved }) {
             <button
               onClick={() => navigate(-1)}
               style={{
-                background: 'transparent',
+                background: '#181512',
                 color: '#FFFFFF',
-                border: '1.5px solid rgba(255, 255, 255, 0.6)',
+                border: '2px solid #181512',
                 padding: '14px 24px',
-                borderRadius: '8px',
-                fontWeight: '700',
+                borderRadius: '2px',
+                fontWeight: '800',
                 fontSize: '14.5px',
                 cursor: 'pointer',
+                boxShadow: '3px 3px 0px #181512',
               }}
             >
               ← {isHi ? 'वापस जाएं' : 'Back to Program'}
@@ -1911,6 +1874,7 @@ export default function ExamDetailPage({ onGetInvolved }) {
 
         {/* QUICK EXAM STATS HIGHLIGHT GRID */}
         <div
+          className="examStatsGrid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -1918,38 +1882,39 @@ export default function ExamDetailPage({ onGetInvolved }) {
             marginBottom: '36px',
           }}
         >
-          <div style={statCardStyle}>
-            <span style={statNumberStyle}>30 Mins</span>
+          <div className="examStatCard" style={statCardStyle}>
+            <span className="examStatNumber" style={statNumberStyle}>30 Mins</span>
             <span style={statLabelStyle}>{isHi ? 'परीक्षा की अवधि' : 'Exam Duration'}</span>
           </div>
-          <div style={statCardStyle}>
-            <span style={statNumberStyle}>30 MCQs</span>
+          <div className="examStatCard" style={statCardStyle}>
+            <span className="examStatNumber" style={statNumberStyle}>30 MCQs</span>
             <span style={statLabelStyle}>{isHi ? 'कुल प्रश्न संख्या' : 'Total Questions'}</span>
           </div>
-          <div style={statCardStyle}>
-            <span style={statNumberStyle}>75% Pass</span>
+          <div className="examStatCard" style={statCardStyle}>
+            <span className="examStatNumber" style={statNumberStyle}>75% Pass</span>
             <span style={statLabelStyle}>{isHi ? 'न्यूनतम उत्तीर्णांक (23/30)' : 'Passing Criteria (23/30)'}</span>
           </div>
-          <div style={statCardStyle}>
-            <span style={statNumberStyle}>Strict Proctored</span>
+          <div className="examStatCard" style={statCardStyle}>
+            <span className="examStatNumber" style={statNumberStyle}>Strict Proctored</span>
             <span style={statLabelStyle}>{isHi ? 'फुलस्क्रीन सुरक्षा' : 'Fullscreen Proctored'}</span>
           </div>
         </div>
 
         {/* EXAM GUIDELINES CARD (Placed BEFORE Candidate Registration) */}
         <div
+          className="examGuidelinesCard"
           style={{
             background: '#FFFFFF',
-            border: '1.5px solid rgba(24, 21, 18, 0.2)',
-            borderRadius: '32px',
+            border: '2px solid #181512',
+            borderRadius: '2px',
             padding: '32px',
             marginBottom: '36px',
-            boxShadow: '0 6px 20px rgba(24, 21, 18, 0.05)',
+            boxShadow: '6px 6px 0px #181512',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <span style={{ fontSize: '24px' }}>📋</span>
-            <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', margin: 0 }}>
+            <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#181512', margin: 0 }}>
               {isHi ? 'आधिकारिक परीक्षा नियम एवं दिशानिर्देश' : 'Official Exam Rules & Assessment Guidelines'}
             </h2>
           </div>
@@ -1961,87 +1926,87 @@ export default function ExamDetailPage({ onGetInvolved }) {
           </p>
 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>1.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>1.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'प्रॉक्टर्ड सुरक्षा एवं निगरानी नीति:' : '3-Warning Security & Focus Monitoring:'}</strong>{' '}
+                <strong style={{ color: '#181512' }}>{isHi ? 'प्रॉक्टर्ड सुरक्षा एवं निगरानी नीति:' : '3-Warning Security & Focus Monitoring:'}</strong>{' '}
                 {isHi ? 'परीक्षा स्वचालित रूप से फुलस्क्रीन मोड में खुलेगी। टैब बदलना या फुलस्क्रीन छोड़ना सुरक्षा उल्लंघन माना जाएगा।' : 'The examination will automatically launch in full-screen locked mode. Exiting full-screen or switching browser tabs triggers an automatic security violation warning.'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#FFFBEB', padding: '14px 16px', borderRadius: '10px', border: '1.5px solid #FCD34D' }}>
-              <span style={{ color: '#D97706', fontWeight: '900', fontSize: '15px' }}>2.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#FFFBEB', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#C1552C', fontWeight: '900', fontSize: '15px' }}>2.</span>
               <div>
                 <strong style={{ color: '#92400E' }}>{isHi ? '0.5 अंक कटौती नीति एवं 3 चेतावनियाँ सीमित सीमा:' : '0.5 Marks Cut Penalty Per Warning (Max 3 Warnings):'}</strong>{' '}
                 {isHi ? 'प्रत्येक सुरक्षा चेतावनी पर आपके कुल अंकों में से 0.5 अंक काट लिए जाएंगे। 3 चेतावनियाँ पूरी होने पर परीक्षा तुरंत निरस्त कर दी जाएगी।' : 'Each security warning deducts 0.5 marks from your final score. Triggering 3 warnings will immediately dismiss and terminate your exam session.'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>3.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>3.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'समयबद्ध मूल्यांकन:' : 'Time-Bound Assessment:'}</strong>{' '}
+                <strong style={{ color: '#181512' }}>{isHi ? 'समयबद्ध मूल्यांकन:' : 'Time-Bound Assessment:'}</strong>{' '}
                 {isHi ? '30 बहुविकल्पीय प्रश्नों का उत्तर देने के लिए 30 मिनट का समय दिया जाएगा। समय समाप्त होने पर आपके उत्तर स्वचालित रूप से जमा हो जाएंगे।' : 'You will have strictly 30 minutes to complete 30 multiple-choice questions. Unsubmitted responses will auto-submit upon timer expiration.'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>4.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>4.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'सत्यापित पहचान पंजीकरण:' : 'Verified Candidate Identification:'}</strong>{' '}
+                <strong style={{ color: '#181512' }}>{isHi ? 'सत्यापित पहचान पंजीकरण:' : 'Verified Candidate Identification:'}</strong>{' '}
                 {isHi ? 'पंजीकरण फॉर्म में सही नाम, पदनाम, आधिकारिक ईमेल और मोबाइल नंबर दर्ज करना अनिवार्य है। प्रमाण पत्र गैर-हस्तांतरणीय हैं।' : 'Provide accurate identity credentials (Name, Designation, Official Email, and Phone Number). Certificates are non-transferable and issued strictly to verified registrants.'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>5.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>5.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'अर्हक अंक सीमा (75%+ कटऑफ):' : 'Qualifying Threshold (75%+ Cutoff):'}</strong>{' '}
+                <strong style={{ color: '#181512' }}>{isHi ? 'अर्हक अंक सीमा (75%+ कटऑफ):' : 'Qualifying Threshold (75%+ Cutoff):'}</strong>{' '}
                 {isHi ? 'प्रमाणपत्र प्राप्त करने के लिए कम से कम 75% अंक (30 में से 23 प्रश्न सही) प्राप्त करना अनिवार्य है।' : 'To earn the official Bihar AI Mission Level 1 Digital Credential, candidates must achieve a minimum score of 75% (at least 23 out of 30 correct answers).'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>6.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>6.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'नेविगेशन एवं उत्तर समीक्षा स्पेक्ट्रम:' : 'Navigation & Answer Palette Controls:'}</strong>{' '}
+                <strong style={{ color: '#181512' }}>{isHi ? 'नेविगेशन एवं उत्तर समीक्षा स्पेक्ट्रम:' : 'Navigation & Answer Palette Controls:'}</strong>{' '}
                 {isHi ? 'अंतिम सबमिशन से पहले आप किसी भी समय साइड पैलेट का उपयोग करके प्रश्नों की समीक्षा और उत्तर बदल सकते हैं।' : 'You can review and navigate between questions at any time before final submission using the interactive Question Palette.'}
               </div>
             </li>
 
-            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#EFEAE5', padding: '14px 16px', borderRadius: '10px', border: '1px solid rgba(17, 24, 39, 0.06)' }}>
-              <span style={{ color: '#000000', fontWeight: '900', fontSize: '15px' }}>7.</span>
+            <li style={{ fontSize: '14px', color: '#374151', display: 'flex', gap: '12px', background: '#F3ECE0', padding: '14px 16px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '2px 2px 0px #181512' }}>
+              <span style={{ color: '#181512', fontWeight: '900', fontSize: '15px' }}>7.</span>
               <div>
-                <strong style={{ color: '#111827' }}>{isHi ? 'तत्काल डिजिटल प्रमाण पत्र डाउनलोड:' : 'Instant Credential Generation:'}</strong>{' '}
-                {isHi ? 'उत्तीर्ण होने पर आपका डिजिटल प्रमाण पत्र तुरंत तैयार हो जाएगा जिसे आप सीधे PDF के रूप में डाउनलोड और प्रिंट कर सकते हैं।' : 'Upon successful completion, your verified digital certificate will be instantly generated and available for immediate PDF print/download.'}
+                <strong style={{ color: '#181512' }}>{isHi ? 'तत्काल डिजिटल प्रमाण पत्र डाउनलोड:' : 'Instant Credential Generation:'}</strong>{' '}
+                {isHi ? 'उत्तीर्ण होने पर आपका डिजिटल प्रमाण पत्र तुरंत तैयार हो जाएगा जिसे आप सीधे PNG के रूप में डाउनलोड और प्रिंट कर सकते हैं।' : 'Upon successful completion, your verified digital certificate will be instantly generated and available for immediate PNG print/download.'}
               </div>
             </li>
           </ul>
         </div>
 
-        {/* CANDIDATE REGISTRATION CARD (Redesigned Spacious 2-Column Responsive Layout) */}
         {/* HIGHLIGHTED INSTRUCTIONS WARNING ALERT BEFORE EXAM LAUNCH */}
         <div
+          className="examNoticeAlert"
           style={{
             background: '#FFFBEB',
-            border: '2px solid #FCD34D',
-            borderRadius: '32px',
-            padding: '22px 26px',
+            border: '2px solid #181512',
+            borderRadius: '2px',
+            padding: '20px 24px',
             marginTop: '28px',
             marginBottom: '24px',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '16px',
-            boxShadow: '0 6px 20px rgba(217, 119, 6, 0.12)',
+            boxShadow: '4px 4px 0px #181512',
           }}
         >
-          <span style={{ fontSize: '32px', lineHeight: 1 }}>⚠️</span>
+          <span style={{ fontSize: '28px', lineHeight: 1 }}>⚠️</span>
           <div>
-            <h4 style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: '900', color: '#92400E' }}>
+            <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '900', color: '#92400E' }}>
               {isHi ? 'महत्वपूर्ण सूचना: परीक्षा शुरू करने से पहले ध्यान दें' : 'Important Notice: Read Instructions Carefully'}
             </h4>
-            <p style={{ margin: 0, fontSize: '14.5px', color: '#B45309', lineHeight: '1.6', fontWeight: '600' }}>
+            <p style={{ margin: 0, fontSize: '14px', color: '#78350F', lineHeight: '1.6', fontWeight: '600' }}>
               {isHi
                 ? 'कृपया परीक्षा शुरू करने से पहले ऊपर दिए गए सभी आधिकारिक नियमों और दिशानिर्देशों को ध्यानपूर्वक पढ़ें। परीक्षा के दौरान 3 सुरक्षा चेतावनियों के उपरांत सत्र निरस्त कर दिया जाएगा।'
                 : 'Please read all official guidelines and exam rules above carefully before launching your exam. Exceeding 3 security warnings during the proctored session will automatically terminate your exam.'}
@@ -2059,23 +2024,23 @@ export default function ExamDetailPage({ onGetInvolved }) {
           }}
         >
           <button
+            className="examStartBtn"
             onClick={handleStartExam}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '10px',
-              background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+              background: '#C1552C',
               color: '#FFFFFF',
-              border: 'none',
+              border: '2px solid #181512',
               padding: '16px 42px',
-              borderRadius: '12px',
+              borderRadius: '2px',
               fontWeight: '900',
-              fontSize: '17px',
+              fontSize: '16px',
               cursor: 'pointer',
-              boxShadow: '0 8px 25px rgba(24, 21, 18, 0.35)',
+              boxShadow: '4px 4px 0px #181512',
               letterSpacing: '0.02em',
-              transition: 'transform 0.2s, boxShadow 0.2s',
             }}
           >
             🚀 {isHi ? 'परीक्षा शुरू करें' : 'Launch Exam'}
@@ -2089,24 +2054,24 @@ export default function ExamDetailPage({ onGetInvolved }) {
 const statCardStyle = {
   background: '#FFFFFF',
   padding: '20px',
-  borderRadius: '12px',
-  border: '1px solid rgba(24, 21, 18, 0.2)',
+  borderRadius: '2px',
+  border: '2px solid #181512',
   textAlign: 'center',
-  boxShadow: '0 4px 15px rgba(24, 21, 18, 0.06)',
+  boxShadow: '4px 4px 0px #181512',
 };
 
 const statNumberStyle = {
   display: 'block',
   fontSize: '22px',
   fontWeight: '900',
-  color: '#000000',
+  color: '#181512',
   marginBottom: '4px',
 };
 
 const statLabelStyle = {
   fontSize: '12.5px',
-  color: '#6B7280',
-  fontWeight: '600',
+  color: '#4B5563',
+  fontWeight: '700',
 };
 
 function EvaluationView({
@@ -2129,7 +2094,7 @@ function EvaluationView({
   });
 
   return (
-    <div style={{ background: '#E9F1FA', minHeight: '100vh', padding: '40px 20px', color: '#111827', fontFamily: "'Manrope', sans-serif" }}>
+    <div className="examPage examEvaluationPage" style={{ background: 'transparent', minHeight: '100vh', padding: '40px 20px', color: 'var(--color-ink, #181512)', fontFamily: "'Manrope', sans-serif" }}>
       <SEO
         title={`${exam.title} | Bihar AI Mission`}
         description={`Take the official ${exam.title}. Score minimum 75% cutoff to earn your Bihar AI Mission Level 1 Digital Certification.`}
@@ -2139,12 +2104,13 @@ function EvaluationView({
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         {/* HEADER CARD */}
         <div
+          className="evalHeaderCard"
           style={{
             background: '#FFFFFF',
-            border: '2px solid #000000',
-            borderRadius: '32px',
+            border: '2px solid #181512',
+            borderRadius: '2px',
             padding: '32px',
-            boxShadow: '0 12px 35px rgba(24, 21, 18, 0.12)',
+            boxShadow: '6px 6px 0px #181512',
             marginBottom: '28px',
             display: 'flex',
             alignItems: 'center',
@@ -2154,14 +2120,14 @@ function EvaluationView({
           }}
         >
           <div>
-            <div style={{ fontSize: '12px', fontWeight: '800', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '800', color: '#181512', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
               🔍 {isHi ? 'परिणाम मूल्यांकन एवं उत्तर समीक्षा' : 'Detailed Results Evaluation & Answer Key'}
             </div>
-            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: '0 0 6px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#181512', margin: '0 0 6px' }}>
               {candidateName || 'Candidate'} ({candidateDesignation || 'Officer Candidate'})
             </h2>
-            <div style={{ fontSize: '14px', color: '#6B7280', fontWeight: '600' }}>
-              {exam.title} · Score: <strong style={{ color: '#1a1a1a' }}>{scoreResult.percentage}%</strong> ({correctCount} / {scoreResult.total} Correct)
+            <div style={{ fontSize: '14px', color: '#374151', fontWeight: '700' }}>
+              {exam.title} · Score: <strong style={{ color: '#C1552C' }}>{scoreResult.percentage}%</strong> ({correctCount} / {scoreResult.total} Correct)
             </div>
           </div>
 
@@ -2170,13 +2136,14 @@ function EvaluationView({
               onClick={() => setExamState('RESULT')}
               style={{
                 background: '#FFFFFF',
-                color: '#111827',
-                border: '1.5px solid rgba(17, 24, 39, 0.08)',
+                color: '#181512',
+                border: '2px solid #181512',
                 padding: '12px 22px',
-                borderRadius: '10px',
+                borderRadius: '2px',
                 fontWeight: '800',
                 fontSize: '14px',
                 cursor: 'pointer',
+                boxShadow: '3px 3px 0px #181512',
               }}
             >
               ← {isHi ? 'परिणाम सारांश पर वापस जाएं' : 'Back to Result Summary'}
@@ -2184,15 +2151,15 @@ function EvaluationView({
             <button
               onClick={() => setExamState('INSTRUCTIONS')}
               style={{
-                background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+                background: '#181512',
                 color: '#FFFFFF',
-                border: 'none',
+                border: '2px solid #181512',
                 padding: '12px 24px',
-                borderRadius: '10px',
+                borderRadius: '2px',
                 fontWeight: '900',
                 fontSize: '14px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(24, 21, 18, 0.25)',
+                boxShadow: '3px 3px 0px #181512',
               }}
             >
               🔄 {isHi ? 'पुनः परीक्षा दें' : 'Retake Exam'}
@@ -2201,35 +2168,35 @@ function EvaluationView({
         </div>
 
         {/* FILTER TABS */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div className="evalFilterTabs" style={{ display: 'flex', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setEvalFilter('ALL')}
             style={{
-              background: evalFilter === 'ALL' ? '#000000' : '#FFFFFF',
-              color: evalFilter === 'ALL' ? '#FFFFFF' : '#6B7280',
-              border: '1.5px solid ' + (evalFilter === 'ALL' ? '#000000' : 'rgba(17, 24, 39, 0.08)'),
+              background: evalFilter === 'ALL' ? '#181512' : '#FFFFFF',
+              color: evalFilter === 'ALL' ? '#FFFFFF' : '#181512',
+              border: '2px solid #181512',
               padding: '10px 20px',
-              borderRadius: '25px',
+              borderRadius: '2px',
               fontWeight: '800',
               fontSize: '13.5px',
               cursor: 'pointer',
-              boxShadow: evalFilter === 'ALL' ? '0 4px 12px rgba(24, 21, 18, 0.2)' : 'none',
+              boxShadow: evalFilter === 'ALL' ? '3px 3px 0px #C1552C' : '2px 2px 0px #181512',
             }}
           >
-            📌 {isHi ? 'सभी प्रश्न' : 'All Questions'} ({responses.length})
+            📋 {isHi ? 'सभी प्रश्न' : 'All Questions'} ({responses.length})
           </button>
           <button
             onClick={() => setEvalFilter('CORRECT')}
             style={{
-              background: evalFilter === 'CORRECT' ? '#16A34A' : '#FFFFFF',
+              background: evalFilter === 'CORRECT' ? '#181512' : '#FFFFFF',
               color: evalFilter === 'CORRECT' ? '#FFFFFF' : '#15803D',
-              border: '1.5px solid ' + (evalFilter === 'CORRECT' ? '#16A34A' : '#BBF7D0'),
+              border: '2px solid #181512',
               padding: '10px 20px',
-              borderRadius: '25px',
+              borderRadius: '2px',
               fontWeight: '800',
               fontSize: '13.5px',
               cursor: 'pointer',
-              boxShadow: evalFilter === 'CORRECT' ? '0 4px 12px rgba(22, 163, 74, 0.2)' : 'none',
+              boxShadow: evalFilter === 'CORRECT' ? '3px 3px 0px #15803D' : '2px 2px 0px #181512',
             }}
           >
             ✅ {isHi ? 'सही उत्तर' : 'Correct'} ({correctCount})
@@ -2237,15 +2204,15 @@ function EvaluationView({
           <button
             onClick={() => setEvalFilter('INCORRECT')}
             style={{
-              background: evalFilter === 'INCORRECT' ? '#DC2626' : '#FFFFFF',
-              color: evalFilter === 'INCORRECT' ? '#FFFFFF' : '#B91C1C',
-              border: '1.5px solid ' + (evalFilter === 'INCORRECT' ? '#DC2626' : '#FECACA'),
+              background: evalFilter === 'INCORRECT' ? '#181512' : '#FFFFFF',
+              color: evalFilter === 'INCORRECT' ? '#FFFFFF' : '#DC2626',
+              border: '2px solid #181512',
               padding: '10px 20px',
-              borderRadius: '25px',
+              borderRadius: '2px',
               fontWeight: '800',
               fontSize: '13.5px',
               cursor: 'pointer',
-              boxShadow: evalFilter === 'INCORRECT' ? '0 4px 12px rgba(220, 38, 38, 0.2)' : 'none',
+              boxShadow: evalFilter === 'INCORRECT' ? '3px 3px 0px #DC2626' : '2px 2px 0px #181512',
             }}
           >
             ❌ {isHi ? 'गलत / छूटे उत्तर' : 'Incorrect / Skipped'} ({incorrectCount})
@@ -2255,7 +2222,7 @@ function EvaluationView({
         {/* QUESTIONS EVALUATION CARDS LIST */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '40px' }}>
           {filteredResponses.length === 0 ? (
-            <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '32px', textAlign: 'center', color: '#9CA3AF', fontWeight: '600' }}>
+            <div style={{ background: '#FFFFFF', padding: '40px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '4px 4px 0px #181512', textAlign: 'center', color: '#181512', fontWeight: '700' }}>
               {isHi ? 'इस फ़िल्टर के तहत कोई प्रश्न नहीं है।' : 'No questions found for this filter.'}
             </div>
           ) : (
@@ -2266,37 +2233,38 @@ function EvaluationView({
               return (
                 <div
                   key={idx}
+                  className="resultQuestionCard"
                   style={{
                     background: '#FFFFFF',
-                    borderRadius: '32px',
+                    borderRadius: '2px',
                     padding: '28px 32px',
-                    border: item.isCorrect ? '1.5px solid #86EFAC' : '1.5px solid #FCA5A5',
-                    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.04)',
+                    border: item.isCorrect ? '2px solid #059669' : '2px solid #DC2626',
+                    boxShadow: '4px 4px 0px #181512',
                   }}
                 >
                   {/* QUESTION HEADER BADGE */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '800', color: '#1a1a1a', background: 'rgba(24, 21, 18, 0.1)', padding: '4px 12px', borderRadius: '15px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '800', color: '#181512', background: '#F3ECE0', border: '2px solid #181512', padding: '4px 12px', borderRadius: '2px' }}>
                       Question #{item.questionId}
                     </span>
 
                     {item.isCorrect ? (
-                      <span style={{ background: '#DCFCE7', color: '#15803D', border: '1px solid #86EFAC', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '32px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ background: '#DCFCE7', color: '#15803D', border: '2px solid #15803D', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                         ✓ {isHi ? 'सही उत्तर (+1 अंक)' : 'Correct (+1 Point)'}
                       </span>
                     ) : item.selectedOption === -1 ? (
-                      <span style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '32px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ background: '#FEF3C7', color: '#B45309', border: '2px solid #FCD34D', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                         ⚠️ {isHi ? 'उत्तर नहीं दिया (0 अंक)' : 'Skipped / Unanswered (0 Points)'}
                       </span>
                     ) : (
-                      <span style={{ background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '32px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ background: '#FEE2E2', color: '#B91C1C', border: '2px solid #B91C1C', fontWeight: '900', fontSize: '12.5px', padding: '5px 14px', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                         ✗ {isHi ? 'गलत उत्तर (0 अंक)' : 'Incorrect Answer (0 Points)'}
                       </span>
                     )}
                   </div>
 
                   {/* QUESTION TEXT */}
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', marginBottom: '20px', lineHeight: '1.45' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#181512', marginBottom: '20px', lineHeight: '1.45' }}>
                     {item.questionText}
                   </h3>
 
@@ -2306,9 +2274,9 @@ function EvaluationView({
                       const isCorrectOpt = optIdx === item.correctOption;
                       const isSelectedOpt = optIdx === item.selectedOption;
 
-                      let optBg = '#EFEAE5';
-                      let optBorder = 'rgba(17, 24, 39, 0.06)';
-                      let optColor = '#374151';
+                      let optBg = '#FFFFFF';
+                      let optBorder = '#181512';
+                      let optColor = '#181512';
                       let badgeText = null;
                       let badgeBg = null;
                       let badgeColor = null;
@@ -2322,7 +2290,7 @@ function EvaluationView({
                         badgeColor = '#15803D';
                       } else if (isSelectedOpt && !isCorrectOpt) {
                         optBg = '#FEF2F2';
-                        optBorder = '#EF4444';
+                        optBorder = '#DC2626';
                         optColor = '#7F1D1D';
                         badgeText = isHi ? '✗ आपका चुना हुआ उत्तर (गलत)' : '✗ Your Selected Choice (Incorrect)';
                         badgeBg = '#FEE2E2';
@@ -2334,20 +2302,20 @@ function EvaluationView({
                           key={optIdx}
                           style={{
                             padding: '14px 18px',
-                            borderRadius: '10px',
-                            border: `1.5px solid ${optBorder}`,
+                            borderRadius: '2px',
+                            border: `2px solid ${optBorder}`,
                             background: optBg,
                             color: optColor,
                             display: 'flex',
-                            justify: 'space-between',
+                            justifyContent: 'space-between',
                             alignItems: 'center',
                             fontSize: '14.5px',
-                            fontWeight: isCorrectOpt || isSelectedOpt ? '700' : '500',
+                            fontWeight: isCorrectOpt || isSelectedOpt ? '800' : '600',
                           }}
                         >
                           <span>{optText}</span>
                           {badgeText && (
-                            <span style={{ background: badgeBg, color: badgeColor, fontSize: '11.5px', fontWeight: '900', padding: '3px 10px', borderRadius: '12px', flexShrink: 0, marginLeft: '10px' }}>
+                            <span style={{ background: badgeBg, color: badgeColor, border: `1.5px solid ${optBorder}`, fontSize: '11.5px', fontWeight: '900', padding: '3px 10px', borderRadius: '2px', flexShrink: 0, marginLeft: '10px' }}>
                               {badgeText}
                             </span>
                           )}
@@ -2358,21 +2326,22 @@ function EvaluationView({
 
                   {/* WHY IS IT CORRECT / EXPLANATION BOX */}
                   <div
+                    className="evalExplanationBox"
                     style={{
-                      background: 'var(--color-sand-50, #FBF8F3)',
-                      border: '1.5px solid #000000',
-                      borderRadius: '12px',
+                      background: '#F3ECE0',
+                      border: '2px solid #181512',
+                      borderRadius: '2px',
                       padding: '16px 20px',
                       fontSize: '14px',
                       lineHeight: '1.6',
-                      color: '#111827',
+                      color: '#181512',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800', color: '#1a1a1a', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800', color: '#181512', marginBottom: '6px' }}>
                       <span>💡</span>
                       <span>{isHi ? 'यह उत्तर क्यों सही है? (कारण और व्याख्या)' : 'Why is this the correct answer? (Explanation)'}</span>
                     </div>
-                    <div style={{ color: '#374151', fontWeight: '500' }}>
+                    <div style={{ color: '#374151', fontWeight: '600' }}>
                       {explanation || (isHi ? 'व्याख्या उपलब्ध है।' : 'Explanation is available.')}
                     </div>
                   </div>
@@ -2383,17 +2352,18 @@ function EvaluationView({
         </div>
 
         {/* BOTTOM ACTIONS BAR */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '20px 28px', borderRadius: '32px', border: '1.5px solid rgba(24, 21, 18, 0.2)', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="evalBottomBar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '20px 28px', borderRadius: '2px', border: '2px solid #181512', boxShadow: '4px 4px 0px #181512', flexWrap: 'wrap', gap: '12px' }}>
           <button
             onClick={() => setExamState('RESULT')}
             style={{
               background: '#FFFFFF',
-              color: '#111827',
-              border: '1.5px solid rgba(17, 24, 39, 0.08)',
+              color: '#181512',
+              border: '2px solid #181512',
               padding: '12px 24px',
-              borderRadius: '8px',
+              borderRadius: '2px',
               fontWeight: '800',
               cursor: 'pointer',
+              boxShadow: '3px 3px 0px #181512',
             }}
           >
             ← {isHi ? 'परिणाम सारांश पर वापस जाएं' : 'Back to Result Summary'}
@@ -2402,14 +2372,14 @@ function EvaluationView({
           <button
             onClick={() => setExamState('INSTRUCTIONS')}
             style={{
-              background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+              background: '#181512',
               color: '#FFFFFF',
-              border: 'none',
+              border: '2px solid #181512',
               padding: '12px 28px',
-              borderRadius: '8px',
+              borderRadius: '2px',
               fontWeight: '900',
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(24, 21, 18, 0.3)',
+              boxShadow: '3px 3px 0px #181512',
             }}
           >
             🔄 {isHi ? 'पुनः परीक्षा दें' : 'Retake Exam'}

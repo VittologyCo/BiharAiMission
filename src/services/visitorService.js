@@ -39,53 +39,81 @@ const presenceListeners = new Set();
  * Initialize or retrieve the global presence channel
  */
 const getOrCreatePresenceChannel = () => {
-  if (presenceChannel || !supabase) return presenceChannel;
+  if (presenceChannel) return presenceChannel;
+  if (!supabase) return null;
 
-  presenceChannel = supabase.channel('site_visitors', {
-    config: {
-      presence: { key: SESSION_ID },
-    },
-  });
+  try {
+    const existingChannels = typeof supabase.getChannels === 'function' ? supabase.getChannels() : [];
+    const existing = existingChannels.find(
+      (ch) => ch.topic === 'realtime:site_visitors' || ch.topic === 'site_visitors'
+    );
 
-  const notifyListeners = () => {
-    try {
-      const state = presenceChannel.presenceState();
-      const parsed = parsePresenceState(state);
-      presenceListeners.forEach((fn) => {
-        try {
-          fn(parsed);
-        } catch (err) {
-          console.error('[VisitorService] listener error:', err);
-        }
-      });
-    } catch (e) {
-      console.warn('[VisitorService] presence sync warning:', e);
-    }
-  };
-
-  presenceChannel
-    .on('presence', { event: 'sync' }, notifyListeners)
-    .on('presence', { event: 'join' }, notifyListeners)
-    .on('presence', { event: 'leave' }, notifyListeners)
-    .subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        const path = currentTrackedPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
-        // Only track if not an admin route
-        if (path && !path.startsWith('/admin')) {
-          try {
-            await presenceChannel.track({
-              session_id: SESSION_ID,
-              page: path,
-              device: getDeviceType(),
-              joined_at: new Date().toISOString(),
-            });
-          } catch (e) {}
-        }
-        notifyListeners();
+    if (existing) {
+      presenceChannel = existing;
+      // If already subscribed or subscribing, do NOT call .on() or .subscribe() again!
+      if (existing.state === 'subscribed' || existing.state === 'subscribing') {
+        return presenceChannel;
       }
+      // If closed/errored, remove to recreate cleanly
+      try {
+        supabase.removeChannel(existing);
+      } catch (_) {}
+    }
+
+    presenceChannel = supabase.channel('site_visitors', {
+      config: {
+        presence: { key: SESSION_ID },
+      },
     });
 
-  return presenceChannel;
+    const notifyListeners = () => {
+      try {
+        if (!presenceChannel || typeof presenceChannel.presenceState !== 'function') return;
+        const state = presenceChannel.presenceState();
+        const parsed = parsePresenceState(state);
+        presenceListeners.forEach((fn) => {
+          try {
+            fn(parsed);
+          } catch (err) {
+            console.error('[VisitorService] listener error:', err);
+          }
+        });
+      } catch (e) {
+        console.warn('[VisitorService] presence sync warning:', e);
+      }
+    };
+
+    // Safely attach presence callbacks only before subscribe()
+    if (presenceChannel.state !== 'subscribed' && presenceChannel.state !== 'subscribing') {
+      presenceChannel
+        .on('presence', { event: 'sync' }, notifyListeners)
+        .on('presence', { event: 'join' }, notifyListeners)
+        .on('presence', { event: 'leave' }, notifyListeners);
+
+      presenceChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const path = currentTrackedPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
+          // Only track if not an admin route
+          if (path && !path.startsWith('/admin')) {
+            try {
+              await presenceChannel.track({
+                session_id: SESSION_ID,
+                page: path,
+                device: getDeviceType(),
+                joined_at: new Date().toISOString(),
+              });
+            } catch (e) {}
+          }
+          notifyListeners();
+        }
+      });
+    }
+
+    return presenceChannel;
+  } catch (err) {
+    console.warn('[VisitorService] failed to setup presence channel:', err);
+    return null;
+  }
 };
 
 /**
@@ -93,29 +121,35 @@ const getOrCreatePresenceChannel = () => {
  * Call this on every route change.
  */
 export const trackPagePresence = (pagePath) => {
-  const path = pagePath || (typeof window !== 'undefined' ? window.location.pathname : '/');
-  currentTrackedPath = path;
-
-  const channel = getOrCreatePresenceChannel();
-  if (!channel) return;
-
-  // Don't track admin pages as public visitors
-  if (path.startsWith('/admin')) {
-    try {
-      channel.untrack();
-    } catch (e) {}
-    return;
-  }
-
   try {
-    channel.track({
-      session_id: SESSION_ID,
-      page: path,
-      device: getDeviceType(),
-      joined_at: new Date().toISOString(),
-    });
+    const path = pagePath || (typeof window !== 'undefined' ? window.location.pathname : '/');
+    currentTrackedPath = path;
+
+    const channel = getOrCreatePresenceChannel();
+    if (!channel) return;
+
+    // Don't track admin pages as public visitors
+    if (path.startsWith('/admin')) {
+      try {
+        if (typeof channel.untrack === 'function') {
+          channel.untrack();
+        }
+      } catch (e) {}
+      return;
+    }
+
+    if (channel.state === 'subscribed' && typeof channel.track === 'function') {
+      channel.track({
+        session_id: SESSION_ID,
+        page: path,
+        device: getDeviceType(),
+        joined_at: new Date().toISOString(),
+      }).catch((e) => {
+        console.warn('[VisitorService] track error:', e);
+      });
+    }
   } catch (e) {
-    console.warn('[VisitorService] track error:', e);
+    console.warn('[VisitorService] trackPagePresence notice:', e);
   }
 };
 

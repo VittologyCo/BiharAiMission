@@ -309,19 +309,34 @@ export const getExamSubmissions = () => {
 export const fetchExamSubmissionsFromSupabase = async () => {
   try {
     if (supabase) {
-      const [mcRes, offRes] = await Promise.all([
-        withAuthRetry(() =>
-          supabase.from('masterclass_exam_submissions').select('*').order('submitted_at', { ascending: false })
-        ).catch(() => ({ data: [] })),
-        withAuthRetry(() =>
-          supabase.from('officer_program_exam_submissions').select('*').order('submitted_at', { ascending: false })
-        ).catch(() => ({ data: [] }))
+      const fetchAllExamTableRows = async (table) => {
+        let all = [];
+        let p = 0;
+        const size = 1000;
+        while (true) {
+          try {
+            const { data, error } = await supabase
+              .from(table)
+              .select('*')
+              .order('submitted_at', { ascending: false })
+              .range(p * size, (p + 1) * size - 1);
+            if (error || !Array.isArray(data) || data.length === 0) break;
+            all.push(...data);
+            if (data.length < size) break;
+            p++;
+          } catch (_) {
+            break;
+          }
+        }
+        return all;
+      };
+
+      const [mcRows, offRows] = await Promise.all([
+        fetchAllExamTableRows('masterclass_exam_submissions'),
+        fetchAllExamTableRows('officer_program_exam_submissions')
       ]);
 
-      const allRows = [
-        ...(Array.isArray(mcRes.data) ? mcRes.data : []),
-        ...(Array.isArray(offRes.data) ? offRes.data : [])
-      ];
+      const allRows = [...mcRows, ...offRows];
 
       if (allRows.length > 0) {
         const mapped = allRows.map((d) => {

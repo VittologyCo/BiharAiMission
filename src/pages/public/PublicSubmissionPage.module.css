@@ -1,9 +1,8 @@
+/* PublicSubmissionPage.module.css — Official Document Public Records View */
+
 .pageContainer {
   min-height: 100vh;
   background-color: var(--color-sand-50, #FBF8F3);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(193, 85, 44, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(232, 178, 61, 0.06) 0px, transparent 50%);
   padding: 40px 20px 80px;
   font-family: var(--font-body, 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif);
   color: var(--color-charcoal-900, #181512);
@@ -34,21 +33,21 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm, 2px);
   background: #FFFFFF;
-  border: 1px solid rgba(24, 21, 18, 0.12);
+  border: 1px solid var(--color-line, #E2D7C3);
   color: #181512;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: background 0.18s ease, color 0.18s ease;
+  box-shadow: none;
 }
 
 .homeLink:hover {
   background: #F3ECE0;
-  border-color: #C1552C;
-  color: #C1552C;
+  border-color: var(--color-ink, #181512);
+  color: var(--color-ink, #181512);
 }
 
 .actionPills {
@@ -62,50 +61,48 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm, 2px);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  border: 1px solid rgba(24, 21, 18, 0.12);
+  border: 1px solid var(--color-line, #E2D7C3);
   background: #FFFFFF;
   color: #181512;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: background 0.18s ease;
+  box-shadow: none;
 }
 
 .actionBtn:hover {
   background: #F3ECE0;
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .whatsappBtn {
-  background: #25D366 !important;
+  background: #1B7A48 !important;
   color: #FFFFFF !important;
-  border: 1px solid #1EBE5D !important;
-  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35) !important;
+  border: 1px solid #145E36 !important;
+  box-shadow: none !important;
 }
 
 .whatsappBtn:hover {
-  background: #20BA5A !important;
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45) !important;
+  background: #145E36 !important;
+  box-shadow: none !important;
 }
 
 /* Document Paper Card */
 .paperCard {
   background: #FFFFFF;
-  border: 1.5px solid rgba(226, 215, 195, 0.85);
-  border-radius: 20px;
-  box-shadow: 
-    0 20px 40px -15px rgba(24, 21, 18, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: none;
   overflow: hidden;
   position: relative;
 }
 
 /* Paper Top Header Banner */
 .cardHeader {
-  background: linear-gradient(135deg, #FAF7F2 0%, #F3ECE0 100%);
-  border-bottom: 1.5px solid rgba(226, 215, 195, 0.7);
+  background: var(--color-sand-100, #F3ECE0);
+  border-bottom: 1.5px solid var(--color-line, #E2D7C3);
   padding: 24px 32px;
   display: flex;
   align-items: center;
@@ -121,45 +118,46 @@
 }
 
 .logoIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm, 2px);
   background: #181512;
-  color: #FBE6A2;
+  color: #FBF8F3;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 20px;
+  box-shadow: none;
 }
 
 .brandTitles h1 {
   margin: 0;
+  font-family: var(--font-display, 'Fraunces', serif);
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   color: #181512;
   letter-spacing: -0.01em;
 }
 
 .brandTitles p {
   margin: 2px 0 0;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #C1552C;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-terracotta-500, #C1552C);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .verifiedBadge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: #ECFDF5;
-  border: 1.5px solid #10B981;
-  color: #065F46;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  font-size: 12px;
+  gap: 6px;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  color: #166534;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 2px);
+  font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -167,7 +165,7 @@
 /* Candidate Hero Section */
 .candidateHero {
   padding: 28px 32px 20px;
-  border-bottom: 1px solid rgba(226, 215, 195, 0.5);
+  border-bottom: 1px solid var(--color-line, #E2D7C3);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -177,8 +175,9 @@
 
 .candidateNameBlock h2 {
   margin: 0;
+  font-family: var(--font-display, 'Fraunces', serif);
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 700;
   color: #181512;
   letter-spacing: -0.02em;
 }
@@ -188,18 +187,18 @@
   margin-top: 6px;
   background: #181512;
   color: #FBF8F3;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 2px);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .createdOnBlock {
   text-align: right;
   font-size: 12px;
-  color: #73675C;
+  color: var(--color-ink-muted, #5E554D);
 }
 
 .createdOnBlock strong {
@@ -229,7 +228,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #73675C;
+  color: var(--color-ink-muted, #5E554D);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -239,7 +238,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(226, 215, 195, 0.6);
+  background: var(--color-line, #E2D7C3);
 }
 
 .grid3 {
@@ -263,7 +262,7 @@
 .fieldLabel {
   font-size: 11px;
   font-weight: 700;
-  color: #8C8275;
+  color: var(--color-ink-muted, #5E554D);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -276,46 +275,46 @@
 }
 
 .textBox {
-  background: #FAF7F2;
-  border: 1px solid rgba(226, 215, 195, 0.7);
-  border-radius: 12px;
+  background: var(--color-sand-50, #FBF8F3);
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: var(--radius-sm, 2px);
   padding: 14px 16px;
   font-size: 13.5px;
   line-height: 1.6;
-  color: #26211C;
+  color: #181512;
   white-space: pre-wrap;
 }
 
 .chipList {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .chip {
-  background: #F3ECE0;
-  border: 1px solid rgba(193, 85, 44, 0.25);
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1px solid var(--color-line, #E2D7C3);
   color: #181512;
-  padding: 5px 12px;
-  border-radius: 9999px;
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 2px);
+  font-size: 11.5px;
   font-weight: 700;
 }
 
 .linkValue {
-  color: #C1552C;
+  color: var(--color-terracotta-500, #C1552C);
   text-decoration: underline;
   font-weight: 700;
 }
 
 .linkValue:hover {
-  color: #A9431E;
+  color: var(--color-terracotta-600, #A2421E);
 }
 
 /* Official Footer Watermark */
 .cardFooter {
-  background: #FAF7F2;
-  border-top: 1.5px solid rgba(226, 215, 195, 0.7);
+  background: var(--color-sand-100, #F3ECE0);
+  border-top: 1.5px solid var(--color-line, #E2D7C3);
   padding: 20px 32px;
   display: flex;
   align-items: center;
@@ -326,7 +325,7 @@
 
 .footerNote {
   font-size: 12px;
-  color: #73675C;
+  color: var(--color-ink-muted, #5E554D);
   line-height: 1.5;
   max-width: 500px;
 }
@@ -339,31 +338,31 @@
   font-family: monospace;
   font-size: 11px;
   font-weight: 700;
-  color: #8C8275;
+  color: var(--color-ink-muted, #5E554D);
   background: #FFFFFF;
-  border: 1px dashed rgba(24, 21, 18, 0.2);
+  border: 1px dashed var(--color-line, #E2D7C3);
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm, 2px);
   letter-spacing: 0.05em;
 }
 
 /* Error & Loading State */
 .loadingBox, .errorBox {
   background: #FFFFFF;
-  border: 1px solid rgba(226, 215, 195, 0.85);
-  border-radius: 16px;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: var(--radius-sm, 2px);
   padding: 48px 32px;
   text-align: center;
   max-width: 540px;
   margin: 40px auto;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
   border: 3px solid rgba(193, 85, 44, 0.2);
-  border-top-color: #C1552C;
+  border-top-color: var(--color-terracotta-500, #C1552C);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;

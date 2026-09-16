@@ -160,7 +160,7 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', width: '100%', background: 'var(--color-charcoal-900, #181512)', color: 'var(--color-sand-100, #F3ECE0)', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', width: '100%', background: 'var(--color-sand-50, #FBF8F3)', color: 'var(--color-ink, #181512)', flexDirection: 'column', gap: '16px' }}>
         <div style={{ width: '36px', height: '36px', border: '3px solid rgba(193, 85, 44, 0.2)', borderTop: '3px solid #C1552C', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <p style={{ margin: 0, fontWeight: 600, fontSize: '15px' }}>Verifying admin authorization...</p>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>

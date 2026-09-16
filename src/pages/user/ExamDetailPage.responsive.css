@@ -1,28 +1,583 @@
 /* ============================================================================
-   ExamDetailPage — Responsive Override Styles
-   Targets inline-styled elements via descendant selectors from .examPage
+   ExamDetailPage — Retro UI & Neobrutalist Component System
+   Bihar AI Mission — Strict Color Discipline:
+   #FBF8F3 (Sand Parchment), #181512 (Ink Charcoal), #C1552C (Terracotta), #FFFFFF (Surface)
+   Tactile 2px ink borders, 4px/6px solid ink drop-shadows, 2px radius
    ============================================================================ */
 
-/* ===================== TABLET (≤1024px) ===================== */
+/* Global Page Base */
+.examPage,
+.examIntro,
+.examEvaluationPage,
+.examCertificatePage,
+.examDismissedWrapper {
+  background: transparent !important;
+  color: var(--color-ink, #181512) !important;
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif) !important;
+}
+
+/* ============================================================================
+   STATE 0: INTRO & INSTRUCTIONS
+   ============================================================================ */
+
+/* Breadcrumb Navigation */
+.examBreadcrumb {
+  background: #FFFFFF !important;
+  border-bottom: 2px solid #181512 !important;
+  box-shadow: 0 3px 0px #181512 !important;
+}
+
+.examBreadcrumb button {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  color: #181512 !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 700 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examBreadcrumb button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  background: #FFFFFF !important;
+}
+
+/* Hero Section */
+.examHero {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+  color: #181512 !important;
+}
+
+.examHero h1 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: var(--color-ink, #181512) !important;
+  font-weight: 800 !important;
+}
+
+.examHero p {
+  color: #374151 !important;
+}
+
+.examHeroChip {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  border-radius: 2px !important;
+  color: #181512 !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+}
+
+.examHero button {
+  background: #181512 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 700 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examHero button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+/* Quick Exam Stats Grid */
+.examStatsGrid .examStatCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examStatsGrid .examStatCard:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 5px 5px 0px #181512 !important;
+}
+
+.examStatNumber {
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  color: #181512 !important;
+}
+
+/* Guidelines Card */
+.examGuidelinesCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.examGuidelinesCard h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 800 !important;
+}
+
+.examGuidelinesCard li {
+  border: 2px solid #181512 !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+/* Highlighted Warning Alert */
+.examNoticeAlert {
+  background: #FFFBEB !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.examNoticeAlert h4 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #92400E !important;
+}
+
+/* Launch Button */
+.examStartBtn {
+  background: var(--color-terracotta-500, #C1552C) !important;
+  color: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examStartBtn:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  background: #D46238 !important;
+}
+
+.examStartBtn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #181512 !important;
+}
+
+/* ============================================================================
+   STATE 2: ACTIVE PROCTORED EXAM SESSION
+   ============================================================================ */
+
+/* Top Security Header */
+.examHeader {
+  background: #FFFFFF !important;
+  color: #181512 !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.examHeader h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 800 !important;
+}
+
+/* Timer Badge */
+.examTimerBadge {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  color: #181512 !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+}
+
+/* Submit Exam Button */
+.examSubmitBtn {
+  background: #181512 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examSubmitBtn:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  background: var(--color-terracotta-500, #C1552C) !important;
+}
+
+.examSubmitBtn:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #181512 !important;
+}
+
+/* Progress Bar */
+.examProgressBar {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  border-radius: 2px !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  overflow: hidden !important;
+}
+
+.examProgressBar > div {
+  background: var(--color-terracotta-500, #C1552C) !important;
+}
+
+/* Main Question Card */
+.questionCard {
+  background: #FFFFFF !important;
+  color: #181512 !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.questionCard h3 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 700 !important;
+}
+
+/* Option Buttons */
+.optionBtn {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+.optionBtn:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  background: #FBF8F3 !important;
+}
+
+.optionBtn[data-selected="true"],
+.optionBtn.selected {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+/* Navigation Buttons Row */
+.examNavButtons button {
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examNavButtons button:hover:not(:disabled) {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+.examNavButtons button:active:not(:disabled) {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #181512 !important;
+}
+
+/* Question Palette */
+.examPalette {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.examPalette h4 {
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  color: #181512 !important;
+  letter-spacing: 0.04em !important;
+}
+
+/* Palette Buttons */
+.qp-btn {
+  border: 2px solid #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.qp-btn:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+}
+
+.qp-btn-unvisited {
+  background: #FFFFFF !important;
+  color: #181512 !important;
+}
+
+.qp-btn-active {
+  background: var(--color-terracotta-500, #C1552C) !important;
+  color: #FFFFFF !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+}
+
+.qp-btn-answered {
+  background: #181512 !important;
+  color: #FFFFFF !important;
+}
+
+.qp-btn-skipped {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  color: #181512 !important;
+}
+
+/* Warning Modal */
+.examWarningModal {
+  background: #FFFFFF !important;
+  border: 3px solid #181512 !important;
+  box-shadow: 8px 8px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+/* ============================================================================
+   STATE 3: RESULTS SUMMARY
+   ============================================================================ */
+
+.resultHeaderCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+  color: #181512 !important;
+}
+
+.resultHeaderCard h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 800 !important;
+}
+
+.resultHeaderCard p {
+  color: #374151 !important;
+}
+
+.resultScoreBadge {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  color: #181512 !important;
+}
+
+.resultCredentialBadge {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.resultActionButtons button {
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.resultActionButtons button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+.resultActionButtons button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #181512 !important;
+}
+
+/* ============================================================================
+   STATE 4: EVALUATION & ANSWER KEY
+   ============================================================================ */
+
+.evalHeaderCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+  color: #181512 !important;
+}
+
+.evalHeaderCard h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 800 !important;
+}
+
+.evalFilterTabs button {
+  border: 2px solid #181512 !important;
+  box-shadow: 2px 2px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.evalFilterTabs button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+}
+
+.resultQuestionCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.resultQuestionCard h3 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+}
+
+.evalExplanationBox {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  border-radius: 2px !important;
+}
+
+.evalBottomBar {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.evalBottomBar button {
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.evalBottomBar button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+/* ============================================================================
+   STATE 5: CERTIFICATE PREVIEW
+   ============================================================================ */
+
+.certificateCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.certificateCard h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #181512 !important;
+  font-weight: 800 !important;
+}
+
+.certActionButtons button {
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.certActionButtons button:hover:not(:disabled) {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+/* ============================================================================
+   STATE 1: DISMISSED SESSION CARD
+   ============================================================================ */
+
+.examDismissedCard {
+  background: #FFFFFF !important;
+  border: 3px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.examDismissedCard h2 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: #DC2626 !important;
+  font-weight: 800 !important;
+}
+
+.examRetryBtn {
+  background: #181512 !important;
+  color: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.examRetryBtn:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+/* ============================================================================
+   RESPONSIVE MEDIA QUERIES (TABLET & MOBILE)
+   ============================================================================ */
+
+/* TABLET (≤1024px) */
 @media (max-width: 1024px) {
-  .examPage > div {
+  .examPage > div,
+  .examIntro > div,
+  .examEvaluationPage > div,
+  .examCertificatePage > div {
     padding: 0 16px !important;
   }
 }
 
-/* ===================== MOBILE (≤768px) ===================== */
+/* MOBILE (≤768px) */
 @media (max-width: 768px) {
-  .examPage {
+  .examPage,
+  .examIntro,
+  .examEvaluationPage,
+  .examCertificatePage {
     padding-bottom: 32px !important;
   }
-  .examPage > div {
+  .examPage > div,
+  .examIntro > div,
+  .examEvaluationPage > div,
+  .examCertificatePage > div {
     padding: 0 12px !important;
   }
 
   /* Exam header bar */
   .examHeader {
     padding: 14px 14px !important;
-    border-radius: 14px !important;
+    border-radius: 2px !important;
     flex-wrap: wrap !important;
     gap: 10px !important;
   }
@@ -33,7 +588,7 @@
   /* Question card */
   .questionCard {
     padding: 20px 16px !important;
-    border-radius: 14px !important;
+    border-radius: 2px !important;
   }
   .questionCard h3 {
     font-size: 16px !important;
@@ -44,13 +599,13 @@
   .optionBtn {
     padding: 12px 14px !important;
     font-size: 13.5px !important;
-    border-radius: 10px !important;
+    border-radius: 2px !important;
     min-height: 44px !important;
   }
 
   /* Question palette sidebar — bottom sheet on mobile */
   .examPalette {
-    border-radius: 14px !important;
+    border-radius: 2px !important;
     padding: 16px 14px !important;
   }
   .examPalette h4 {
@@ -68,22 +623,23 @@
     padding: 10px 14px !important;
     font-size: 12.5px !important;
     min-height: 40px !important;
-    border-radius: 10px !important;
+    border-radius: 2px !important;
   }
 
   /* Timer badge */
   .examTimerBadge {
     font-size: 13px !important;
     padding: 6px 12px !important;
-    border-radius: 10px !important;
+    border-radius: 2px !important;
   }
 
   /* Results page */
   .examResults {
     padding: 24px 18px !important;
-    border-radius: 16px !important;
+    border-radius: 2px !important;
   }
-  .examResults h1 {
+  .examResults h1,
+  .resultHeaderCard h2 {
     font-size: 22px !important;
   }
 
@@ -94,24 +650,27 @@
   }
   .scoreGrid > div {
     padding: 14px 12px !important;
-    border-radius: 12px !important;
+    border-radius: 2px !important;
   }
 
   /* Results question list */
   .resultQuestionCard {
     padding: 16px 14px !important;
-    border-radius: 12px !important;
+    border-radius: 2px !important;
   }
 
   /* Exam intro / details page */
   .examIntro {
-    padding: 28px 18px !important;
-    border-radius: 16px !important;
+    padding-bottom: 28px !important;
+    border-radius: 2px !important;
   }
-  .examIntro h1 {
+  .examHero {
+    padding: 24px 18px !important;
+  }
+  .examHero h1 {
     font-size: 22px !important;
   }
-  .examIntro p {
+  .examHero p {
     font-size: 14px !important;
   }
 
@@ -120,11 +679,11 @@
     width: 100% !important;
     padding: 14px 20px !important;
     font-size: 15px !important;
-    border-radius: 12px !important;
+    border-radius: 2px !important;
   }
 }
 
-/* ===================== SMALL MOBILE (≤480px) ===================== */
+/* SMALL MOBILE (≤480px) */
 @media (max-width: 480px) {
   .examHeader {
     padding: 12px 12px !important;
@@ -145,10 +704,11 @@
   .scoreGrid {
     grid-template-columns: 1fr !important;
   }
-  .examResults h1 {
+  .examResults h1,
+  .resultHeaderCard h2 {
     font-size: 20px !important;
   }
-  .examIntro h1 {
+  .examHero h1 {
     font-size: 20px !important;
   }
 }

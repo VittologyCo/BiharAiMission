@@ -53,31 +53,33 @@ export const Section24Hero = ({
   };
 
   return (
-    <main
-      className="hero-main-stage w-full bg-[#14110F] text-[#FFFFFF] relative overflow-hidden flex flex-col justify-center items-center select-none"
+    <section
+      aria-label="Hero Stage"
+      className="hero-main-stage w-full bg-[#FFFFFF] text-[#181512] relative overflow-hidden flex flex-col justify-center items-center select-none"
+      style={{ backgroundColor: '#FFFFFF', position: 'relative', zIndex: 2 }}
     >
       {/* Ambient Glowing Aura */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] opacity-20 blur-[100px] z-0"
+        className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] opacity-15 blur-[100px] z-0"
         style={{
           background:
-            "radial-gradient(circle, rgba(193, 85, 44, 0.8) 0%, rgba(217, 155, 38, 0.35) 45%, transparent 70%)",
+            "radial-gradient(circle, rgba(193, 85, 44, 0.4) 0%, rgba(217, 155, 38, 0.2) 45%, transparent 70%)",
         }}
       />
 
-      {/* Nalanda University Interactive Particle Canvas */}
+      {/* Nalanda University Interactive Particle Canvas (Untouched) */}
       <div className="absolute inset-0 size-full z-0 pointer-events-auto overflow-hidden">
         <div className="size-full">
           <BuildingParticles />
         </div>
-        {/* Soft radial backdrop to maintain crystal-clear text contrast across full viewport */}
+        {/* Luminous radial backdrop localized to center text area to ensure 100% crisp, bold text legibility over particles */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(20, 17, 15, 0.82) 0%, rgba(20, 17, 15, 0.55) 55%, rgba(20, 17, 15, 0.92) 100%)",
+              "radial-gradient(ellipse at 50% 48%, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.72) 42%, rgba(255, 255, 255, 0.28) 68%, transparent 84%)",
           }}
         />
       </div>
@@ -88,42 +90,73 @@ export const Section24Hero = ({
 
       {/* Hero Content — Centered and High Contrast */}
       <div className="hero-content-stage relative z-10 mx-auto flex w-full max-w-[880px] flex-col items-center justify-center px-4 sm:px-6 my-auto text-center pointer-events-none">
-        <RevealGroup className="flex flex-col items-center gap-3.5 sm:gap-4 pointer-events-auto" delay={0.05}>
+        <RevealGroup className="flex flex-col items-center gap-2.5 sm:gap-3 pointer-events-auto" delay={0.05}>
 
           {/* Civic Badge Pill */}
-          <Reveal className="relative flex items-center justify-center gap-2 border-[1.5px] border-[#E28B5C]/50 bg-[#1E1916]/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.5)]">
-            <span className="inline-block size-2 rounded-full bg-[#E28B5C] shadow-[0_0_8px_#E28B5C]" />
-            <span className="font-sans text-[12px] sm:text-[13px] leading-[1.3] font-bold tracking-[0.03em] text-[#FED7AA]">
+          <Reveal className="relative flex items-center justify-center gap-2 border-2 border-[#181512] bg-[#FBF8F3] px-3 sm:px-3.5 py-1 rounded-[2px] shadow-[2.5px_2.5px_0px_#181512] max-w-full">
+            <span className="inline-block size-2 rounded-none bg-[#C1552C] border border-[#181512] flex-shrink-0" />
+            <span className="font-mono text-[10px] sm:text-[12px] leading-[1.3] font-bold uppercase tracking-[0.04em] text-[#181512] text-center">
               {t.hTag || "Independent Civic Initiative · Est. 2024 · biharaimission.org"}
             </span>
           </Reveal>
 
-          {/* Headline */}
-          <div className="flex flex-col items-center gap-1.5 text-center">
+          {/* Headline — Bold, Majestic, and Perfectly Proportionate */}
+          <div className="flex flex-col items-center text-center px-1">
             <Reveal>
               <h1
-                className="text-center text-[34px] sm:text-[46px] md:text-[54px] lg:text-[62px] leading-[1.12] tracking-[-0.025em] text-[#FFFFFF] font-serif font-medium"
+                className="m-0 p-0 text-center text-[#181512] font-serif font-bold tracking-[-0.025em]"
                 style={{
-                  fontFamily: "'Fraunces', 'Georgia', serif",
-                  textShadow: "0 4px 20px rgba(0, 0, 0, 0.95), 0 2px 6px rgba(0, 0, 0, 0.8)",
+                  fontFamily: "'Fraunces', 'Instrument Serif', Georgia, serif",
+                  fontSize: 'clamp(2.15rem, 5.4vw, 4.35rem)',
+                  fontWeight: 700,
+                  margin: 0,
+                  padding: 0,
+                  lineHeight: 1.03,
+                  textShadow:
+                    "0 0 32px rgba(255, 255, 255, 1), 0 0 16px rgba(255, 255, 255, 0.95), 0 1px 3px rgba(255, 255, 255, 0.9)",
                 }}
               >
-                {"Bringing "}
-                <span className="italic text-[#E28B5C]">{"AI Literacy &"}</span>
-                <br />
-                <span className="italic text-[#E28B5C]">{"Opportunity"}</span>
-                {" to"}
-                <br />
-                {"Every Corner of Bihar"}
+                {isHi ? (
+                  <>
+                    <span className="block leading-[1.03]">
+                      {"बिहार के हर कोने तक "}
+                      <span className="italic text-[#C1552C] font-bold">{"AI साक्षरता और अवसर"}</span>
+                    </span>
+                    <span className="block leading-[1.03] mt-0.5 sm:mt-1">
+                      {"पहुंचाना"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block leading-[1.03]">
+                      {"Bringing "}
+                      <span className="italic text-[#C1552C] font-bold">{"AI Literacy &"}</span>
+                    </span>
+                    <span className="block leading-[1.03] mt-0.5 sm:mt-1">
+                      <span className="italic text-[#C1552C] font-bold">{"Opportunity"}</span>
+                      {" to"}
+                    </span>
+                    <span className="block leading-[1.03] mt-0.5 sm:mt-1">
+                      {"Every Corner of Bihar"}
+                    </span>
+                  </>
+                )}
               </h1>
             </Reveal>
 
-            {/* Description — Enhanced Brightness & High Legibility */}
+            {/* Description — Bold, Crisp, and Highly Legible */}
             <Reveal>
               <p
-                className="w-full max-w-[720px] text-center font-sans text-[14px] sm:text-[15.5px] md:text-[16px] leading-[1.65] text-[#F3ECE0] font-normal pt-1"
+                className="m-0 w-full max-w-[760px] text-center font-sans font-semibold text-[#181512]"
                 style={{
-                  textShadow: "0 2px 14px rgba(0, 0, 0, 0.95), 0 1px 4px rgba(0, 0, 0, 0.9)",
+                  margin: 0,
+                  marginTop: '12px',
+                  padding: 0,
+                  fontSize: 'clamp(0.95rem, 1.25vw, 1.125rem)',
+                  lineHeight: 1.6,
+                  letterSpacing: '0.005em',
+                  textShadow:
+                    "0 0 20px #FFFFFF, 0 0 10px #FFFFFF, 0 1px 2px rgba(255, 255, 255, 0.95)",
                 }}
               >
                 {t.hDesc ||
@@ -132,10 +165,10 @@ export const Section24Hero = ({
             </Reveal>
           </div>
 
-          {/* ═══ ACTION BUTTONS — Distinct, High-Contrast Pill Styles ═══ */}
+          {/* ═══ ACTION BUTTONS ═══ */}
           <Reveal className="hero-buttons-group">
 
-            {/* ── PRIMARY: Register Now (Terracotta gradient pill w/ shimmer) ── */}
+            {/* ── PRIMARY: Register Now ── */}
             <button
               type="button"
               onClick={handleRegisterClick}
@@ -154,7 +187,7 @@ export const Section24Hero = ({
               </span>
             </button>
 
-            {/* ── SECONDARY: Explore Tools (Frosted dark obsidian pill w/ glowing hover) ── */}
+            {/* ── SECONDARY: Explore Tools ── */}
             <button
               type="button"
               onClick={handleToolsClick}
@@ -166,7 +199,7 @@ export const Section24Hero = ({
               </span>
             </button>
 
-            {/* ── TERTIARY: Our Mission (Cream/white pill w/ orange dot & single arrow) ── */}
+            {/* ── TERTIARY: Our Mission ── */}
             <button
               type="button"
               onClick={() => navigate("/about")}
@@ -179,27 +212,26 @@ export const Section24Hero = ({
             </button>
           </Reveal>
 
-          {/* Alignment Badges — High Contrast Glass Cards */}
-          <Reveal className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-center pt-2 text-[12px] sm:text-[13px]">
+          {/* Alignment Badges */}
+          <Reveal className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap justify-center pt-2 text-[11px] sm:text-[13px] px-2">
             <span
-              className="text-[#F3ECE0] font-semibold text-[13px] pr-0.5"
-              style={{ textShadow: "0 1px 8px rgba(0, 0, 0, 0.9)" }}
+              className="text-[#181512] font-mono font-bold text-[10px] sm:text-[11px] uppercase tracking-wider pr-0.5"
             >
               {t.alignedWith || "Aligned with:"}
             </span>
-            <span className="inline-flex items-center bg-[#1E1916]/95 border border-white/25 rounded-lg px-3 py-1 backdrop-blur-md text-[#FFFFFF] font-semibold shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+            <span className="inline-flex items-center bg-[#FFFFFF] border-2 border-[#181512] rounded-[2px] px-2 sm:px-2.5 py-0.5 text-[#181512] font-mono text-[10px] sm:text-[11px] font-bold uppercase shadow-[2px_2px_0px_#181512]">
               {t.chip1 || "IndiaAI Mission (MeitY)"}
             </span>
-            <span className="inline-flex items-center bg-[#1E1916]/95 border border-white/25 rounded-lg px-3 py-1 backdrop-blur-md text-[#FFFFFF] font-semibold shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+            <span className="inline-flex items-center bg-[#FFFFFF] border-2 border-[#181512] rounded-[2px] px-2 sm:px-2.5 py-0.5 text-[#181512] font-mono text-[10px] sm:text-[11px] font-bold uppercase shadow-[2px_2px_0px_#181512]">
               {t.chip2 || "Digital India"}
             </span>
-            <span className="inline-flex items-center bg-[#1E1916]/95 border border-white/25 rounded-lg px-3 py-1 backdrop-blur-md text-[#FFFFFF] font-semibold shadow-[0_2px_10px_rgba(0,0,0,0.4)]">
+            <span className="inline-flex items-center bg-[#FFFFFF] border-2 border-[#181512] rounded-[2px] px-2 sm:px-2.5 py-0.5 text-[#181512] font-mono text-[10px] sm:text-[11px] font-bold uppercase shadow-[2px_2px_0px_#181512]">
               {t.chip3 || "IndiaAI FutureSkills"}
             </span>
           </Reveal>
         </RevealGroup>
       </div>
-    </main>
+    </section>
   );
 };
 

@@ -3,7 +3,7 @@
 .bannerStrip {
   width: 100%;
   background: var(--color-charcoal-900, #181512);
-  border-bottom: 1px solid rgba(226, 215, 195, 0.16);
+  border-bottom: 2px solid var(--color-charcoal-900, #181512);
   padding: 6px 20px;
   font-size: 0.75rem;
   position: relative;
@@ -29,16 +29,17 @@
   display: inline-flex;
   align-items: center;
   padding: 2.5px 8px;
-  background: linear-gradient(135deg, var(--color-terracotta-500, #C1552C) 0%, var(--color-ochre-400, #D99B26) 100%);
+  background: var(--color-terracotta-500, #C1552C);
   color: #FFFFFF;
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.68rem;
   font-weight: 800;
-  border-radius: 4px;
+  border: 1px solid var(--color-ink, #181512);
+  box-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(193, 85, 44, 0.35);
 }
 
 .disclaimerText {
@@ -71,25 +72,26 @@
 .govLink {
   display: inline-flex;
   align-items: center;
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-sand-50, #FBF8F3);
-  background: rgba(193, 85, 44, 0.25);
-  border: 1px solid rgba(226, 139, 92, 0.45);
+  background: rgba(226, 215, 195, 0.1);
+  border: 1.5px solid rgba(226, 215, 195, 0.4);
+  box-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.35);
   padding: 2px 9px;
-  border-radius: 4px;
+  border-radius: 2px;
   text-decoration: none;
   white-space: nowrap;
-  transition: all 180ms ease-out;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
 }
 
 .govLink:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2.5px 2.5px 0px rgba(0, 0, 0, 0.45);
   background: var(--color-terracotta-500, #C1552C);
   color: #FFFFFF;
   border-color: var(--color-terracotta-500, #C1552C);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(193, 85, 44, 0.35);
 }
 
 @media (max-width: 768px) {
@@ -107,5 +109,28 @@
   }
   .metaText, .dot {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .bannerStrip {
+    padding: 6px 10px;
+  }
+  .disclaimerBlock {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .civicBadge {
+    font-size: 0.625rem;
+    padding: 2px 6px;
+  }
+  .disclaimerText {
+    font-size: 0.72rem;
+    text-align: center;
+  }
+  .govLink {
+    font-size: 0.7rem;
+    padding: 2px 7px;
   }
 }

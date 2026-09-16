@@ -198,14 +198,12 @@ export default function CertificateModal({ submission, onClose }) {
         position: 'fixed',
         inset: 0,
         zIndex: 10000,
-        background: 'rgba(14, 12, 10, 0.84)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(24, 21, 18, 0.65)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '20px',
-        animation: 'fadeInModal 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        animation: 'fadeInModal 0.2s ease',
         boxSizing: 'border-box'
       }}
     >
@@ -213,60 +211,49 @@ export default function CertificateModal({ submission, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          background: 'linear-gradient(145deg, #1C1814 0%, #15120F 100%)',
-          borderRadius: '24px',
-          border: '1px solid rgba(226, 139, 92, 0.35)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          background: '#FFFFFF',
+          borderRadius: 'var(--radius-sm, 2px)',
+          border: '1px solid var(--color-sand-300, #D8CEBE)',
+          borderTop: '3px solid var(--color-terracotta, #C1552C)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
           width: '100%',
           maxWidth: '960px',
           maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          color: '#FFFFFF',
-          padding: '24px 28px',
+          color: 'var(--color-ink, #181512)',
+          padding: '22px 24px',
           boxSizing: 'border-box'
         }}
       >
-        {/* Top Amber Ambient Glow Line */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '320px',
-          height: '2.5px',
-          background: 'linear-gradient(90deg, transparent, #C1552C 30%, #D99B26 70%, transparent)',
-          borderRadius: '2px'
-        }} />
-
         {/* Modal Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px', borderBottom: '1px solid rgba(226, 139, 92, 0.2)', paddingBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '14px', borderBottom: '1px solid var(--color-sand-200, #E6DCB8)', paddingBottom: '12px' }}>
           <div>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(16, 185, 129, 0.16)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              color: '#34D399',
+              background: 'var(--color-sand-100, #F3ECE0)',
+              border: '1px solid var(--color-sand-300, #D8CEBE)',
+              color: 'var(--color-ink, #181512)',
               fontSize: '10.5px',
-              fontWeight: '800',
-              padding: '3px 10px',
-              borderRadius: '9999px',
-              letterSpacing: '0.06em',
+              fontWeight: '700',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              letterSpacing: '0.04em',
               textTransform: 'uppercase',
               marginBottom: '6px'
             }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#15803D' }} />
               <span>OFFICIAL VERIFIED CIVIC CREDENTIAL</span>
             </div>
 
             <h2 style={{
-              fontFamily: "var(--font-display, 'Fraunces', serif)",
+              fontFamily: "var(--font-heading, 'Fraunces', serif)",
               fontSize: '20px',
               fontWeight: '700',
-              color: '#FFFFFF',
+              color: 'var(--color-ink, #181512)',
               margin: '0 0 4px 0',
               display: 'flex',
               alignItems: 'center',
@@ -279,19 +266,19 @@ export default function CertificateModal({ submission, onClose }) {
                   fontSize: '12px',
                   fontFamily: "var(--font-body, sans-serif)",
                   fontWeight: '600',
-                  color: 'var(--color-terracotta-400, #E28B5C)',
-                  background: 'rgba(193, 85, 44, 0.15)',
-                  border: '1px solid rgba(226, 139, 92, 0.3)',
+                  color: 'var(--color-terracotta, #C1552C)',
+                  background: 'var(--color-sand-100, #F3ECE0)',
+                  border: '1px solid var(--color-sand-300, #D8CEBE)',
                   padding: '2px 8px',
-                  borderRadius: '6px'
+                  borderRadius: 'var(--radius-sm, 2px)'
                 }}>
                   💼 {cleanDesignation}
                 </span>
               )}
             </h2>
 
-            <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontWeight: '700', color: '#E8B23D' }}>ID: {submission.credentialId}</span>
+            <div style={{ fontSize: '12px', color: 'var(--color-ink-muted, #5C554B)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontWeight: '700', color: 'var(--color-terracotta, #C1552C)' }}>ID: {submission.credentialId}</span>
               <span>•</span>
               <span>Score: {submission.percentage}% ({submission.score}/{submission.total || 30})</span>
             </div>
@@ -301,19 +288,28 @@ export default function CertificateModal({ submission, onClose }) {
             onClick={onClose}
             aria-label="Close modal"
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              color: '#FFFFFF',
+              width: '28px',
+              height: '28px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: 'var(--color-sand-100, #F3ECE0)',
+              border: '1px solid var(--color-sand-300, #D8CEBE)',
+              color: 'var(--color-ink-muted, #5C554B)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '18px',
-              transition: 'all 0.2s ease',
+              fontSize: '13px',
+              fontWeight: '700',
+              transition: 'all 0.15s ease',
               flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-ink, #181512)';
+              e.currentTarget.style.background = 'var(--color-sand-200, #E6DCB8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-ink-muted, #5C554B)';
+              e.currentTarget.style.background = 'var(--color-sand-100, #F3ECE0)';
             }}
           >
             ✕
@@ -322,9 +318,9 @@ export default function CertificateModal({ submission, onClose }) {
 
         {/* Certificate Image Frame */}
         <div style={{
-          background: 'radial-gradient(ellipse at center, #FAF7F2 0%, #EFE8DC 100%)',
-          borderRadius: '16px',
-          border: '1px solid rgba(226, 215, 195, 0.8)',
+          background: 'var(--color-sand-50, #FBF8F3)',
+          borderRadius: 'var(--radius-sm, 2px)',
+          border: '1px solid var(--color-sand-300, #D8CEBE)',
           padding: '12px',
           textAlign: 'center',
           display: 'flex',
@@ -332,11 +328,10 @@ export default function CertificateModal({ submission, onClose }) {
           justifyContent: 'center',
           minHeight: '260px',
           maxHeight: 'calc(86vh - 190px)',
-          overflow: 'hidden',
-          boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.35)'
+          overflow: 'hidden'
         }}>
           {loading || !certImageUrl ? (
-            <div style={{ padding: '40px', color: '#181512', fontWeight: '800', fontSize: '15px' }}>
+            <div style={{ padding: '40px', color: 'var(--color-ink, #181512)', fontWeight: '700', fontSize: '14px' }}>
               ⏳ Generating Official Verified High-DPI Certificate...
             </div>
           ) : (
@@ -349,16 +344,16 @@ export default function CertificateModal({ submission, onClose }) {
                 width: 'auto',
                 height: 'auto',
                 objectFit: 'contain',
-                borderRadius: '8px',
-                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)'
+                borderRadius: 'var(--radius-sm, 2px)',
+                border: '1px solid var(--color-sand-300, #D8CEBE)'
               }}
             />
           )}
         </div>
 
         {/* Modal Action Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '16px', flexWrap: 'wrap' }}>
-          <div style={{ fontSize: '11.5px', color: 'var(--color-sand-200, #C2B7A3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', marginTop: '14px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--color-ink-muted, #5C554B)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span>🔒</span>
             <span>Verifiable via QR Code & Credential ID</span>
           </div>
@@ -367,15 +362,21 @@ export default function CertificateModal({ submission, onClose }) {
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#F3ECE0',
-                padding: '9px 20px',
-                borderRadius: '11px',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-sand-300, #D8CEBE)',
+                color: 'var(--color-ink, #181512)',
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-sm, 2px)',
                 fontWeight: '700',
                 fontSize: '13px',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--color-sand-200, #E6DCB8)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--color-sand-100, #F3ECE0)';
               }}
             >
               Close
@@ -385,20 +386,25 @@ export default function CertificateModal({ submission, onClose }) {
               onClick={handleDownload}
               disabled={loading || !certImageUrl}
               style={{
-                background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                background: 'var(--color-terracotta, #C1552C)',
                 color: '#FFFFFF',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                padding: '9px 22px',
-                borderRadius: '11px',
-                fontWeight: '800',
+                border: 'none',
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-sm, 2px)',
+                fontWeight: '700',
                 fontSize: '13px',
                 cursor: loading || !certImageUrl ? 'not-allowed' : 'pointer',
                 opacity: loading || !certImageUrl ? 0.6 : 1,
-                boxShadow: '0 4px 16px rgba(193, 85, 44, 0.4)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                transition: 'all 0.2s ease'
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading && certImageUrl) e.currentTarget.style.background = 'var(--color-terracotta-dark, #A9431E)';
+              }}
+              onMouseLeave={(e) => {
+                if (!loading && certImageUrl) e.currentTarget.style.background = 'var(--color-terracotta, #C1552C)';
               }}
             >
               <span>📥</span>

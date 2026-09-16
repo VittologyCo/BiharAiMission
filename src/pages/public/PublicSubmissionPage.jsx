@@ -209,6 +209,18 @@ export default function PublicSubmissionPage() {
                   <span className={styles.fieldValue}>{submission.full_name || '--'}</span>
                 </div>
                 <div className={styles.fieldItem}>
+                  <span className={styles.fieldLabel}>Username (@)</span>
+                  <span className={styles.fieldValue}>
+                    {submission.username ? (
+                      <span style={{ color: '#B45309', fontWeight: '800', fontFamily: 'monospace' }}>
+                        @{submission.username.replace(/^@/, '')}
+                      </span>
+                    ) : (
+                      '--'
+                    )}
+                  </span>
+                </div>
+                <div className={styles.fieldItem}>
                   <span className={styles.fieldLabel}>Email Address</span>
                   <span className={styles.fieldValue}>
                     {submission.email ? (

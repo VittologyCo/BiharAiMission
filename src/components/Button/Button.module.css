@@ -6,28 +6,27 @@
   justify-content: center;
   position: relative;
   font-family: var(--font-body, 'General Sans', 'Sora', sans-serif);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
-  border: none;
+  border: 2px solid var(--color-ink, #181512);
   outline: none;
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
-  border-radius: var(--radius-sm, 12px);
+  border-radius: 2px;
   overflow: hidden;
   letter-spacing: -0.01em;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              background 0.22s ease,
-              border-color 0.22s ease,
-              color 0.22s ease;
+  transition: transform 0.12s ease,
+              box-shadow 0.12s ease,
+              background 0.15s ease,
+              color 0.15s ease;
   will-change: transform;
 }
 
 .button:focus-visible {
   outline: 2px solid var(--color-terracotta-400, #E28B5C);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(193, 85, 44, 0.35);
+  box-shadow: 0 0 0 3px rgba(193, 85, 44, 0.35);
 }
 
 .fullWidth {
@@ -36,86 +35,73 @@
 
 /* SIZES */
 .sm {
-  padding: 7px 14px;
+  padding: 6px 14px;
   font-size: 0.813rem;
   line-height: 1.35;
   gap: 6px;
-  border-radius: 8px;
+  border-radius: 2px;
 }
 
 .md {
-  padding: 10px 20px;
+  padding: 9px 20px;
   font-size: 0.938rem;
   line-height: 1.45;
   gap: 8px;
-  border-radius: 11px;
+  border-radius: 2px;
 }
 
 .lg {
-  padding: 12px 24px;
+  padding: 12px 26px;
   font-size: 1.05rem;
   line-height: 1.4;
   gap: 10px;
-  border-radius: 13px;
+  border-radius: 2px;
 }
 
-/* ═════ PRIMARY VARIANT (TERRACOTTA MULTI-STOP GRADIENT) ═════ */
+/* ═════ PRIMARY VARIANT (TERRACOTTA TACTILE NEOBRUTALIST) ═════ */
 .primary {
-  background: linear-gradient(135deg, #D45D31 0%, #BA491F 55%, #9F3812 100%);
-  color: var(--color-sand-50, #FBF8F3);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4),
-              inset 0 -1px 1px rgba(0, 0, 0, 0.3),
-              0 6px 20px -3px rgba(193, 85, 44, 0.42),
-              0 2px 5px rgba(0, 0, 0, 0.25);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--color-terracotta-500, #C1552C);
+  color: #FFFFFF;
+  border: 2px solid var(--color-ink, #181512);
+  box-shadow: 3.5px 3.5px 0px var(--color-ink, #181512);
 }
 
 .primary:hover:not(.disabled) {
-  background: linear-gradient(135deg, #DE6739 0%, #C45125 55%, #A83E16 100%);
-  transform: translateY(-2.5px) scale(1.015);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5),
-              inset 0 -1px 1px rgba(0, 0, 0, 0.2),
-              0 12px 30px -4px rgba(193, 85, 44, 0.55),
-              0 4px 10px rgba(0, 0, 0, 0.22);
+  background: #D46237;
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5px 5px 0px var(--color-ink, #181512);
+  color: #FFFFFF;
 }
 
 .primary:active:not(.disabled) {
-  transform: translateY(0.5px) scale(0.975);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35),
-              0 2px 8px rgba(193, 85, 44, 0.25);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--color-ink, #181512);
 }
 
-/* ═════ SECONDARY VARIANT (FROSTED GLASS WITH LUMINOUS BORDER) ═════ */
+/* ═════ SECONDARY VARIANT (SOLID SAND DOSSIER WITH INK SHADOW) ═════ */
 .secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-sand-50, #FBF8F3);
-  border: 1px solid rgba(226, 215, 195, 0.24);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12),
-              0 4px 16px rgba(0, 0, 0, 0.25);
+  background: #FFFFFF;
+  color: var(--color-ink, #181512);
+  border: 2px solid var(--color-ink, #181512);
+  box-shadow: 3.5px 3.5px 0px var(--color-ink, #181512);
 }
 
 .secondary:hover:not(.disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(226, 139, 92, 0.65);
-  color: #FFFFFF;
-  transform: translateY(-2.5px) scale(1.015);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25),
-              0 0 20px rgba(193, 85, 44, 0.25),
-              0 8px 24px rgba(0, 0, 0, 0.3);
+  background: var(--color-sand-100, #F3ECE0);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5px 5px 0px var(--color-ink, #181512);
+  color: var(--color-ink, #181512);
 }
 
 .secondary:active:not(.disabled) {
-  transform: translateY(0.5px) scale(0.975);
-  background: rgba(255, 255, 255, 0.04);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--color-ink, #181512);
 }
 
 /* ═════ GHOST VARIANT (CLEAN AMBIENT ACTION) ═════ */
 .ghost {
   background: transparent;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
   padding-left: 10px;
   padding-right: 10px;
 }

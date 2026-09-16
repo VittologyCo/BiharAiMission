@@ -584,12 +584,39 @@ export const getAllTaskSubmissions = async () => {
         }
       } catch (e) {}
 
-      const { data, error } = await supabase
-        .from('daily_task_submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Paginated fetch to bypass PostgREST 1000-row default limit and retrieve all submissions
+      let data = [];
+      let page = 0;
+      const CHUNK_SIZE = 1000;
+      let hasMore = true;
 
-      if (!error && Array.isArray(data)) {
+      while (hasMore) {
+        const from = page * CHUNK_SIZE;
+        const to = from + CHUNK_SIZE - 1;
+        const { data: chunk, error: pageErr } = await supabase
+          .from('daily_task_submissions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (pageErr) {
+          console.error('[getAllTaskSubmissions] error fetching page:', pageErr);
+          break;
+        }
+
+        if (Array.isArray(chunk) && chunk.length > 0) {
+          data.push(...chunk);
+          if (chunk.length < CHUNK_SIZE) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      if (data.length > 0) {
         // Supabase is authoritative!
         const now = Date.now();
         const pendingLocal = getLocalTaskSubmissions().filter((s) => {
@@ -1230,12 +1257,38 @@ export const fetchRealtimeLeaderboardData = async () => {
   // 3. Fetch all submissions from Supabase with authoritative DB truth
   if (supabase) {
     try {
-      const { data: subsData, error: subsError } = await supabase
-        .from('daily_task_submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let subsData = [];
+      let sPage = 0;
+      const S_CHUNK = 1000;
+      let sHasMore = true;
 
-      if (!subsError && Array.isArray(subsData)) {
+      while (sHasMore) {
+        const from = sPage * S_CHUNK;
+        const to = from + S_CHUNK - 1;
+        const { data: chunk, error: subsError } = await supabase
+          .from('daily_task_submissions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (subsError) {
+          console.error('[getLeaderboardData] error fetching submissions page:', subsError);
+          break;
+        }
+
+        if (Array.isArray(chunk) && chunk.length > 0) {
+          subsData.push(...chunk);
+          if (chunk.length < S_CHUNK) {
+            sHasMore = false;
+          } else {
+            sPage++;
+          }
+        } else {
+          sHasMore = false;
+        }
+      }
+
+      if (subsData.length > 0) {
         const now = Date.now();
         const pendingLocal = getLocalTaskSubmissions().filter((s) => {
           if (!s._pendingSync) return false;
@@ -1266,11 +1319,33 @@ export const fetchRealtimeLeaderboardData = async () => {
 
     // 4. Fetch user profile details for rich designations & organizations
     try {
-      const { data: usersData, error: usersError } = await supabase
-        .from('user_details')
-        .select('email, full_name, designation, role_type, organization, department, district');
+      let usersData = [];
+      let uPage = 0;
+      const U_CHUNK = 1000;
+      let uHasMore = true;
 
-      if (!usersError && Array.isArray(usersData)) {
+      while (uHasMore) {
+        const from = uPage * U_CHUNK;
+        const to = from + U_CHUNK - 1;
+        const { data: uChunk, error: usersError } = await supabase
+          .from('user_details')
+          .select('email, full_name, designation, role_type, organization, department, district')
+          .range(from, to);
+
+        if (usersError) break;
+        if (Array.isArray(uChunk) && uChunk.length > 0) {
+          usersData.push(...uChunk);
+          if (uChunk.length < U_CHUNK) {
+            uHasMore = false;
+          } else {
+            uPage++;
+          }
+        } else {
+          uHasMore = false;
+        }
+      }
+
+      if (usersData.length > 0) {
         usersData.forEach((u) => {
           if (u.email) {
             userDetailsMap[u.email.toLowerCase().trim()] = u;

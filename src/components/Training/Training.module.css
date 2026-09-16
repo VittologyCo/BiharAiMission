@@ -3,7 +3,7 @@
 .trainingSection {
   padding: var(--space-section, 5rem) 24px;
   background: transparent;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   position: relative;
   z-index: 1;
 }
@@ -43,7 +43,7 @@
   font-size: clamp(2rem, 3.5vw, 2.75rem);
   font-weight: 600;
   line-height: 1.15;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   letter-spacing: -0.02em;
   margin-bottom: 12px;
 }
@@ -52,7 +52,7 @@
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 1.05rem;
   line-height: 1.62;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
 }
 
 /* RESTRICTED ACCESS BANNER */
@@ -61,7 +61,7 @@
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(226, 215, 195, 0.18);
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   border-radius: var(--radius-lg, 20px);
   padding: 24px 32px;
   margin-bottom: 40px;
@@ -98,13 +98,13 @@
   font-size: 1.15rem;
   font-weight: 600;
   margin-bottom: 4px;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
 }
 
 .restrictedDesc {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.875rem;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
   line-height: 1.45;
 }
 
@@ -172,7 +172,7 @@
 .durationBadge {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.75rem;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
   font-weight: 600;
 }
 
@@ -180,7 +180,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.45rem;
   font-weight: 600;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   line-height: 1.25;
   margin-bottom: 14px;
 }
@@ -189,7 +189,7 @@
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.938rem;
   line-height: 1.6;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
   margin-bottom: 20px;
 }
 
@@ -204,7 +204,7 @@
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.844rem;
   font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   margin-bottom: 12px;
 }
 
@@ -220,7 +220,7 @@
   gap: 8px;
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.813rem;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
 }
 
 .checkIcon {

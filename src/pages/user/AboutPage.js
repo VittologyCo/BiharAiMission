@@ -29,7 +29,7 @@ const AboutPage = ({ onOpenContact, onOpenRegistration }) => {
       
       <About />
 
-      <div style={{ maxWidth: '1140px', margin: '40px auto 20px', padding: '0 24px' }}>
+      <div style={{ maxWidth: 'var(--max-width-content, 1200px)', margin: '40px auto 20px', padding: '0 24px' }}>
         <StatsPanel />
       </div>
 

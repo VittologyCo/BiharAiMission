@@ -557,14 +557,6 @@ export default function StartupsHub({ onOpenRegistration, onOpenContact, onOpenS
                 )}
               </span>
             </div>
-            <button
-              onClick={() => setActiveCategory(activeCategory === 'BUILDING_PHASE' ? 'ALL' : 'BUILDING_PHASE')}
-              className={styles.radarBtn}
-            >
-              {activeCategory === 'BUILDING_PHASE'
-                ? (isHi ? 'सभी स्टार्टअप्स देखें →' : 'View All Startups →')
-                : (isHi ? `🛠️ केवल निर्माण चरण देखें (${buildingPhaseCount})` : `🛠️ Filter Building Phase (${buildingPhaseCount})`)}
-            </button>
           </div>
 
           {/* CATEGORY TABS */}

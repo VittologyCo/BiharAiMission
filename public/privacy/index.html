@@ -40,24 +40,33 @@
   }
   </script>
   <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; padding: 2rem 1.5rem; background: #181512; color: #f0ece1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; }
+    :root { color-scheme: light; }
+    /* When JavaScript is active (normal human visitors), completely hide the static HTML immediately and hand off to SPA */
+    .js body { display: none !important; }
+    body { margin: 0; padding: 2rem 1.5rem; background: #FBF8F3; color: #181512; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; }
     .container { max-width: 860px; margin: 0 auto; }
-    h1 { font-size: 2.25rem; color: #f5af87; margin-bottom: 0.5rem; }
-    .effective-date { font-size: 0.95rem; color: #b0a898; margin-bottom: 1.5rem; }
-    h2 { font-size: 1.45rem; color: #e2d7c3; border-bottom: 1px solid rgba(226,139,92,0.25); padding-bottom: 0.5rem; margin-top: 2rem; }
-    p, li { font-size: 1.05rem; color: #d0c7b7; }
-    a { color: #f5af87; text-decoration: none; }
+    h1 { font-size: 2.25rem; color: #181512; margin-bottom: 0.5rem; }
+    .effective-date { font-size: 0.95rem; color: #7A7265; margin-bottom: 1.5rem; }
+    h2 { font-size: 1.45rem; color: #181512; border-bottom: 1px solid #D8CEBE; padding-bottom: 0.5rem; margin-top: 2rem; }
+    p, li { font-size: 1.05rem; color: #5C554B; }
+    a { color: #C1552C; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .policy-box { background: rgba(193,85,44,0.1); border: 1px solid rgba(226,139,92,0.25); border-radius: 10px; padding: 1.25rem; margin: 1.5rem 0; }
-    .nav-strip { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem; }
+    .policy-box { background: #FFFFFF; border: 1px solid #D8CEBE; border-left: 3px solid #C1552C; border-radius: 2px; padding: 1.25rem; margin: 1.5rem 0; color: #181512; }
+    .nav-strip { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #D8CEBE; font-size: 0.95rem; }
     .nav-strip a { margin-right: 1.25rem; }
   </style>
+  <script>
+    document.documentElement.classList.add('js');
+    if (typeof window !== 'undefined' && window.location) {
+      sessionStorage.setItem('spa_redirect', '/privacy' + window.location.search + window.location.hash);
+      window.location.replace('/');
+    }
+  </script>
 </head>
 <body>
   <div class="container">
     <header>
-      <a href="/" style="font-weight:700;letter-spacing:0.05em;text-transform:uppercase;font-size:0.9rem;color:#f5af87">&larr; Back to Bihar AI Mission</a>
+      <a href="/" style="font-weight:700;letter-spacing:0.05em;text-transform:uppercase;font-size:0.9rem;color:#C1552C">&larr; Back to Bihar AI Mission</a>
       <h1>Privacy Policy & Data Protection Charter</h1>
       <div class="effective-date">Effective Date: January 1, 2024 &bull; Last Revised & Verified: September 2026</div>
       <p><strong>Bihar AI Mission (बिहार AI मिशन)</strong> is committed to safeguarding personal data in compliance with India's <em>Digital Personal Data Protection (DPDP) Act 2023</em> and IndiaAI ethical guidelines. This Privacy Policy details the strict principles under which candidate data, assessment records, and platform telemetry are collected, processed, stored, and retained.</p>

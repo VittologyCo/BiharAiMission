@@ -2,7 +2,7 @@
    Bihar AI Mission — Progressive Web App Service Worker (PWA)
    ============================================================================ */
 
-const CACHE_NAME = 'bihar-ai-v1';
+const CACHE_NAME = 'bihar-ai-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -39,7 +39,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch Event — Stale-While-Revalidate with Network Fallback
+// 3. Fetch Event — Network-First for Navigation, Stale-While-Revalidate for Assets
 self.addEventListener('fetch', (event) => {
   // Ignore non-GET requests or Supabase/API calls
   if (
@@ -51,6 +51,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // For HTML navigation requests, ALWAYS prioritize the network to prevent stale page caches
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline fallback
+          return caches.match('/index.html') || caches.match('/');
+        })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
@@ -63,12 +85,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // If offline and requesting navigation page, return cached index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html') || caches.match('/');
-          }
-        });
+        .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

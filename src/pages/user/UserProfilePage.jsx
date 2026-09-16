@@ -12,6 +12,8 @@ import AIClasswork from '../../components/AIClasswork/AIClasswork';
 import { getUserTaskSubmissions, getDailyTasks } from '../../services/taskService';
 import SEO from '../../components/SEO/SEO';
 import TaskLeaderboard from '../../components/TaskLeaderboard/TaskLeaderboard';
+import ChitChat from '../../components/ChitChat/ChitChat';
+import { isWithinNightChatHours } from '../../services/chitchatService';
 import './UserProfilePage.responsive.css';
 
 import {
@@ -23,6 +25,7 @@ import {
 
 const MANDATORY_REGISTRATION_FIELDS = [
   'full_name',
+  'username',
   'email',
   'mobile',
   'gender',
@@ -62,7 +65,7 @@ function parseExperience(exp) {
 }
 
 export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpenContact }) {
-  const { user, logout, forcePurgeAndLogout } = useAuth();
+  const { user, logout, forcePurgeAndLogout, updateUserSession } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const { lang } = useLanguage();
@@ -98,6 +101,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
   // Form input state - start with clean empty values (no fake pre-filled defaults)
   const [formData, setFormData] = useState({
     full_name: '',
+    username: '',
     email: '',
     mobile: '',
     gender: '',
@@ -124,7 +128,176 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
   const [formError, setFormError] = useState('');
   const [isCustomDistrict, setIsCustomDistrict] = useState(false);
 
+  // One-time username creation state
+  const [newUsernameInput, setNewUsernameInput] = useState('');
+  const [profileUsernameStatus, setProfileUsernameStatus] = useState(null); // null | 'checking' | 'available' | 'taken' | 'invalid'
+  const [isClaimingUsername, setIsClaimingUsername] = useState(false);
+  const [showClaimConfirmModal, setShowClaimConfirmModal] = useState(false);
+  const profileUsernameTimer = useRef(null);
+  const profileUsernameCache = useRef({});
+
   const isBiharState = !formData.state || formData.state === 'Bihar';
+
+  const cleanProfileUsername = (str) => (str || '').replace(/^@+/, '').trim().toLowerCase();
+
+  const checkProfileUsernameAvailability = useCallback(async (usernameVal) => {
+    if (profileUsernameTimer.current) clearTimeout(profileUsernameTimer.current);
+    const clean = cleanProfileUsername(usernameVal);
+    if (!clean) {
+      setProfileUsernameStatus(null);
+      return;
+    }
+    if (!/^[a-z0-9_]{5,10}$/.test(clean)) {
+      setProfileUsernameStatus('invalid');
+      return;
+    }
+    if (profileUsernameCache.current[clean] !== undefined) {
+      setProfileUsernameStatus(profileUsernameCache.current[clean] ? 'taken' : 'available');
+      return;
+    }
+    setProfileUsernameStatus('checking');
+    try {
+      // 1. Try secure RPC
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('check_username_exists', { username_input: clean });
+      if (!rpcErr && typeof rpcData === 'boolean') {
+        profileUsernameCache.current[clean] = rpcData;
+        setProfileUsernameStatus(rpcData ? 'taken' : 'available');
+        return;
+      }
+
+      // 2. Direct query fallback
+      const { data: directData, error: directErr } = await supabase
+        .from('user_details')
+        .select('id, email')
+        .ilike('username', clean)
+        .limit(1);
+
+      if (!directErr) {
+        const isTaken = Array.isArray(directData) && directData.length > 0 && directData[0].email?.toLowerCase() !== currentUser?.email?.toLowerCase();
+        profileUsernameCache.current[clean] = isTaken;
+        setProfileUsernameStatus(isTaken ? 'taken' : 'available');
+      } else {
+        setProfileUsernameStatus(null);
+      }
+    } catch {
+      setProfileUsernameStatus(null);
+    }
+  }, [currentUser?.email]);
+
+  const handleProfileUsernameChange = (val) => {
+    const rawClean = (val || '').replace(/^@+/, '').replace(/\s+/g, '').toLowerCase().slice(0, 10);
+    setNewUsernameInput(rawClean);
+
+    if (profileUsernameTimer.current) clearTimeout(profileUsernameTimer.current);
+    if (!rawClean) {
+      setProfileUsernameStatus(null);
+      return;
+    }
+    if (rawClean.length < 5 || !/^[a-z0-9_]{5,10}$/.test(rawClean)) {
+      setProfileUsernameStatus('invalid');
+      return;
+    }
+    // Instant cache check
+    if (profileUsernameCache.current[rawClean] !== undefined) {
+      setProfileUsernameStatus(profileUsernameCache.current[rawClean] ? 'taken' : 'available');
+      return;
+    }
+    // Instant checking feedback & fast 150ms debounce
+    setProfileUsernameStatus('checking');
+    profileUsernameTimer.current = setTimeout(() => {
+      checkProfileUsernameAvailability(rawClean);
+    }, 150);
+  };
+
+  const handleClaimUsername = () => {
+    const cleanUser = cleanProfileUsername(newUsernameInput);
+    if (!cleanUser) {
+      toast?.warning(isHi ? 'कृपया एक यूज़रनेम दर्ज करें।' : 'Please enter a username.');
+      return;
+    }
+    if (!/^[a-z0-9_]{5,10}$/.test(cleanUser)) {
+      toast?.warning(isHi ? 'यूज़रनेम 5-10 वर्णों का होना चाहिए (केवल अक्षर, संख्या और अंडरस्कोर)।' : 'Username must be 5-10 characters (letters, numbers, underscore only).');
+      return;
+    }
+    if (profileUsernameStatus === 'taken') {
+      toast?.error(isHi ? 'यह यूज़रनेम पहले से लिया जा चुका है। कृपया दूसरा चुनें।' : 'This username is already taken. Please choose another.');
+      return;
+    }
+
+    setShowClaimConfirmModal(true);
+  };
+
+  const executeClaimUsername = async () => {
+    setShowClaimConfirmModal(false);
+    const cleanUser = cleanProfileUsername(newUsernameInput);
+    const targetEmail = currentUser?.email || formData.email;
+    if (!targetEmail) {
+      toast?.error('User email not found. Please log in again.');
+      return;
+    }
+
+    setIsClaimingUsername(true);
+    try {
+      let success = false;
+      let errMsg = '';
+      try {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('claim_user_username', {
+          email_input: targetEmail.toLowerCase().trim(),
+          username_input: cleanUser
+        });
+        if (!rpcErr && rpcRes && rpcRes.success) {
+          success = true;
+        } else if (rpcErr) {
+          errMsg = rpcErr.message;
+        } else if (rpcRes && !rpcRes.success) {
+          errMsg = rpcRes.error || 'Failed to claim username';
+        }
+      } catch (rpcEx) {
+        errMsg = rpcEx.message;
+      }
+
+      // Direct table update fallback
+      if (!success) {
+        const { data: checkData } = await supabase
+          .from('user_details')
+          .select('id, email')
+          .ilike('username', cleanUser)
+          .limit(1);
+
+        if (checkData && checkData.length > 0 && checkData[0].email?.toLowerCase() !== targetEmail.toLowerCase()) {
+          toast?.error(isHi ? 'यह यूज़रनेम पहले से लिया जा चुका है।' : 'This username is already taken by another account.');
+          setIsClaimingUsername(false);
+          return;
+        }
+
+        const { error: updateErr } = await supabase
+          .from('user_details')
+          .update({ username: cleanUser, updated_at: getIstTimestamp() })
+          .ilike('email', targetEmail.toLowerCase().trim());
+
+        if (!updateErr) {
+          success = true;
+        } else {
+          errMsg = updateErr.message;
+        }
+      }
+
+      if (success) {
+        setFormData(prev => ({ ...prev, username: cleanUser }));
+        setExistingSubmission(prev => prev ? ({ ...prev, username: cleanUser }) : null);
+        if (updateUserSession) {
+          updateUserSession({ username: cleanUser });
+        }
+        toast?.success(isHi ? `🎉 आपका यूज़रनेम @${cleanUser} सफलतापूर्वक सेट और स्थायी रूप से लॉक हो गया है!` : `🎉 Your username @${cleanUser} has been permanently set and locked!`);
+      } else {
+        toast?.error(errMsg || 'Could not set username. Please try again.');
+      }
+    } catch (err) {
+      toast?.error(err.message || 'Error setting username');
+    } finally {
+      setIsClaimingUsername(false);
+    }
+  };
 
   const forcePurgeRef = useRef(forcePurgeAndLogout);
   useEffect(() => {
@@ -135,6 +308,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     if (currentUser) {
       setFormData(prev => {
         const nextFullName = currentUser.fullName || prev.full_name;
+        const nextUsername = currentUser.username || prev.username;
         const nextEmail = currentUser.email || prev.email;
         const nextMobile = (currentUser.phone && currentUser.phone !== 'N/A') ? currentUser.phone : prev.mobile;
         const nextDesignation = (currentUser.designation && currentUser.designation !== 'Member' && currentUser.designation !== 'Officer / Citizen') ? currentUser.designation : prev.designation;
@@ -142,6 +316,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
         if (
           prev.full_name === nextFullName &&
+          prev.username === nextUsername &&
           prev.email === nextEmail &&
           prev.mobile === nextMobile &&
           prev.designation === nextDesignation &&
@@ -153,6 +328,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         return {
           ...prev,
           full_name: nextFullName,
+          username: nextUsername,
           email: nextEmail,
           mobile: nextMobile,
           designation: nextDesignation,
@@ -160,7 +336,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         };
       });
     }
-  }, [currentUser?.email, currentUser?.fullName, currentUser?.phone, currentUser?.designation, currentUser?.district]);
+  }, [currentUser?.email, currentUser?.username, currentUser?.fullName, currentUser?.phone, currentUser?.designation, currentUser?.district]);
 
   // Check for existing saved submission in Supabase or localStorage
   const checkExisting = useCallback(async () => {
@@ -381,6 +557,17 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
       loadRemoteEnrollments();
       loadTaskSubmissions();
     };
+    const handleSwitchTab = (e) => {
+      const tab = e?.detail || 'profile';
+      setActiveTab(tab);
+      if (tab === 'profile') {
+        setTimeout(() => {
+          const el = document.getElementById('createUsernameSection') || document.querySelector('.formGrid');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 120);
+      }
+    };
+    window.addEventListener('switch_profile_tab', handleSwitchTab);
     window.addEventListener('bihar_ai_programs_updated', handleEvents);
     window.addEventListener('bihar_ai_progress_updated', handleEvents);
     window.addEventListener('bihar_ai_tasks_updated', handleEvents);
@@ -389,6 +576,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
     return () => {
       supabase.removeChannel(realtimeChannel);
+      window.removeEventListener('switch_profile_tab', handleSwitchTab);
       window.removeEventListener('bihar_ai_programs_updated', handleEvents);
       window.removeEventListener('bihar_ai_progress_updated', handleEvents);
       window.removeEventListener('bihar_ai_tasks_updated', handleEvents);
@@ -431,6 +619,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         return {
           ...prev,
           full_name: existingSubmission.full_name || prev.full_name,
+          username: existingSubmission.username || prev.username || '',
           email: existingSubmission.email || prev.email,
           mobile: cleanMobile || prev.mobile,
           gender: existingSubmission.gender || prev.gender,
@@ -455,8 +644,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     }
   }, [existingSubmission]);
 
+  const hasSetUsername = Boolean(
+    (formData.username && formData.username.trim()) ||
+    (existingSubmission && existingSubmission.username && existingSubmission.username.trim()) ||
+    (currentUser && currentUser.username && currentUser.username.trim())
+  );
+
   // Mandatory registration fields are locked (non-editable); Non-mandatory fields are always editable
   const isFieldLocked = (fieldKey) => {
+    if (fieldKey === 'username') return hasSetUsername;
     return MANDATORY_REGISTRATION_FIELDS.includes(fieldKey);
   };
 
@@ -562,18 +758,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
         {/* Top Breadcrumb */}
         <div style={{ maxWidth: '1200px', margin: '24px auto 0 auto', padding: '0 20px' }}>
-          <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-sand-200, #C2B7A3)' }}>
+          <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-ink-muted, #5E554D)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <Link to="/" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+              <Link to="/" style={{ color: 'var(--color-ink, #181512)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
               <span style={{ opacity: 0.6 }}>/</span>
               <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700' }}>{isHi ? 'सदस्य डैशबोर्ड' : 'Candidate Dashboard'}</span>
             </div>
             <Link
               to="/"
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: '#FFFFFF',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-line, #E2D7C3)',
+                color: 'var(--color-ink, #181512)',
                 padding: '6px 16px',
                 borderRadius: '8px',
                 fontWeight: '700',
@@ -594,42 +790,39 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         <div style={{ maxWidth: '1200px', margin: '28px auto 48px auto', padding: '0 20px' }}>
           <div style={{
             position: 'relative',
-            background: 'linear-gradient(145deg, #181512 0%, #201C18 55%, #15120F 100%)',
-            borderRadius: '24px',
+            background: '#FFFFFF',
+            borderRadius: 'var(--radius-sm, 2px)',
             padding: '48px 36px',
-            color: '#FFFFFF',
-            border: '1px solid rgba(226, 139, 92, 0.28)',
-            boxShadow: '0 20px 45px -15px rgba(24, 21, 18, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            color: 'var(--color-ink, #181512)',
+            border: '1px solid var(--color-line, #E2D7C3)',
+            boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
             textAlign: 'center',
             overflow: 'hidden'
           }}>
-            {/* Top Amber Ambient Glow */}
+            {/* Top Gazette Rule */}
             <div style={{
               position: 'absolute',
               top: 0,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '320px',
+              left: 0,
+              right: 0,
               height: '3px',
-              background: 'linear-gradient(90deg, transparent, #C1552C, #D99B26, transparent)',
-              borderRadius: '2px'
+              background: 'var(--color-terracotta-500, #C1552C)'
             }} />
 
             {/* Lock Icon */}
             <div style={{
-              width: '64px',
-              height: '64px',
-              background: 'linear-gradient(135deg, rgba(193, 85, 44, 0.25) 0%, rgba(217, 155, 38, 0.18) 100%)',
-              border: '1px solid rgba(226, 139, 92, 0.4)',
-              borderRadius: '20px',
+              width: '56px',
+              height: '56px',
+              background: 'var(--color-sand-50, #FBF8F3)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 18px auto',
-              color: '#E28B5C',
-              boxShadow: '0 8px 24px rgba(193, 85, 44, 0.25)'
+              color: 'var(--color-terracotta-500, #C1552C)'
             }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
@@ -640,18 +833,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: 'rgba(193, 85, 44, 0.22)',
-              border: '1px solid rgba(226, 139, 92, 0.4)',
-              borderRadius: '9999px',
-              padding: '4px 14px',
+              background: 'var(--color-sand-50, #FBF8F3)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              padding: '4px 12px',
               fontSize: '11px',
               fontWeight: '800',
-              color: 'var(--color-sand-50, #FBF8F3)',
+              color: 'var(--color-ink, #181512)',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               marginBottom: '16px'
             }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
               BIHAR AI CIVIC ECOSYSTEM · CANDIDATE PORTAL
             </div>
 
@@ -662,22 +855,21 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               fontWeight: '700',
               margin: '0 0 14px 0',
               letterSpacing: '-0.02em',
-              color: '#FFFFFF'
+              color: 'var(--color-ink, #181512)'
             }}>
               {isHi ? (
-                <>कैंडिडेट पोर्टल <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontStyle: 'italic' }}>साइन-इन आवश्यक</span></>
+                <>कैंडिडेट पोर्टल <span style={{ color: 'var(--color-terracotta-500, #C1552C)', fontStyle: 'italic' }}>साइन-इन आवश्यक</span></>
               ) : (
-                <>Member Access <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontStyle: 'italic' }}>Required</span></>
+                <>Member Access <span style={{ color: 'var(--color-terracotta-500, #C1552C)', fontStyle: 'italic' }}>Required</span></>
               )}
             </h1>
 
             <p style={{
               fontSize: '15px',
-              color: 'var(--color-sand-100, #F3ECE0)',
+              color: 'var(--color-ink-muted, #5E554D)',
               lineHeight: '1.6',
               maxWidth: '560px',
-              margin: '0 auto 28px auto',
-              opacity: 0.9
+              margin: '0 auto 28px auto'
             }}>
               {isHi
                 ? 'अपने व्यक्तिगत शिक्षण डैशबोर्ड, पंजीकृत मास्टरक्लास, टेस्ट स्कोर और सत्यापित डिजिटल प्रमाणपत्रों तक पहुंचने के लिए साइन इन करें।'
@@ -689,20 +881,19 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               <button
                 onClick={() => onOpenAuth && onOpenAuth('login')}
                 style={{
-                  height: '46px',
-                  padding: '0 28px',
-                  background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                  height: '44px',
+                  padding: '0 26px',
+                  background: 'var(--color-terracotta-500, #C1552C)',
                   color: '#FFFFFF',
-                  fontSize: '14.5px',
+                  fontSize: '14px',
                   fontWeight: '700',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   cursor: 'pointer',
-                  boxShadow: '0 8px 24px rgba(193, 85, 44, 0.4)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  transition: 'all 0.2s ease'
+                  transition: 'background 0.2s ease'
                 }}
               >
                 <span>{isHi ? 'साइन इन करें' : 'Sign In to Account'}</span>
@@ -712,19 +903,19 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               <button
                 onClick={() => onOpenRegistration && onOpenRegistration()}
                 style={{
-                  height: '46px',
-                  padding: '0 24px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  color: '#FFFFFF',
+                  height: '44px',
+                  padding: '0 22px',
+                  background: '#FFFFFF',
+                  color: 'var(--color-ink, #181512)',
                   fontSize: '14px',
                   fontWeight: '700',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '12px',
+                  border: '1px solid var(--color-line, #E2D7C3)',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  transition: 'all 0.2s ease'
+                  transition: 'background 0.2s ease'
                 }}
               >
                 <span>✨ {isHi ? 'नया सदस्य पंजीकरण' : 'Register New Account'}</span>
@@ -733,10 +924,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               <Link
                 to="/"
                 style={{
-                  height: '46px',
-                  padding: '0 20px',
+                  height: '44px',
+                  padding: '0 18px',
                   background: 'transparent',
-                  color: 'var(--color-sand-200, #C2B7A3)',
+                  color: 'var(--color-ink-muted, #5E554D)',
                   fontSize: '14px',
                   fontWeight: '600',
                   border: 'none',
@@ -930,6 +1121,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
       created_at: existingSubmission?.created_at || getIstTimestamp()
     };
 
+    const activeUsername = (formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '').trim().toLowerCase();
+    if (activeUsername) {
+      dbPayload.username = activeUsername;
+    }
+
     let dbSuccess = false;
     let dbErrorMessage = '';
 
@@ -1024,11 +1220,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         canonical="https://biharaimission.org/profile"
       />
       <div style={{ maxWidth: '1200px', margin: '24px auto 0 auto', padding: '0 20px' }}>
-        <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-sand-200, #C2B7A3)' }}>
+        <div className="profileBreadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: 'var(--color-ink-muted, #5E554D)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <Link to="/" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+            <Link to="/" style={{ color: 'var(--color-ink, #181512)', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
             <span style={{ opacity: 0.6 }}>/</span>
-            <Link to="/learning" style={{ color: 'var(--color-sand-100, #F3ECE0)', textDecoration: 'none', fontWeight: '600' }}>Learning Hub</Link>
+            <Link to="/learning" style={{ color: 'var(--color-ink, #181512)', textDecoration: 'none', fontWeight: '600' }}>Learning Hub</Link>
             <span style={{ opacity: 0.6 }}>/</span>
             <span style={{ color: 'var(--color-terracotta-400, #E28B5C)', fontWeight: '700' }}>{isHi ? 'मेरा लर्निंग डैशबोर्ड' : 'My Learning Dashboard'}</span>
           </div>
@@ -1036,9 +1232,9 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             <button
               onClick={() => navigate(-1)}
               style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: '#FFFFFF',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-line, #E2D7C3)',
+                color: 'var(--color-ink, #181512)',
                 padding: '6px 16px',
                 borderRadius: '8px',
                 fontWeight: '700',
@@ -1063,41 +1259,30 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           className="feedbackBanner"
           style={{
             position: 'relative',
-            background: 'linear-gradient(135deg, rgba(24, 21, 18, 0.95) 0%, rgba(32, 28, 24, 0.92) 100%)',
-            border: '1px solid rgba(226, 139, 92, 0.35)',
-            borderRadius: '18px',
-            padding: '18px 24px',
+            background: 'var(--color-sand-100, #F3ECE0)',
+            border: '1px solid var(--color-line, #E2D7C3)',
+            borderRadius: 'var(--radius-sm, 2px)',
+            padding: '16px 20px',
             marginBottom: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '20px',
             flexWrap: 'wrap',
-            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))'
           }}
         >
-          {/* Subtle Ambient Glow Strip */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: '20px',
-            right: '20px',
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent, #C1552C 40%, #D99B26 70%, transparent)',
-            borderRadius: '1px'
-          }} />
-
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
             <div style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(193, 85, 44, 0.16)',
-              border: '1px solid rgba(226, 139, 92, 0.4)',
+              width: '40px',
+              height: '40px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: 'var(--color-sand-50, #FBF8F3)',
+              border: '1px solid var(--color-line, #E2D7C3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '22px',
+              fontSize: '20px',
               flexShrink: 0
             }}>
               🛠️
@@ -1107,7 +1292,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 fontFamily: "var(--font-display, 'Fraunces', serif)",
                 fontSize: '15px',
                 fontWeight: '700',
-                color: '#FFFFFF',
+                color: 'var(--color-ink, #181512)',
                 letterSpacing: '-0.01em',
                 display: 'flex',
                 alignItems: 'center',
@@ -1119,9 +1304,9 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   fontSize: '10px',
                   fontWeight: '800',
                   padding: '2px 8px',
-                  borderRadius: '9999px',
-                  background: 'rgba(217, 155, 38, 0.18)',
-                  color: '#D99B26',
+                  borderRadius: 'var(--radius-sm, 2px)',
+                  background: 'rgba(217, 155, 38, 0.15)',
+                  color: '#9E6E10',
                   border: '1px solid rgba(217, 155, 38, 0.4)',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase'
@@ -1131,7 +1316,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               </div>
               <p style={{
                 fontSize: '13px',
-                color: '#C2B7A3',
+                color: 'var(--color-ink-muted, #5E554D)',
                 lineHeight: 1.5,
                 margin: '4px 0 0 0'
               }}>
@@ -1153,20 +1338,19 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               }
             }}
             style={{
-              background: 'linear-gradient(135deg, #DE6739 0%, #C1552C 60%, #A83E16 100%)',
+              background: 'var(--color-terracotta-500, #C1552C)',
               color: '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: '9999px',
-              padding: '11px 22px',
-              fontSize: '13.5px',
+              border: '1px solid var(--color-terracotta-600, #A4431E)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              padding: '9px 18px',
+              fontSize: '13px',
               fontWeight: '700',
               fontFamily: "var(--font-body, 'General Sans', sans-serif)",
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              boxShadow: '0 4px 16px rgba(193, 85, 44, 0.45)',
-              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              transition: 'background 0.2s ease',
               flexShrink: 0
             }}
           >
@@ -1178,15 +1362,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           </button>
         </div>
 
-        {/* PROFILE HEADER HERO CARD (Machined Double-Bezel Dark Charcoal & Amber) */}
+        {/* PROFILE HEADER HERO CARD */}
         <div style={{
           position: 'relative',
-          background: 'linear-gradient(145deg, #181512 0%, #201C18 55%, #15120F 100%)',
-          borderRadius: '24px',
-          padding: '36px 40px',
-          color: '#FFFFFF',
-          border: '1px solid rgba(226, 139, 92, 0.3)',
-          boxShadow: '0 24px 50px -15px rgba(24, 21, 18, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          background: '#FFFFFF',
+          borderRadius: 'var(--radius-sm, 2px)',
+          padding: '32px 36px',
+          color: 'var(--color-ink, #181512)',
+          border: '1px solid var(--color-line, #E2D7C3)',
+          boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
           marginBottom: '28px',
           display: 'flex',
           alignItems: 'center',
@@ -1195,37 +1379,34 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           gap: '24px',
           overflow: 'hidden'
         }} className="profileHero">
-          {/* Top Amber Ambient Glow Accent */}
+          {/* Top Gazette Rule */}
           <div style={{
             position: 'absolute',
             top: 0,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '320px',
+            left: 0,
+            right: 0,
             height: '3px',
-            background: 'linear-gradient(90deg, transparent, #C1552C 30%, #D99B26 70%, transparent)',
-            borderRadius: '2px'
+            background: 'var(--color-terracotta-500, #C1552C)'
           }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
-            {/* Dual-Ring Gradient Avatar */}
+            {/* Square 2px Avatar */}
             <div className="profileHeroAvatar" style={{
-              width: '84px',
-              height: '84px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+              width: '76px',
+              height: '76px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: 'var(--color-terracotta-500, #C1552C)',
               color: '#FFFFFF',
-              fontSize: '32px',
+              fontSize: '28px',
               fontWeight: '900',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '3.5px solid rgba(255, 255, 255, 0.22)',
-              boxShadow: '0 10px 28px rgba(193, 85, 44, 0.45), 0 0 0 2px rgba(226, 139, 92, 0.3)',
+              border: '2px solid var(--color-line, #E2D7C3)',
               overflow: 'hidden',
               flexShrink: 0
             }}>
-              <UserAvatar user={currentUser} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              <UserAvatar user={currentUser} style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-sm, 2px)', objectFit: 'cover' }} />
             </div>
 
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -1234,18 +1415,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'rgba(193, 85, 44, 0.18)',
-                border: '1px solid rgba(226, 139, 92, 0.45)',
-                color: 'var(--color-sand-50, #FBF8F3)',
+                background: 'var(--color-sand-50, #FBF8F3)',
+                border: '1px solid var(--color-line, #E2D7C3)',
+                color: 'var(--color-ink, #181512)',
                 fontSize: '11px',
                 fontWeight: '800',
-                padding: '4px 14px',
-                borderRadius: '9999px',
+                padding: '3px 10px',
+                borderRadius: 'var(--radius-sm, 2px)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                marginBottom: '10px'
+                marginBottom: '8px'
               }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 10px #10B981' }} />
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
                 <span>BIHAR AI MISSION MEMBER</span>
               </div>
 
@@ -1256,7 +1437,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 fontWeight: '700',
                 margin: '0 0 10px 0',
                 letterSpacing: '-0.025em',
-                color: '#FFFFFF',
+                color: 'var(--color-ink, #181512)',
                 lineHeight: 1.15
               }}>
                 {currentUser?.fullName || currentUser?.full_name || 'Civic Member'}
@@ -1264,24 +1445,24 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
               {/* Meta Chips */}
               <div style={{
-                fontSize: '13.5px',
-                color: 'var(--color-sand-100, #F3ECE0)',
+                fontSize: '13px',
+                color: 'var(--color-ink-muted, #5E554D)',
                 display: 'flex',
-                gap: '10px',
+                gap: '8px',
                 flexWrap: 'wrap',
                 alignItems: 'center'
               }}>
                 {currentUser?.designation && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.07)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', fontWeight: '600' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-sand-50, #FBF8F3)', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)', border: '1px solid var(--color-line, #E2D7C3)', fontWeight: '600', color: 'var(--color-ink, #181512)' }}>
                     💼 {currentUser.designation}
                   </span>
                 )}
                 {currentUser?.district && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.07)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', fontWeight: '600' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-sand-50, #FBF8F3)', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)', border: '1px solid var(--color-line, #E2D7C3)', fontWeight: '600', color: 'var(--color-ink, #181512)' }}>
                     📍 {currentUser.district}, Bihar
                   </span>
                 )}
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--color-sand-200, #C2B7A3)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-sand-50, #FBF8F3)', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)', border: '1px solid var(--color-line, #E2D7C3)', color: 'var(--color-ink-muted, #5E554D)' }}>
                   ✉ {currentUser?.email}
                 </span>
               </div>
@@ -1289,25 +1470,24 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           </div>
 
           {/* Quick Hero Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={handleRefreshProfile}
               disabled={isRefreshing}
               style={{
-                background: isRefreshing ? 'rgba(193, 85, 44, 0.28)' : 'rgba(255, 255, 255, 0.08)',
-                border: isRefreshing ? '1px solid rgba(226, 139, 92, 0.6)' : '1px solid rgba(255, 255, 255, 0.2)',
-                color: isRefreshing ? '#E28B5C' : '#FFFFFF',
-                borderRadius: '12px',
-                padding: '11px 20px',
+                background: isRefreshing ? 'rgba(193, 85, 44, 0.12)' : 'var(--color-sand-50, #FBF8F3)',
+                border: isRefreshing ? '1px solid var(--color-terracotta-500, #C1552C)' : '1px solid var(--color-line, #E2D7C3)',
+                color: isRefreshing ? 'var(--color-terracotta-500, #C1552C)' : 'var(--color-ink, #181512)',
+                borderRadius: 'var(--radius-sm, 2px)',
+                padding: '9px 16px',
                 fontSize: '13px',
                 fontWeight: '700',
                 cursor: isRefreshing ? 'wait' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                backdropFilter: 'blur(10px)',
+                transition: 'background 0.2s ease',
                 flexShrink: 0
               }}
               title={isHi ? 'सुपाबेस से सभी लाइव डेटा रीफ्रेश करें' : 'Refresh and sync profile & tasks from Supabase'}
@@ -1332,19 +1512,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 navigate('/');
               }}
               style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.35)',
-                color: '#FCA5A5',
-                borderRadius: '12px',
-                padding: '11px 20px',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#DC2626',
+                borderRadius: 'var(--radius-sm, 2px)',
+                padding: '9px 16px',
                 fontSize: '13px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                backdropFilter: 'blur(10px)',
+                transition: 'background 0.2s ease',
                 flexShrink: 0
               }}
               className="heroLogoutBtn"
@@ -1358,25 +1537,25 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         {/* ADMIN TASK REVISION REQUIRED BANNER */}
         {userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0 && (
           <div style={{
-            background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.18) 0%, rgba(225, 29, 72, 0.12) 100%)',
-            border: '1.5px solid rgba(244, 63, 94, 0.65)',
-            borderRadius: '18px',
-            padding: '20px 26px',
+            background: '#FFF5F5',
+            border: '1px solid #FECDD3',
+            borderRadius: 'var(--radius-sm, 2px)',
+            padding: '18px 22px',
             marginBottom: '28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '16px',
-            boxShadow: '0 12px 32px rgba(244, 63, 94, 0.3)',
+            boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '32px' }}>⚠️</span>
+              <span style={{ fontSize: '28px' }}>⚠️</span>
               <div>
-                <div style={{ color: '#FDA4AF', fontWeight: '800', fontSize: '15.5px', marginBottom: '3px' }}>
+                <div style={{ color: '#BE123C', fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>
                   Action Required: {userTaskSubmissions.filter((s) => s.status === 'REJECTED').length} Daily Task(s) Need Revision!
                 </div>
-                <div style={{ color: 'var(--color-sand-100, #F3ECE0)', fontSize: '13.5px' }}>
+                <div style={{ color: 'var(--color-ink, #181512)', fontSize: '13.5px' }}>
                   Admin reviewer requested updates on:{' '}
                   <strong>
                     {userTaskSubmissions
@@ -1391,15 +1570,14 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             <button
               onClick={() => setActiveTab('daily_tasks')}
               style={{
-                background: 'linear-gradient(135deg, #F43F5E 0%, #BE123C 100%)',
+                background: '#BE123C',
                 color: '#FFFFFF',
                 border: 'none',
-                padding: '11px 24px',
-                borderRadius: '12px',
+                padding: '10px 20px',
+                borderRadius: 'var(--radius-sm, 2px)',
                 fontWeight: '800',
                 fontSize: '13.5px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(244, 63, 94, 0.45)',
                 whiteSpace: 'nowrap'
               }}
             >
@@ -1408,7 +1586,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           </div>
         )}
 
-        {/* QUICK STATS BENTO CARDS (Interactive Machined Double-Bezel Tiles) */}
+        {/* QUICK STATS BENTO CARDS */}
         <div className="profileStats">
           {/* Card 1: Joined Masterclasses (LOCKED) */}
           <div
@@ -1420,39 +1598,37 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             })}
             className="bentoStatCard"
             style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              background: '#FFFFFF',
+              padding: '20px 22px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              transition: 'border-color 0.2s ease'
             }}
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-ink-muted, #5E554D)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Joined Masterclasses
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                <span style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 'var(--radius-sm, 2px)', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
                   🔒
                 </span>
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+              <div style={{ fontSize: '32px', fontWeight: '900', color: 'var(--color-ink, #181512)', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {joinedMasterclasses.length}
               </div>
-              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#DC2626', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 🔒 Portal Locked (Upcoming Batch)
               </div>
             </div>
-            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(193, 85, 44, 0.18)', border: '1px solid rgba(226, 139, 92, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: 'var(--radius-sm, 2px)', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
               🎓
-              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '10px', background: 'var(--color-sand-100, #F3ECE0)', borderRadius: 'var(--radius-sm, 2px)', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-line, #E2D7C3)' }}>🔒</span>
             </div>
           </div>
 
@@ -1466,39 +1642,37 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             })}
             className="bentoStatCard"
             style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              background: '#FFFFFF',
+              padding: '20px 22px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              transition: 'border-color 0.2s ease'
             }}
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-ink-muted, #5E554D)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Officer Programs
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                <span style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 'var(--radius-sm, 2px)', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
                   🔒
                 </span>
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#10B981', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+              <div style={{ fontSize: '32px', fontWeight: '900', color: '#2D6A4F', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {joinedOfficerPrograms.length}
               </div>
-              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#DC2626', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 🔒 Currently Locked (Upcoming Cohort)
               </div>
             </div>
-            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.18)', border: '1px solid rgba(16, 185, 129, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: 'var(--radius-sm, 2px)', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
               🏛️
-              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '10px', background: 'var(--color-sand-100, #F3ECE0)', borderRadius: 'var(--radius-sm, 2px)', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-line, #E2D7C3)' }}>🔒</span>
             </div>
           </div>
 
@@ -1512,39 +1686,37 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             })}
             className="bentoStatCard"
             style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              background: '#FFFFFF',
+              padding: '20px 22px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              transition: 'border-color 0.2s ease'
             }}
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-ink-muted, #5E554D)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Certificates Earned
                 </span>
-                <span style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '9999px', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
+                <span style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '1px 5px', borderRadius: 'var(--radius-sm, 2px)', fontSize: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }} title="Locked">
                   🔒
                 </span>
               </div>
-              <div style={{ fontSize: '34px', fontWeight: '900', color: '#E8B23D', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+              <div style={{ fontSize: '32px', fontWeight: '900', color: 'var(--color-terracotta-500, #C1552C)', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                 {userSubmissions.filter(s => s.isPassed).length}
               </div>
-              <div style={{ fontSize: '11px', color: '#FCA5A5', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#DC2626', fontWeight: '700', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 🔒 Exam & Cert Portal Locked
               </div>
             </div>
-            <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(232, 178, 61, 0.18)', border: '1px solid rgba(232, 178, 61, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: 'var(--radius-sm, 2px)', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
               📜
-              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '11px', background: '#181512', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.6)' }}>🔒</span>
+              <span style={{ position: 'absolute', bottom: '-4px', right: '-4px', fontSize: '10px', background: 'var(--color-sand-100, #F3ECE0)', borderRadius: 'var(--radius-sm, 2px)', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-line, #E2D7C3)' }}>🔒</span>
             </div>
           </div>
 
@@ -1553,33 +1725,31 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             onClick={() => setActiveTab('daily_tasks')}
             className="bentoStatCard"
             style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.88) 0%, rgba(20, 17, 15, 0.94) 100%)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '24px 26px',
-              borderRadius: '22px',
-              border: activeTab === 'daily_tasks' ? '1.5px solid rgba(217, 155, 38, 0.6)' : userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0 ? '1.5px solid rgba(244, 63, 94, 0.6)' : '1px solid rgba(226, 139, 92, 0.22)',
-              boxShadow: activeTab === 'daily_tasks' ? '0 16px 40px -10px rgba(217, 155, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12)' : '0 16px 36px -12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              background: '#FFFFFF',
+              padding: '20px 22px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: activeTab === 'daily_tasks' ? '1px solid var(--color-terracotta-500, #C1552C)' : userTaskSubmissions.filter((s) => s.status === 'REJECTED').length > 0 ? '1px solid #FECDD3' : '1px solid var(--color-line, #E2D7C3)',
+              boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               cursor: 'pointer',
-              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              transition: 'border-color 0.2s ease'
             }}
           >
             <div>
-              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-sand-200, #C2B7A3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '6px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-ink-muted, #5E554D)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
                 Daily Tasks
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontSize: '34px', fontWeight: '900', color: '#FFFFFF', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
+                <span style={{ fontSize: '32px', fontWeight: '900', color: 'var(--color-ink, #181512)', fontFamily: "var(--font-display, 'Fraunces', serif)", letterSpacing: '-0.02em', lineHeight: 1.1 }} className="statNum">
                   {userTaskSubmissions.length}
                 </span>
-                <span style={{ fontSize: '16px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '800' }}>
+                <span style={{ fontSize: '15px', color: 'var(--color-ink-muted, #5E554D)', fontWeight: '700' }}>
                   / {totalTasksCount}
                 </span>
               </div>
-              <div style={{ fontSize: '11px', color: userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0 ? '#E8B23D' : userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0 ? '#10B981' : 'var(--color-sand-200, #C2B7A3)', fontWeight: '700', marginTop: '6px' }}>
+              <div style={{ fontSize: '11px', color: userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0 ? '#B45309' : userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0 ? '#2D6A4F' : 'var(--color-ink-muted, #5E554D)', fontWeight: '700', marginTop: '6px' }}>
                 {userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0 && userTaskSubmissions.filter((s) => s.status === 'PENDING').length > 0
                   ? `✅ ${userTaskSubmissions.filter((s) => s.status === 'APPROVED').length} Approved · ⏳ ${userTaskSubmissions.filter((s) => s.status === 'PENDING').length} Under Review`
                   : userTaskSubmissions.filter((s) => s.status === 'APPROVED').length > 0
@@ -1591,21 +1761,19 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   : `${totalTasksCount} Practical Tasks →`}
               </div>
             </div>
-            <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: userTaskSubmissions.length > 0 ? 'rgba(217, 155, 38, 0.28)' : 'rgba(217, 155, 38, 0.18)', border: '1px solid rgba(217, 155, 38, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm, 2px)', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
               ⚡
             </div>
           </div>
         </div>
 
-        {/* DASHBOARD TABS NAVIGATION DOCK (Responsive Grid Dock - Perfect Symmetry) */}
+        {/* DASHBOARD TABS NAVIGATION DOCK */}
         <div style={{
-          background: 'rgba(20, 17, 14, 0.92)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          padding: '7px 8px',
-          borderRadius: '16px',
-          border: '1px solid rgba(226, 139, 92, 0.25)',
-          boxShadow: '0 14px 34px -10px rgba(0, 0, 0, 0.45)',
+          background: 'var(--color-sand-100, #F3ECE0)',
+          padding: '6px 8px',
+          borderRadius: 'var(--radius-sm, 2px)',
+          border: '1px solid var(--color-line, #E2D7C3)',
+          boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
           marginBottom: '32px',
           boxSizing: 'border-box',
           width: '100%'
@@ -1618,16 +1786,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 10px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: activeTab === 'get_involved' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: activeTab === 'get_involved' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
-              color: '#FFFFFF',
-              boxShadow: activeTab === 'get_involved' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
+              border: activeTab === 'get_involved' ? '1px solid var(--color-terracotta-500, #C1552C)' : '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: activeTab === 'get_involved' ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
+              color: activeTab === 'get_involved' ? '#FFFFFF' : 'var(--color-ink, #181512)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1648,16 +1815,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 10px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: activeTab === 'leaderboard' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: activeTab === 'leaderboard' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
-              color: '#FFFFFF',
-              boxShadow: activeTab === 'leaderboard' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
+              border: activeTab === 'leaderboard' ? '1px solid var(--color-terracotta-500, #C1552C)' : '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: activeTab === 'leaderboard' ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
+              color: activeTab === 'leaderboard' ? '#FFFFFF' : 'var(--color-ink, #181512)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1668,7 +1834,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           >
             <span>🏆</span>
             <span>{isHi ? 'लीडरबोर्ड' : 'Leaderboard'}</span>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', flexShrink: 0 }} />
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', flexShrink: 0 }} />
           </button>
 
           {/* 3. DAILY TASKS (UNLOCKED) */}
@@ -1680,16 +1846,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 10px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: activeTab === 'daily_tasks' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: activeTab === 'daily_tasks' ? 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)' : 'rgba(255, 255, 255, 0.04)',
-              color: '#FFFFFF',
-              boxShadow: activeTab === 'daily_tasks' ? '0 4px 14px rgba(193, 85, 44, 0.4)' : 'none',
+              border: activeTab === 'daily_tasks' ? '1px solid var(--color-terracotta-500, #C1552C)' : '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: activeTab === 'daily_tasks' ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
+              color: activeTab === 'daily_tasks' ? '#FFFFFF' : 'var(--color-ink, #181512)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1697,39 +1862,21 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               whiteSpace: 'nowrap',
               boxSizing: 'border-box'
             }}
-            onMouseEnter={(e) => {
-              if (activeTab !== 'daily_tasks') {
-                e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== 'daily_tasks') {
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-              }
-            }}
           >
-            <span style={{ fontSize: '13.5px', lineHeight: 1, flexShrink: 0 }}>⚡</span>
+            <span style={{ fontSize: '13px', lineHeight: 1, flexShrink: 0 }}>⚡</span>
             <span>{isHi ? 'दैनिक कार्य' : 'Daily Tasks'}</span>
             <span style={{
               background: activeTab === 'daily_tasks'
                 ? 'rgba(255, 255, 255, 0.25)'
-                : userTaskSubmissions.length > 0
-                  ? 'rgba(245, 158, 11, 0.16)'
-                  : 'rgba(255, 255, 255, 0.08)',
+                : 'var(--color-sand-100, #F3ECE0)',
               color: activeTab === 'daily_tasks'
                 ? '#FFFFFF'
-                : userTaskSubmissions.length > 0
-                  ? '#FBBF24'
-                  : 'var(--color-sand-200, #C2B7A3)',
+                : 'var(--color-ink, #181512)',
               border: activeTab === 'daily_tasks'
                 ? '1px solid rgba(255, 255, 255, 0.35)'
-                : userTaskSubmissions.length > 0
-                  ? '1px solid rgba(245, 158, 11, 0.4)'
-                  : '1px solid rgba(255, 255, 255, 0.12)',
-              padding: '2px 7px',
-              borderRadius: '9999px',
+                : '1px solid var(--color-line, #E2D7C3)',
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-sm, 2px)',
               fontSize: '11px',
               fontWeight: '800',
               lineHeight: 1,
@@ -1757,15 +1904,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: 'rgba(32, 28, 24, 0.65)',
-              color: '#E2D7C3',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: 'var(--color-sand-50, #FBF8F3)',
+              color: 'var(--color-ink-muted, #5E554D)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1773,24 +1920,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               whiteSpace: 'nowrap',
               boxSizing: 'border-box'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
-              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
-            }}
             title="Joined Masterclasses (Locked)"
           >
             <span>🎓</span>
             <span>{isHi ? 'मास्टरक्लासेज' : 'Masterclasses'}</span>
             <span style={{
-              background: 'rgba(239, 68, 68, 0.18)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              padding: '2px 6px',
-              borderRadius: '9999px',
-              fontSize: '11px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              padding: '1px 5px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              fontSize: '10px',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1812,15 +1951,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: 'rgba(32, 28, 24, 0.65)',
-              color: '#E2D7C3',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: 'var(--color-sand-50, #FBF8F3)',
+              color: 'var(--color-ink-muted, #5E554D)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1828,24 +1967,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               whiteSpace: 'nowrap',
               boxSizing: 'border-box'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
-              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
-            }}
             title="Enrolled Programs (Locked)"
           >
             <span>🏛️</span>
             <span>{isHi ? 'कार्यक्रम' : 'Officer Programs'}</span>
             <span style={{
-              background: 'rgba(239, 68, 68, 0.18)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              padding: '2px 6px',
-              borderRadius: '9999px',
-              fontSize: '11px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              padding: '1px 5px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              fontSize: '10px',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1855,22 +1986,24 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             </span>
           </button>
 
-          {/* 6. GUP-SHUP (LOCKED) */}
+          {/* 6. GUP-SHUP / CHIT-CHAT (ACTIVE) */}
           <button
             type="button"
-            onClick={() => setShowGupShupModal(true)}
+            onClick={() => setActiveTab('gupshup')}
             style={{
               width: '100%',
               minWidth: 0,
-              padding: '10px 12px',
+              padding: '9px 10px',
               fontSize: '12.8px',
               fontWeight: '700',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '11px',
-              background: 'rgba(32, 28, 24, 0.65)',
-              color: '#E2D7C3',
+              border: activeTab === 'gupshup'
+                ? '1px solid var(--color-terracotta-500, #C1552C)'
+                : '1px solid var(--color-line, #E2D7C3)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              background: activeTab === 'gupshup' ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
+              color: activeTab === 'gupshup' ? '#FFFFFF' : 'var(--color-ink, #181512)',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1878,30 +2011,30 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               whiteSpace: 'nowrap',
               boxSizing: 'border-box'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(226, 139, 92, 0.35)';
-              e.currentTarget.style.background = 'rgba(193, 85, 44, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.background = 'rgba(32, 28, 24, 0.65)';
-            }}
-            title="Gup-Shup (Locked - Coming Soon)"
+            title="Gup-Shup (Chit-Chat)"
           >
             <span>💬</span>
             <span>{isHi ? 'गप-शप' : 'Gup-Shup'}</span>
             <span style={{
-              background: 'rgba(239, 68, 68, 0.18)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
+              background: activeTab === 'gupshup'
+                ? 'rgba(255, 255, 255, 0.25)'
+                : (isWithinNightChatHours() ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)'),
+              border: activeTab === 'gupshup'
+                ? '1px solid rgba(255, 255, 255, 0.35)'
+                : (isWithinNightChatHours() ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'),
+              color: activeTab === 'gupshup'
+                ? '#FFFFFF'
+                : (isWithinNightChatHours() ? '#059669' : '#D97706'),
               padding: '2px 6px',
-              borderRadius: '9999px',
-              fontSize: '11px',
+              borderRadius: 'var(--radius-sm, 2px)',
+              fontSize: '10px',
+              fontWeight: '800',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               lineHeight: 1
             }}>
-              🔒
+              {isWithinNightChatHours() ? '🌙 8PM-8AM' : '🔑 Pass'}
             </span>
           </button>
         </div>
@@ -1911,19 +2044,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           <div>
             {joinedMasterclasses.length === 0 ? (
               <div style={{
-                background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.85) 0%, rgba(20, 17, 15, 0.92) 100%)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '24px',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                borderRadius: 'var(--radius-sm, 2px)',
                 padding: '48px 32px',
                 textAlign: 'center',
-                border: '1px solid rgba(226, 139, 92, 0.22)',
-                boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)'
+                border: '1px solid var(--color-line, #E2D7C3)',
+                boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))'
               }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎓</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                   No Enrolled Masterclasses Yet
                 </h3>
-                <p style={{ fontSize: '14px', color: 'var(--color-sand-200, #C2B7A3)', margin: '0 0 20px 0' }}>
+                <p style={{ fontSize: '14px', color: 'var(--color-ink-muted, #5E554D)', margin: '0 0 20px 0' }}>
                   Explore live bilingual masterclasses offered by Bihar AI Mission.
                 </p>
                 <Link
@@ -1932,14 +2064,13 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                    background: 'var(--color-terracotta-500, #C1552C)',
                     color: '#FFFFFF',
                     padding: '10px 22px',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius-sm, 2px)',
                     fontWeight: '700',
                     fontSize: '14px',
-                    textDecoration: 'none',
-                    boxShadow: '0 4px 16px rgba(193, 85, 44, 0.35)'
+                    textDecoration: 'none'
                   }}
                 >
                   Explore Masterclasses →
@@ -1971,30 +2102,30 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                   return (
                     <div key={cls.id} style={{
-                      background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
-                      borderRadius: '20px',
-                      border: '1px solid rgba(226, 139, 92, 0.25)',
+                      background: '#FFFFFF',
+                      borderRadius: 'var(--radius-sm, 2px)',
+                      border: '1px solid var(--color-line, #E2D7C3)',
                       padding: '24px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)',
-                      color: '#FFFFFF'
+                      boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
+                      color: 'var(--color-ink, #181512)'
                     }}>
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-400, #E28B5C)', background: 'rgba(193, 85, 44, 0.16)', border: '1px solid rgba(226, 139, 92, 0.35)', padding: '3px 10px', borderRadius: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-500, #C1552C)', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)' }}>
                             {cls.category || 'Masterclass'}
                           </span>
-                          <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>✓ Enrolled</span>
+                          <span style={{ fontSize: '12px', color: '#2D6A4F', fontWeight: '700' }}>✓ Enrolled</span>
                         </div>
-                        <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: '0 0 8px 0', lineHeight: '1.4' }}>
                           {cls.title}
                         </h3>
-                        <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '600', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12.5px', color: 'var(--color-ink-muted, #5E554D)', fontWeight: '600', marginBottom: '12px' }}>
                           📅 Joined Date: <strong>{getJoinedDate(cls.id)}</strong>
                         </div>
-                        <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                        <p style={{ fontSize: '13px', color: 'var(--color-ink-muted, #5E554D)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                           {cls.description ? cls.description.slice(0, 100) + '…' : ''}
                         </p>
                       </div>
@@ -2004,15 +2135,14 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                           onClick={() => setActiveCertSubmission(sub)}
                           style={{
                             width: '100%',
-                            background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                            background: '#2D6A4F',
                             color: '#FFFFFF',
-                            padding: '11px 14px',
-                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            borderRadius: 'var(--radius-sm, 2px)',
                             fontWeight: '800',
                             fontSize: '13px',
                             border: 'none',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(5, 150, 105, 0.35)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -2027,13 +2157,13 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                             <div
                               style={{
                                 width: '100%',
-                                background: 'rgba(244, 63, 94, 0.15)',
-                                color: '#FDA4AF',
+                                background: '#FFF5F5',
+                                color: '#BE123C',
                                 padding: '10px 12px',
-                                borderRadius: '8px',
+                                borderRadius: 'var(--radius-sm, 2px)',
                                 fontWeight: '800',
                                 fontSize: '12px',
-                                border: '1.5px solid rgba(244, 63, 94, 0.4)',
+                                border: '1px solid #FECDD3',
                                 textAlign: 'center',
                                 boxSizing: 'border-box'
                               }}
@@ -2049,11 +2179,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                                   rel="noreferrer"
                                   style={{
                                     width: '100%',
-                                    background: 'rgba(255, 255, 255, 0.08)',
-                                    border: '1px solid rgba(255, 255, 255, 0.16)',
-                                    color: '#FFFFFF',
-                                    padding: '10px 12px',
-                                    borderRadius: '10px',
+                                    background: 'var(--color-sand-50, #FBF8F3)',
+                                    border: '1px solid var(--color-line, #E2D7C3)',
+                                    color: 'var(--color-ink, #181512)',
+                                    padding: '9px 12px',
+                                    borderRadius: 'var(--radius-sm, 2px)',
                                     fontWeight: '800',
                                     fontSize: '12.5px',
                                     textDecoration: 'none',
@@ -2072,10 +2202,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                                 onClick={() => navigate(`/exam/${cls.id}`)}
                                 style={{
                                   width: '100%',
-                                  background: 'linear-gradient(135deg, #D45D31 0%, #BA491F 60%, #9F3812 100%)',
+                                  background: 'var(--color-terracotta-500, #C1552C)',
                                   color: '#FFFFFF',
-                                  padding: '11px 14px',
-                                  borderRadius: '10px',
+                                  padding: '10px 14px',
+                                  borderRadius: 'var(--radius-sm, 2px)',
                                   fontWeight: '800',
                                   fontSize: '13px',
                                   border: 'none',
@@ -2083,8 +2213,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  gap: '6px',
-                                  boxShadow: '0 4px 16px rgba(193, 85, 44, 0.35)'
+                                  gap: '6px'
                                 }}
                               >
                                 📝 Take Certification Exam →
@@ -2106,19 +2235,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           <div>
             {joinedOfficerPrograms.length === 0 ? (
               <div style={{
-                background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.85) 0%, rgba(20, 17, 15, 0.92) 100%)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '24px',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                borderRadius: 'var(--radius-sm, 2px)',
                 padding: '48px 32px',
                 textAlign: 'center',
-                border: '1px solid rgba(226, 139, 92, 0.22)',
-                boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)'
+                border: '1px solid var(--color-line, #E2D7C3)',
+                boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))'
               }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏛️</div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: '0 0 8px 0', fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                   No Enrolled Officer Programs Yet
                 </h3>
-                <p style={{ fontSize: '14px', color: 'var(--color-sand-200, #C2B7A3)', margin: '0 0 20px 0' }}>
+                <p style={{ fontSize: '14px', color: 'var(--color-ink-muted, #5E554D)', margin: '0 0 20px 0' }}>
                   You have not enrolled in any specialized officer programs yet.
                 </p>
                 <Link
@@ -2127,14 +2255,13 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    background: '#2D6A4F',
                     color: '#FFFFFF',
                     padding: '10px 22px',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius-sm, 2px)',
                     fontWeight: '700',
                     fontSize: '14px',
-                    textDecoration: 'none',
-                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)'
+                    textDecoration: 'none'
                   }}
                 >
                   Explore Programs & Enroll →
@@ -2144,30 +2271,30 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                 {joinedOfficerPrograms.map((prog) => (
                   <div key={prog.id} style={{
-                    background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
-                    borderRadius: '20px',
-                    border: '1px solid rgba(226, 139, 92, 0.25)',
+                    background: '#FFFFFF',
+                    borderRadius: 'var(--radius-sm, 2px)',
+                    border: '1px solid var(--color-line, #E2D7C3)',
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    boxShadow: '0 16px 36px -12px rgba(0, 0, 0, 0.45)',
-                    color: '#FFFFFF'
+                    boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
+                    color: 'var(--color-ink, #181512)'
                   }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#10B981', background: 'rgba(16, 185, 129, 0.16)', border: '1px solid rgba(16, 185, 129, 0.35)', padding: '3px 10px', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#2D6A4F', background: 'var(--color-sand-50, #FBF8F3)', border: '1px solid var(--color-line, #E2D7C3)', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)' }}>
                           SPECIALIZED PROGRAM
                         </span>
-                        <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>✓ Enrolled</span>
+                        <span style={{ fontSize: '12px', color: '#2D6A4F', fontWeight: '700' }}>✓ Enrolled</span>
                       </div>
-                      <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                      <h3 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: '0 0 8px 0', lineHeight: '1.4' }}>
                         {prog.title}
                       </h3>
-                      <div style={{ fontSize: '12.5px', color: 'var(--color-sand-200, #C2B7A3)', fontWeight: '600', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12.5px', color: 'var(--color-ink-muted, #5E554D)', fontWeight: '600', marginBottom: '12px' }}>
                         📅 Joined Date: <strong>{getJoinedDate(prog.id)}</strong>
                       </div>
-                      <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+                      <p style={{ fontSize: '13px', color: 'var(--color-ink-muted, #5E554D)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
                         {prog.desc}
                       </p>
                     </div>
@@ -2175,15 +2302,14 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                       onClick={() => navigate(`/exam/${prog.id || 'ai-fundamentals'}`)}
                       style={{
                         width: '100%',
-                        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                        background: '#2D6A4F',
                         color: '#FFFFFF',
-                        padding: '11px 14px',
-                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm, 2px)',
                         fontWeight: '800',
                         fontSize: '13px',
                         border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)'
+                        cursor: 'pointer'
                       }}
                     >
                       View Certificate →
@@ -2206,31 +2332,31 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         {activeTab === 'get_involved' && (() => {
           return (
             <div style={{
-              background: 'linear-gradient(145deg, rgba(32, 28, 24, 0.9) 0%, rgba(20, 17, 15, 0.95) 100%)',
-              borderRadius: '24px',
-              border: '1px solid rgba(226, 139, 92, 0.25)',
-              padding: '36px 40px',
-              boxShadow: '0 20px 45px -15px rgba(0, 0, 0, 0.5)',
-              color: '#FFFFFF'
+              background: '#FFFFFF',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: '1px solid var(--color-line, #E2D7C3)',
+              padding: '32px 36px',
+              boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))',
+              color: 'var(--color-ink, #181512)'
             }} className="profileForm">
-              <div style={{ marginBottom: '24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ marginBottom: '24px', borderBottom: '1px solid var(--color-line, #E2D7C3)', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-400, #E28B5C)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-500, #C1552C)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
                     BIHAR AI MISSION
                   </div>
-                  <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', margin: 0, fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
+                  <h2 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--color-ink, #181512)', margin: 0, fontFamily: "var(--font-display, 'Fraunces', serif)" }}>
                     Profile Details
                   </h2>
                 </div>
               </div>
 
               <div style={{
-                background: 'rgba(24, 21, 18, 0.65)',
-                border: '1px solid rgba(226, 139, 92, 0.25)',
-                borderRadius: '16px',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-line, #E2D7C3)',
+                borderRadius: 'var(--radius-sm, 2px)',
                 padding: '16px 20px',
                 marginBottom: '24px',
-                color: 'var(--color-sand-100, #F3ECE0)',
+                color: 'var(--color-ink, #181512)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -2238,17 +2364,17 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               }}>
                 <span style={{ fontSize: '22px' }}>🔒</span>
                 <div>
-                  <strong style={{ color: '#FFFFFF' }}>Registration Integrity Notice:</strong> Mandatory identity inputs (Full Name, Email, Mobile, Gender, Age, Category, State, District, and Block) were verified during registration and are permanently locked. You can edit and update your <strong>designation, organization, experience, AI interests, and professional links</strong> anytime.
+                  <strong style={{ color: 'var(--color-ink, #181512)' }}>Registration Integrity Notice:</strong> Mandatory identity inputs (Full Name, Email, Mobile, Gender, Age, Category, State, District, and Block) were verified during registration and are permanently locked. You can edit and update your <strong>designation, organization, experience, AI interests, and professional links</strong> anytime.
                 </div>
               </div>
 
               {formSuccess && (
                 <div style={{
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid #10B981',
-                  color: '#6EE7B7',
+                  background: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  color: '#065F46',
                   padding: '14px 18px',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   fontSize: '14px',
                   fontWeight: '700',
                   marginBottom: '24px'
@@ -2259,11 +2385,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
               {formError && (
                 <div style={{
-                  background: 'rgba(239, 68, 68, 0.15)',
-                  border: '1px solid #EF4444',
-                  color: '#FCA5A5',
+                  background: '#FFF5F5',
+                  border: '1px solid #FECDD3',
+                  color: '#BE123C',
                   padding: '14px 18px',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   fontSize: '14px',
                   fontWeight: '700',
                   marginBottom: '24px'
@@ -2276,26 +2402,27 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                 {/* 1. MANDATORY REGISTRATION DETAILS (LOCKED) */}
                 <div style={{
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '16px',
+                  background: 'var(--color-sand-50, #FBF8F3)',
+                  border: '1px solid var(--color-line, #E2D7C3)',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   padding: '20px 22px',
                   marginBottom: '28px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-line, #E2D7C3)', paddingBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '18px' }}>🔒</span>
-                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: 0 }}>
                         Mandatory Registration Details
                       </h3>
                     </div>
                     <span style={{
                       fontSize: '11px',
                       fontWeight: '800',
-                      color: '#9CA3AF',
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      padding: '4px 10px',
-                      borderRadius: '20px'
+                      color: 'var(--color-ink-muted, #5E554D)',
+                      background: 'var(--color-sand-100, #F3ECE0)',
+                      border: '1px solid var(--color-line, #E2D7C3)',
+                      padding: '3px 8px',
+                      borderRadius: 'var(--radius-sm, 2px)'
                     }}>
                       🔒 Non-Editable (Verified)
                     </span>
@@ -2303,7 +2430,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                   <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Full Name *
                       </label>
                       <input
@@ -2314,16 +2441,214 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.full_name}
                         autoComplete="off"
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
+                    {/* UNIQUE USERNAME (@) - DYNAMIC LOCKED OR ONE-TIME CREATION */}
+                    {hasSetUsername ? (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', margin: 0 }}>
+                            Unique Username (@) *
+                          </label>
+                          <span style={{
+                            fontSize: '10.5px',
+                            fontWeight: '800',
+                            color: '#166534',
+                            background: '#DCFCE7',
+                            border: '1px solid #BBF7D0',
+                            padding: '1px 6px',
+                            borderRadius: 'var(--radius-sm, 2px)'
+                          }}>
+                            🔒 Permanent (Locked)
+                          </span>
+                        </div>
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                          <span style={{ position: 'absolute', left: '12px', fontSize: '14px', fontWeight: '800', color: '#B45309', fontFamily: 'monospace', pointerEvents: 'none' }}>@</span>
+                          <input
+                            type="text"
+                            readOnly
+                            value={(formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '')}
+                            style={{
+                              width: '100%', height: '42px', padding: '0 14px 0 28px', borderRadius: 'var(--radius-sm, 2px)',
+                              border: '1px solid var(--color-line, #E2D7C3)',
+                              background: 'var(--color-sand-100, #F3ECE0)',
+                              fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed',
+                              fontWeight: '700', fontFamily: 'monospace'
+                            }}
+                          />
+                        </div>
+                        <span style={{ display: 'block', fontSize: '11px', color: '#786F66', marginTop: '4px' }}>
+                          🔒 Verified unique username is locked and cannot be changed.
+                        </span>
+                      </div>
+                    ) : (
+                      <div
+                        id="createUsernameSection"
+                        style={{
+                          gridColumn: '1 / -1',
+                          background: '#FFFDF9',
+                          border: '1.5px solid #F59E0B',
+                          borderRadius: '6px',
+                          padding: '16px',
+                          boxShadow: '0 2px 10px rgba(245, 158, 11, 0.08)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                          <label style={{ fontSize: '13.5px', fontWeight: '800', color: '#92400E', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>✍️</span>
+                            <span>{isHi ? 'अपना यूनीक यूज़रनेम (@) बनाएं' : 'Create Your Unique Username (@)'} <span style={{ color: '#DC2626' }}>*</span></span>
+                          </label>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            color: '#B45309',
+                            background: '#FEF3C7',
+                            border: '1px solid #FDE68A',
+                            padding: '2px 8px',
+                            borderRadius: '3px'
+                          }}>
+                            ⚡ {isHi ? 'आवश्यक: केवल एक बार सेट किया जा सकता है' : 'Action Required · One-Time Creation'}
+                          </span>
+                        </div>
+
+                        {/* Prominent Warning Banner */}
+                        <div style={{
+                          background: '#FEF2F2',
+                          border: '1px solid #FECACA',
+                          borderRadius: '4px',
+                          padding: '10px 12px',
+                          marginBottom: '14px',
+                          fontSize: '12.5px',
+                          lineHeight: 1.5,
+                          color: '#991B1B',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px'
+                        }}>
+                          <span style={{ fontSize: '16px', lineHeight: 1 }}>⚠️</span>
+                          <span>
+                            <strong>{isHi ? 'महत्वपूर्ण चेतावनी:' : 'Important Warning:'}</strong>{' '}
+                            {isHi
+                              ? 'आप अपना यूज़रनेम (@) केवल एक बार बना सकते हैं। एक बार सेट करने के बाद यह हमेशा के लिए लॉक हो जाएगा और इसे दोबारा कभी बदला या संपादित नहीं किया जा सकेगा।'
+                              : 'You can set your unique username (@) only ONCE. Once set, it will be permanently locked and cannot be changed or edited under any circumstances.'}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <div style={{ position: 'relative', flex: '1 1 260px', minWidth: '240px' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', fontWeight: '800', color: '#B45309', fontFamily: 'monospace', pointerEvents: 'none', zIndex: 2 }}>@</span>
+                            <input
+                              type="text"
+                              placeholder={isHi ? 'apna_username (उदा. rahul_patna)' : 'choose_username (e.g. rahul_kumar)'}
+                              value={newUsernameInput}
+                              maxLength={10}
+                              onChange={(e) => handleProfileUsernameChange(e.target.value)}
+                              onBlur={() => checkProfileUsernameAvailability(newUsernameInput)}
+                              autoComplete="off"
+                              autoCorrect="off"
+                              autoCapitalize="none"
+                              spellCheck="false"
+                              style={{
+                                width: '100%', height: '42px', padding: '0 38px 0 30px', borderRadius: '4px',
+                                border: profileUsernameStatus === 'available' ? '1.5px solid #16A34A' : profileUsernameStatus === 'taken' || profileUsernameStatus === 'invalid' ? '1.5px solid #DC2626' : '1.5px solid #D1D5DB',
+                                background: profileUsernameStatus === 'available' ? '#F4FBF7' : profileUsernameStatus === 'taken' || profileUsernameStatus === 'invalid' ? '#FEF2F2' : '#FFFFFF',
+                                fontSize: '14px', color: '#181512', fontWeight: '700', fontFamily: 'monospace'
+                              }}
+                            />
+
+                            {/* Inside input indicator: Green tick / Red cross / Spinner */}
+                            {profileUsernameStatus && (
+                              <span className="profileUsernameInsideIndicator" aria-hidden="true">
+                                {profileUsernameStatus === 'checking' && (
+                                  <span className="profileInsideChecking" title={isHi ? 'जाँच हो रही है…' : 'Checking availability…'}></span>
+                                )}
+                                {profileUsernameStatus === 'available' && (
+                                  <span className="profileInsideSuccess" title={isHi ? 'उपलब्ध है' : 'Available'}>
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                  </span>
+                                )}
+                                {(profileUsernameStatus === 'taken' || profileUsernameStatus === 'invalid') && (
+                                  <span className="profileInsideError" title={profileUsernameStatus === 'taken' ? (isHi ? 'यूज़रनेम पहले से लिया जा चुका है' : 'Username already taken') : (isHi ? 'अमान्य यूज़रनेम' : 'Invalid username')}>
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleClaimUsername}
+                            disabled={
+                              isClaimingUsername ||
+                              !newUsernameInput.trim() ||
+                              profileUsernameStatus === 'checking' ||
+                              profileUsernameStatus === 'taken' ||
+                              profileUsernameStatus === 'invalid'
+                            }
+                            style={{
+                              height: '42px',
+                              padding: '0 20px',
+                              background: (!newUsernameInput.trim() || profileUsernameStatus === 'taken' || profileUsernameStatus === 'invalid') ? '#9CA3AF' : 'linear-gradient(135deg, #B45309, #92400E)',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontWeight: '800',
+                              fontSize: '13px',
+                              cursor: (!newUsernameInput.trim() || profileUsernameStatus === 'taken' || profileUsernameStatus === 'invalid' || isClaimingUsername) ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 6px rgba(180, 83, 9, 0.25)',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            {isClaimingUsername ? (
+                              <>⏳ {isHi ? 'सहेज रहे हैं…' : 'Saving…'}</>
+                            ) : (
+                              <>{isHi ? 'यूज़रनेम सेट करें' : 'Set Username'}</>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Availability status indicators */}
+                        <div style={{ marginTop: '8px', minHeight: '18px' }}>
+                          {profileUsernameStatus === 'checking' && (
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280' }}>
+                              ⏳ {isHi ? 'यूज़रनेम की उपलब्धता जाँची जा रही है…' : 'Checking availability in database…'}
+                            </span>
+                          )}
+                          {profileUsernameStatus === 'available' && (
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#16A34A' }}>
+                              ✅ {isHi ? `@${cleanProfileUsername(newUsernameInput)} उपलब्ध है! 'यूज़रनेम सेट करें' पर क्लिक करें।` : `@${cleanProfileUsername(newUsernameInput)} is available! Click 'Set Username' to set.`}
+                            </span>
+                          )}
+                          {profileUsernameStatus === 'taken' && (
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#DC2626' }}>
+                              ❌ {isHi ? `यह यूज़रनेम @${cleanProfileUsername(newUsernameInput)} पहले से किसी ने ले लिया है। कृपया दूसरा नाम चुनें।` : `Username @${cleanProfileUsername(newUsernameInput)} is already taken. Please choose another.`}
+                            </span>
+                          )}
+                          {profileUsernameStatus === 'invalid' && (
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#B45309' }}>
+                              ⚠️ {isHi ? '5-10 वर्ण (केवल अक्षर a-z, संख्या 0-9 और अंडरस्कोर _)' : 'Must be 5-10 characters (lowercase letters, numbers, and underscore _ only)'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Email Address *
                       </label>
                       <input
@@ -2333,16 +2658,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         placeholder="e.g. user@example.com"
                         value={formData.email}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Mobile Number *
                       </label>
                       <input
@@ -2351,16 +2676,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         placeholder="e.g. 9876543210"
                         value={formData.mobile === 'N/A' ? '' : formData.mobile}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Gender *
                       </label>
                       <input
@@ -2368,16 +2693,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         readOnly
                         value={formData.gender || 'Not Specified'}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Age *
                       </label>
                       <input
@@ -2385,16 +2710,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         readOnly
                         value={formData.age ? `${formData.age} Years` : 'Not Specified'}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Role / Category *
                       </label>
                       <input
@@ -2406,16 +2731,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                           'Registered Member'
                         }
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         State *
                       </label>
                       <input
@@ -2423,16 +2748,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         readOnly
                         value={formData.state || 'Bihar'}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         District *
                       </label>
                       <input
@@ -2440,16 +2765,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         readOnly
                         value={formData.district || 'Not Specified'}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-200, #C2B7A3)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         Block / Sub-Division / City *
                       </label>
                       <input
@@ -2457,10 +2782,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         readOnly
                         value={formData.block_city || 'Not Specified'}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          fontSize: '13.5px', color: '#9CA3AF', cursor: 'not-allowed'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: 'var(--color-sand-100, #F3ECE0)',
+                          fontSize: '13.5px', color: 'var(--color-ink-muted, #5E554D)', cursor: 'not-allowed'
                         }}
                       />
                     </div>
@@ -2469,27 +2794,27 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                 {/* 2. NON-MANDATORY & EDITABLE PROFILE DETAILS */}
                 <div style={{
-                  background: 'rgba(0, 0, 0, 0.25)',
-                  border: '1px solid rgba(226, 139, 92, 0.3)',
-                  borderRadius: '16px',
+                  background: 'var(--color-sand-50, #FBF8F3)',
+                  border: '1px solid var(--color-line, #E2D7C3)',
+                  borderRadius: 'var(--radius-sm, 2px)',
                   padding: '20px 22px',
                   marginBottom: '28px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-line, #E2D7C3)', paddingBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '18px' }}>✏️</span>
-                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--color-ink, #181512)', margin: 0 }}>
                         Professional & Profile Details
                       </h3>
                     </div>
                     <span style={{
                       fontSize: '11px',
                       fontWeight: '800',
-                      color: '#34D399',
-                      background: 'rgba(52, 211, 153, 0.12)',
-                      border: '1px solid rgba(52, 211, 153, 0.3)',
-                      padding: '4px 10px',
-                      borderRadius: '20px'
+                      color: '#065F46',
+                      background: '#ECFDF5',
+                      border: '1px solid #A7F3D0',
+                      padding: '3px 8px',
+                      borderRadius: 'var(--radius-sm, 2px)'
                     }}>
                       ✏️ Editable Anytime
                     </span>
@@ -2497,7 +2822,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                   <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '20px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         Designation / Job Title
                       </label>
                       <input
@@ -2506,16 +2831,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.designation}
                         onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         Department / Wing
                       </label>
                       <input
@@ -2524,16 +2849,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.department}
                         onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         Organization / College / Company
                       </label>
                       <input
@@ -2542,16 +2867,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.organization}
                         onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         Experience
                       </label>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -2563,20 +2888,20 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                           value={formData.experience_val || ''}
                           onChange={(e) => setFormData({ ...formData, experience_val: e.target.value })}
                           style={{
-                            flex: 1, height: '42px', padding: '0 14px', borderRadius: '8px',
-                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                            background: 'rgba(255, 255, 255, 0.08)',
-                            fontSize: '13.5px', color: '#FFFFFF'
+                            flex: 1, height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                            border: '1px solid var(--color-line, #E2D7C3)',
+                            background: '#FFFFFF',
+                            fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                           }}
                         />
                         <select
                           value={formData.experience_unit || 'Years'}
                           onChange={(e) => setFormData({ ...formData, experience_unit: e.target.value })}
                           style={{
-                            width: '110px', height: '42px', padding: '0 10px', borderRadius: '8px',
-                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                            background: '#201C18',
-                            fontSize: '13.5px', color: '#FFFFFF', fontWeight: '600'
+                            width: '110px', height: '42px', padding: '0 10px', borderRadius: 'var(--radius-sm, 2px)',
+                            border: '1px solid var(--color-line, #E2D7C3)',
+                            background: '#FFFFFF',
+                            fontSize: '13.5px', color: 'var(--color-ink, #181512)', fontWeight: '600'
                           }}
                         >
                           <option value="Years">Years</option>
@@ -2588,7 +2913,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                   {/* PRIMARY AI FOCUS & INTERESTS */}
                   <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '8px' }}>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '8px' }}>
                       Primary AI Interest & Focus (Select your focus area)
                     </label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -2600,18 +2925,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                             key={item.value}
                             onClick={() => handleInterestToggle(item.value)}
                             style={{
-                              padding: '7px 14px',
-                              borderRadius: '24px',
+                              padding: '6px 12px',
+                              borderRadius: 'var(--radius-sm, 2px)',
                               fontSize: '12.5px',
                               fontWeight: '700',
-                              border: isSelected ? '1.5px solid #C1552C' : '1px solid rgba(255, 255, 255, 0.15)',
-                              background: isSelected ? 'rgba(193, 85, 44, 0.3)' : 'rgba(255, 255, 255, 0.05)',
-                              color: isSelected ? '#FFFFFF' : 'var(--color-sand-200, #C2B7A3)',
+                              border: isSelected ? '1px solid var(--color-terracotta-500, #C1552C)' : '1px solid var(--color-line, #E2D7C3)',
+                              background: isSelected ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
+                              color: isSelected ? '#FFFFFF' : 'var(--color-ink, #181512)',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '6px',
-                              transition: 'all 0.2s ease'
+                              transition: 'background 0.2s ease'
                             }}
                           >
                             <span>{isSelected ? '✓' : '+'}</span>
@@ -2622,7 +2947,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                     </div>
 
                     <div style={{ marginTop: '12px' }}>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--color-sand-300, #9CA3AF)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--color-ink-muted, #5E554D)', marginBottom: '6px' }}>
                         ✍️ Custom / Additional Interest (Optional)
                       </label>
                       <input
@@ -2631,10 +2956,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.custom_interest || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, custom_interest: e.target.value }))}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
@@ -2642,7 +2967,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
                   {/* CONTRIBUTION / STATEMENT OF INTENT */}
                   <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                       How do you wish to contribute to Bihar AI Mission?
                     </label>
                     <textarea
@@ -2651,10 +2976,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                       value={formData.contribution || ''}
                       onChange={(e) => setFormData({ ...formData, contribution: e.target.value })}
                       style={{
-                        width: '100%', padding: '10px 14px', borderRadius: '8px',
-                        border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        fontSize: '13.5px', fontFamily: 'inherit', color: '#FFFFFF'
+                        width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-sm, 2px)',
+                        border: '1px solid var(--color-line, #E2D7C3)',
+                        background: '#FFFFFF',
+                        fontSize: '13.5px', fontFamily: 'inherit', color: 'var(--color-ink, #181512)'
                       }}
                     />
                   </div>
@@ -2662,7 +2987,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   {/* SOCIAL & PORTFOLIO LINKS */}
                   <div className="formGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         LinkedIn Profile URL
                       </label>
                       <input
@@ -2671,16 +2996,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.linkedin || ''}
                         onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-sand-100, #F3ECE0)', marginBottom: '6px' }}>
+                      <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: 'var(--color-ink, #181512)', marginBottom: '6px' }}>
                         Portfolio / GitHub / Website URL
                       </label>
                       <input
@@ -2689,10 +3014,10 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                         value={formData.portfolio || ''}
                         onChange={(e) => setFormData({ ...formData, portfolio: e.target.value })}
                         style={{
-                          width: '100%', height: '42px', padding: '0 14px', borderRadius: '8px',
-                          border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          fontSize: '13.5px', color: '#FFFFFF'
+                          width: '100%', height: '42px', padding: '0 14px', borderRadius: 'var(--radius-sm, 2px)',
+                          border: '1px solid var(--color-line, #E2D7C3)',
+                          background: '#FFFFFF',
+                          fontSize: '13.5px', color: 'var(--color-ink, #181512)'
                         }}
                       />
                     </div>
@@ -2704,22 +3029,21 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   disabled={formSubmitting}
                   style={{
                     width: '100%',
-                    height: '48px',
+                    height: '46px',
                     background: formSubmitting
                       ? 'rgba(193, 85, 44, 0.5)'
-                      : 'linear-gradient(135deg, #C1552C 0%, #E28B5C 100%)',
+                      : 'var(--color-terracotta-500, #C1552C)',
                     color: '#FFFFFF',
                     fontSize: '15px',
                     fontWeight: '800',
                     border: 'none',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius-sm, 2px)',
                     cursor: formSubmitting ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 8px 24px rgba(193, 85, 44, 0.35)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    transition: 'all 0.2s ease'
+                    transition: 'background 0.2s ease'
                   }}
                 >
                   <span>💾</span>
@@ -2733,6 +3057,27 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         {/* TAB 5: DEDICATED REAL-TIME LEADERBOARD */}
         {activeTab === 'leaderboard' && (
           <TaskLeaderboard isHi={isHi} />
+        )}
+
+        {/* TAB 6: CHIT-CHAT (GUP-SHUP) */}
+        {activeTab === 'gupshup' && (
+          <ChitChat
+            currentUser={{
+              ...currentUser,
+              ...formData,
+              username: (formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '').trim()
+            }}
+            isHi={isHi}
+            onGoToProfile={() => {
+              setActiveTab('profile');
+              setTimeout(() => {
+                const el = document.getElementById('createUsernameSection') || document.querySelector('.formGrid');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 120);
+            }}
+          />
         )}
 
       </div>
@@ -2751,9 +3096,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             position: 'fixed',
             inset: 0,
             zIndex: 99999,
-            background: 'rgba(10, 8, 7, 0.82)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            background: 'rgba(24, 21, 18, 0.65)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2763,15 +3106,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         >
           <div
             style={{
-              background: 'linear-gradient(160deg, #1E1B18 0%, #14110E 100%)',
-              border: '1.5px solid rgba(226, 139, 92, 0.35)',
-              borderRadius: '24px',
+              background: '#FFFFFF',
+              border: '1px solid var(--color-sand-300, #D8CEBE)',
+              borderTop: '3px solid var(--color-terracotta, #C1552C)',
+              borderRadius: 'var(--radius-sm, 2px)',
               maxWidth: '520px',
               width: '100%',
-              padding: '32px 28px',
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(193, 85, 44, 0.2)',
+              padding: '28px 24px',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
               position: 'relative',
-              color: '#FFFFFF'
+              color: 'var(--color-ink, #181512)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2780,29 +3124,29 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               onClick={() => setShowGupShupModal(false)}
               style={{
                 position: 'absolute',
-                top: '18px',
-                right: '18px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#9CA3AF',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
+                top: '16px',
+                right: '16px',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-sand-300, #D8CEBE)',
+                color: 'var(--color-ink-muted, #5C554B)',
+                width: '28px',
+                height: '28px',
+                borderRadius: 'var(--radius-sm, 2px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                fontSize: '15px',
+                fontSize: '13px',
                 fontWeight: '700',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#FFFFFF';
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+                e.currentTarget.style.color = 'var(--color-ink, #181512)';
+                e.currentTarget.style.background = 'var(--color-sand-200, #E6DCB8)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#9CA3AF';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.color = 'var(--color-ink-muted, #5C554B)';
+                e.currentTarget.style.background = 'var(--color-sand-100, #F3ECE0)';
               }}
             >
               ✕
@@ -2812,15 +3156,15 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
               <div
                 style={{
-                  width: '54px',
-                  height: '54px',
-                  borderRadius: '16px',
-                  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: 'var(--radius-sm, 2px)',
+                  background: 'var(--color-sand-100, #F3ECE0)',
+                  border: '1px solid var(--color-sand-300, #D8CEBE)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '26px',
-                  boxShadow: '0 8px 24px rgba(37, 211, 102, 0.35)',
+                  fontSize: '22px',
                   flexShrink: 0
                 }}
               >
@@ -2828,18 +3172,18 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <h3 style={{ fontSize: '21px', fontWeight: '800', margin: 0, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+                  <h3 style={{ fontSize: '20px', fontFamily: 'var(--font-heading, "Fraunces", Georgia, serif)', fontWeight: '700', margin: 0, color: 'var(--color-ink, #181512)', letterSpacing: '-0.01em' }}>
                     Gup-Shup
                   </h3>
                   <span
                     style={{
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      color: '#FCA5A5',
-                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      background: '#FEF2F2',
+                      color: '#991B1B',
+                      border: '1px solid #FECDD3',
                       padding: '2px 8px',
-                      borderRadius: '9999px',
+                      borderRadius: 'var(--radius-sm, 2px)',
                       fontSize: '11px',
-                      fontWeight: '800',
+                      fontWeight: '700',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2850,7 +3194,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                     🔒
                   </span>
                 </div>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#C2B7A3' }}>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-ink-muted, #5C554B)' }}>
                   Community Chit-Chat World — Department Groups, @Mentions & Achievements
                 </p>
               </div>
@@ -2859,11 +3203,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             {/* WHATSAPP CHAT PREVIEW MOCKUP BUBBLE */}
             <div
               style={{
-                background: 'rgba(11, 20, 26, 0.85)',
-                border: '1px solid rgba(37, 211, 102, 0.25)',
-                borderRadius: '18px',
-                padding: '16px',
-                marginBottom: '20px',
+                background: 'var(--color-sand-50, #FBF8F3)',
+                border: '1px solid var(--color-sand-300, #D8CEBE)',
+                borderRadius: 'var(--radius-sm, 2px)',
+                padding: '14px',
+                marginBottom: '18px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px'
@@ -2872,15 +3216,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <div
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: 'var(--radius-sm, 2px)',
+                    background: 'var(--color-terracotta, #C1552C)',
+                    color: '#FFFFFF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '14px',
-                    fontWeight: '800',
+                    fontWeight: '700',
                     flexShrink: 0
                   }}
                 >
@@ -2888,22 +3233,23 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 </div>
                 <div
                   style={{
-                    background: '#202C33',
+                    background: '#FFFFFF',
+                    border: '1px solid var(--color-sand-200, #E6DCB8)',
                     padding: '10px 14px',
-                    borderRadius: '0 14px 14px 14px',
+                    borderRadius: 'var(--radius-sm, 2px)',
                     fontSize: '13px',
-                    color: '#E9EDEF',
+                    color: 'var(--color-ink, #181512)',
                     lineHeight: '1.5',
-                    maxWidth: '85%'
+                    maxWidth: '88%'
                   }}
                 >
-                  <p style={{ margin: '0 0 6px 0', fontWeight: '700', color: '#25D366' }}>
+                  <p style={{ margin: '0 0 6px 0', fontWeight: '700', color: '#15803D' }}>
                     Gup-Shup Community Bot
                   </p>
                   <p style={{ margin: 0 }}>
                     Namaste! 🙏 <strong>Gup-Shup</strong> is an interactive community world. You will be able to join <strong>Department-Wise Groups</strong>, chat statewide in the <strong>Overall Group</strong>, tag peers with <strong>@mentions</strong>, and share <strong>Achievement Photos & Certificates</strong>!
                   </p>
-                  <span style={{ fontSize: '10px', color: '#8696A0', display: 'block', textAlign: 'right', marginTop: '6px' }}>
+                  <span style={{ fontSize: '10px', color: 'var(--color-ink-muted, #7A7265)', display: 'block', textAlign: 'right', marginTop: '6px' }}>
                     Just now · 🔒 End-to-End Civic Network
                   </span>
                 </div>
@@ -2911,9 +3257,9 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             </div>
 
             {/* UPCOMING HIGHLIGHTS */}
-            <div style={{ marginBottom: '22px' }}>
-              <p style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#E28B5C', margin: '0 0 10px 0' }}>
-                ✨ Features in Next Rollout:
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-terracotta, #C1552C)', margin: '0 0 8px 0' }}>
+                Features in Next Rollout:
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
                 {[
@@ -2925,13 +3271,13 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                   <div
                     key={fIdx}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: '10px',
+                      background: 'var(--color-sand-100, #F3ECE0)',
+                      border: '1px solid var(--color-sand-300, #D8CEBE)',
+                      borderRadius: 'var(--radius-sm, 2px)',
                       padding: '8px 12px',
-                      fontSize: '12.5px',
+                      fontSize: '12px',
                       fontWeight: '600',
-                      color: '#F3ECE0'
+                      color: 'var(--color-ink, #181512)'
                     }}
                   >
                     {feat}
@@ -2947,27 +3293,24 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 onClick={() => setShowGupShupModal(false)}
                 style={{
                   flex: 1,
-                  background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                  background: 'var(--color-terracotta, #C1552C)',
                   border: 'none',
                   color: '#FFFFFF',
-                  padding: '12px 20px',
-                  borderRadius: '12px',
-                  fontWeight: '800',
-                  fontSize: '14px',
+                  padding: '10px 18px',
+                  borderRadius: 'var(--radius-sm, 2px)',
+                  fontWeight: '700',
+                  fontSize: '13px',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 18px rgba(193, 85, 44, 0.4)',
-                  transition: 'all 0.2s ease'
+                  transition: 'background 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 22px rgba(193, 85, 44, 0.55)';
+                  e.currentTarget.style.background = 'var(--color-terracotta-dark, #A9431E)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(193, 85, 44, 0.4)';
+                  e.currentTarget.style.background = 'var(--color-terracotta, #C1552C)';
                 }}
               >
-                🚀 Coming Soon — Got it!
+                Coming Soon — Understood
               </button>
             </div>
           </div>
@@ -2981,9 +3324,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
             position: 'fixed',
             inset: 0,
             zIndex: 99999,
-            background: 'rgba(10, 8, 7, 0.82)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            background: 'rgba(24, 21, 18, 0.65)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -2993,15 +3334,16 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
         >
           <div
             style={{
-              background: 'linear-gradient(160deg, #1E1B18 0%, #14110E 100%)',
-              border: '1.5px solid rgba(226, 139, 92, 0.35)',
-              borderRadius: '24px',
+              background: '#FFFFFF',
+              border: '1px solid var(--color-sand-300, #D8CEBE)',
+              borderTop: '3px solid var(--color-terracotta, #C1552C)',
+              borderRadius: 'var(--radius-sm, 2px)',
               maxWidth: '480px',
               width: '100%',
-              padding: '30px 26px',
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(193, 85, 44, 0.2)',
+              padding: '28px 24px',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
               position: 'relative',
-              color: '#FFFFFF',
+              color: 'var(--color-ink, #181512)',
               textAlign: 'center'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -3013,42 +3355,51 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#9CA3AF',
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
+                background: 'var(--color-sand-100, #F3ECE0)',
+                border: '1px solid var(--color-sand-300, #D8CEBE)',
+                color: 'var(--color-ink-muted, #5C554B)',
+                width: '28px',
+                height: '28px',
+                borderRadius: 'var(--radius-sm, 2px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                fontSize: '15px',
-                fontWeight: '700'
+                fontSize: '13px',
+                fontWeight: '700',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--color-ink, #181512)';
+                e.currentTarget.style.background = 'var(--color-sand-200, #E6DCB8)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--color-ink-muted, #5C554B)';
+                e.currentTarget.style.background = 'var(--color-sand-100, #F3ECE0)';
               }}
             >
               ✕
             </button>
 
-            <div style={{ fontSize: '46px', marginBottom: '12px' }}>
+            <div style={{ fontSize: '38px', marginBottom: '10px' }}>
               {lockedModal.icon || '🔒'}
             </div>
 
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#FCA5A5', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '3px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: '800', marginBottom: '12px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECDD3', padding: '3px 10px', borderRadius: 'var(--radius-sm, 2px)', fontSize: '11px', fontWeight: '700', marginBottom: '12px' }}>
               🔒 Feature Locked
             </div>
 
-            <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 6px 0' }}>
+            <h3 style={{ fontSize: '19px', fontFamily: 'var(--font-heading, "Fraunces", Georgia, serif)', fontWeight: '700', color: 'var(--color-ink, #181512)', margin: '0 0 6px 0' }}>
               {lockedModal.title}
             </h3>
 
             {lockedModal.subtitle && (
-              <p style={{ fontSize: '13px', color: '#E28B5C', margin: '0 0 14px 0', fontWeight: '600' }}>
+              <p style={{ fontSize: '13px', color: 'var(--color-terracotta, #C1552C)', margin: '0 0 12px 0', fontWeight: '600' }}>
                 {lockedModal.subtitle}
               </p>
             )}
 
-            <p style={{ fontSize: '13.5px', color: '#C2B7A3', lineHeight: '1.55', margin: '0 0 24px 0' }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--color-ink-muted, #5C554B)', lineHeight: '1.55', margin: '0 0 20px 0' }}>
               {lockedModal.message}
             </p>
 
@@ -3057,19 +3408,91 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               onClick={() => setLockedModal(null)}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #C1552C 0%, #A9431E 100%)',
+                background: 'var(--color-terracotta, #C1552C)',
                 border: 'none',
                 color: '#FFFFFF',
-                padding: '12px 20px',
-                borderRadius: '12px',
-                fontWeight: '800',
-                fontSize: '14px',
+                padding: '10px 18px',
+                borderRadius: 'var(--radius-sm, 2px)',
+                fontWeight: '700',
+                fontSize: '13px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 18px rgba(193, 85, 44, 0.4)'
+                transition: 'background 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--color-terracotta-dark, #A9431E)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--color-terracotta, #C1552C)';
               }}
             >
-              Got it
+              Understood
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CLAIM USERNAME PERMANENT CONFIRMATION MODAL */}
+      {showClaimConfirmModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100000,
+          background: 'rgba(12, 10, 8, 0.75)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '8px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+            border: '1.5px solid #F59E0B'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#181512' }}>
+                {isHi ? 'यूज़रनेम स्थायी रूप से लॉक करें?' : 'Lock Username Permanently?'}
+              </h3>
+            </div>
+            <p style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+              {isHi ? (
+                <>
+                  आप अपना यूनीक यूज़रनेम <strong style={{ color: '#B45309', fontFamily: 'monospace' }}>@{cleanProfileUsername(newUsernameInput)}</strong> सेट करने जा रहे हैं।
+                  <br /><br />
+                  <strong>महत्वपूर्ण सूचना:</strong> यह क्रिया केवल <strong>एक बार</strong> ही की जा सकती है। इसके बाद आपका यूज़रनेम स्थायी रूप से लॉक हो जाएगा और इसे दोबारा कभी बदला या संपादित नहीं किया जा सकेगा।
+                </>
+              ) : (
+                <>
+                  You are about to permanently set your unique username as <strong style={{ color: '#B45309', fontFamily: 'monospace' }}>@{cleanProfileUsername(newUsernameInput)}</strong>.
+                  <br /><br />
+                  <strong>Important Notice:</strong> You can only do this <strong>ONCE</strong>. After setting it, this username is permanently locked to your account and cannot be changed or edited.
+                </>
+              )}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowClaimConfirmModal(false)}
+                style={{
+                  padding: '8px 16px', borderRadius: '4px',
+                  border: '1px solid #D1D5DB', background: '#F3F4F6',
+                  color: '#374151', fontWeight: '700', fontSize: '13px', cursor: 'pointer'
+                }}
+              >
+                {isHi ? 'रद्द करें' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={executeClaimUsername}
+                style={{
+                  padding: '8px 18px', borderRadius: '4px',
+                  border: 'none', background: '#B45309',
+                  color: '#FFFFFF', fontWeight: '800', fontSize: '13px', cursor: 'pointer'
+                }}
+              >
+                {isHi ? 'हाँ, यूज़रनेम सेट करें' : 'Yes, Set Username'}
+              </button>
+            </div>
           </div>
         </div>
       )}

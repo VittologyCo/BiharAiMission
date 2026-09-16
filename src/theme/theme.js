@@ -84,13 +84,13 @@ export const TYPOGRAPHY = {
 };
 
 export const RADIUS = {
-  sm: '10px',
-  lg: '20px'
+  sm: '2px',
+  lg: '4px'
 };
 
 export const SHADOWS = {
-  soft: '0 10px 30px -10px rgba(24, 21, 18, 0.08)',
-  hover: '0 20px 40px -12px rgba(193, 85, 44, 0.14)'
+  soft: '0 1px 2px rgba(24, 21, 18, 0.04)',
+  hover: '0 2px 4px rgba(24, 21, 18, 0.08)'
 };
 
 export const SPACING = {

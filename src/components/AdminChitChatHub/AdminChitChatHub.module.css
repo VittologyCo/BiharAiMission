@@ -1,0 +1,186 @@
+.hubContainer {
+  background: #FFFFFF;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: var(--radius-sm, 2px);
+  padding: 24px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+.hubHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-line, #E2D7C3);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.hubTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-ink, #181512);
+  margin: 0;
+  font-family: var(--font-heading, "Fraunces", Georgia, serif);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hubSubTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-line, #E2D7C3);
+  padding-bottom: 8px;
+}
+
+.subTabBtn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--color-line, #E2D7C3);
+  background: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink-muted, #5E554D);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subTabBtnActive {
+  background: var(--color-charcoal-900, #181512) !important;
+  color: #FBE6A2 !important;
+  border-color: var(--color-charcoal-900, #181512) !important;
+}
+
+.card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-ink, #181512);
+  margin: 0 0 12px;
+}
+
+.codeGenRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.selectInput, .textInput {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: 4px;
+  font-size: 13px;
+  background: #FFFFFF;
+  color: var(--color-ink, #181512);
+}
+
+.primaryBtn {
+  height: 40px;
+  padding: 0 20px;
+  background: #B45309;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.primaryBtn:hover {
+  background: #92400E;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 14px;
+}
+
+.table th {
+  background: var(--color-sand-100, #F3ECE0);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-ink, #181512);
+  border-bottom: 1px solid var(--color-line, #E2D7C3);
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F3ECE0;
+  color: var(--color-ink, #181512);
+}
+
+.codeBadge {
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 14px;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.copyBtn {
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1px solid var(--color-line, #E2D7C3);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.dangerBtn {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dangerBtn:hover {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+/* Chat oversight list */
+.oversightFeed {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--color-line, #E2D7C3);
+  border-radius: 4px;
+  padding: 16px;
+  background: var(--color-sand-50, #FBF8F3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.oversightItem {
+  background: #FFFFFF;
+  border: 1px solid var(--color-line, #E2D7C3);
+  padding: 10px 14px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}

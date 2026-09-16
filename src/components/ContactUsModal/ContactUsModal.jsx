@@ -33,7 +33,6 @@ export default function ContactUsModal({ isOpen, onClose }) {
 
     setIsSubmitting(true);
 
-    // Send email via Resend API directly — NO database / Supabase persistence
     try {
       const emailRes = await sendContactEmailViaResend({
         name: name.trim(),
@@ -72,44 +71,45 @@ export default function ContactUsModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       {/* Modal Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
         <div
           style={{
-            width: '44px',
-            height: '44px',
-            borderRadius: '12px',
-            background: 'rgba(193, 85, 44, 0.1)',
-            border: '1px solid var(--color-line, var(--color-line, #E2D7C3))',
+            width: '42px',
+            height: '42px',
+            borderRadius: '2px',
+            background: '#F3ECE0',
+            border: '2px solid #181512',
+            boxShadow: '2px 2px 0px #181512',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '22px',
+            fontSize: '20px',
+            flexShrink: 0,
           }}
         >
           📩
         </div>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--color-terracotta-500, #C1552C)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', fontWeight: '800', color: '#C1552C', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>
             {isHi ? 'बिहार AI मिशन सहायता केंद्र' : 'BIHAR AI MISSION SUPPORT'}
           </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', margin: 0 }}>
+          <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#181512', margin: '0 0 6px 0', lineHeight: '1.25' }}>
             {isHi ? 'हमारी टीम से संपर्क करें' : 'Contact Our Team'}
           </h3>
+          <p style={{ fontSize: '13.5px', color: '#5E554D', margin: 0, lineHeight: '1.5' }}>
+            {isHi
+              ? 'आपके पास कोई प्रश्न, प्रतिक्रिया या प्रशासनिक पूछताछ है? हमें अपना संदेश भेजें।'
+              : 'Have a question, feedback, or administrative inquiry? Fill out your details below.'}
+          </p>
         </div>
       </div>
 
-      <p style={{ fontSize: '14px', color: 'var(--color-ink-muted, var(--color-ink-muted, #5E554D))', marginBottom: '24px', lineHeight: '1.55' }}>
-        {isHi
-          ? 'आपके पास कोई प्रश्न, प्रतिक्रिया या प्रशासनिक पूछताछ है? हमें अपना संदेश भेजें और हमारी टीम आपसे शीघ्र ही संपर्क करेगी।'
-          : 'Have a question, feedback, or administrative inquiry? Fill out your details below and our Bihar AI Mission team will reach out to you.'}
-      </p>
-
       {/* Contact Form */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} autoComplete="off">
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} autoComplete="off">
         {/* Field 1: Full Name */}
         <div>
-          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', marginBottom: '6px' }}>
-            👤 {isHi ? 'पूरा नाम' : 'Full Name'} <span style={{ color: 'var(--color-error, #B3341C)' }}>*</span>
+          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '800', color: '#181512', marginBottom: '6px' }}>
+            👤 {isHi ? 'पूरा नाम' : 'Full Name'} <span style={{ color: '#B3341C' }}>*</span>
           </label>
           <input
             type="text"
@@ -121,25 +121,27 @@ export default function ContactUsModal({ isOpen, onClose }) {
             autoComplete="off"
             autoCorrect="off"
             spellCheck="false"
+            required
             style={{
               width: '100%',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-sm, 10px)',
-              border: '1.5px solid var(--color-line, var(--color-line, #E2D7C3))',
-              fontSize: '14.5px',
+              padding: '11px 14px',
+              borderRadius: '2px',
+              border: '2px solid #181512',
+              fontSize: '14px',
               fontWeight: '600',
-              color: 'var(--color-ink, var(--color-charcoal-900, #181512))',
-              background: 'var(--color-sand-100, var(--color-sand-100, #F3ECE0))',
+              color: '#181512',
+              background: '#FFFFFF',
               outline: 'none',
               boxSizing: 'border-box',
+              minHeight: '44px',
             }}
           />
         </div>
 
         {/* Field 2: Email Address */}
         <div>
-          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', marginBottom: '6px' }}>
-            📧 {isHi ? 'ईमेल पता' : 'Email Address'} <span style={{ color: 'var(--color-error, #B3341C)' }}>*</span>
+          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '800', color: '#181512', marginBottom: '6px' }}>
+            📧 {isHi ? 'ईमेल पता' : 'Email Address'} <span style={{ color: '#B3341C' }}>*</span>
           </label>
           <input
             type="email"
@@ -152,40 +154,43 @@ export default function ContactUsModal({ isOpen, onClose }) {
             autoCorrect="off"
             autoCapitalize="none"
             spellCheck="false"
+            required
             style={{
               width: '100%',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-sm, 10px)',
-              border: '1.5px solid var(--color-line, var(--color-line, #E2D7C3))',
-              fontSize: '14.5px',
+              padding: '11px 14px',
+              borderRadius: '2px',
+              border: '2px solid #181512',
+              fontSize: '14px',
               fontWeight: '600',
-              color: 'var(--color-ink, var(--color-charcoal-900, #181512))',
-              background: 'var(--color-sand-100, var(--color-sand-100, #F3ECE0))',
+              color: '#181512',
+              background: '#FFFFFF',
               outline: 'none',
               boxSizing: 'border-box',
+              minHeight: '44px',
             }}
           />
         </div>
 
         {/* Field 3: Description / Message */}
         <div>
-          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: 'var(--color-ink, var(--color-charcoal-900, #181512))', marginBottom: '6px' }}>
-            📝 {isHi ? 'विवरण / संदेश' : 'Description / Message'} <span style={{ color: 'var(--color-error, #B3341C)' }}>*</span>
+          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '800', color: '#181512', marginBottom: '6px' }}>
+            📝 {isHi ? 'विवरण / संदेश' : 'Description / Message'} <span style={{ color: '#B3341C' }}>*</span>
           </label>
           <textarea
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={isHi ? 'यहाँ अपनी पूछताछ या संदेश का विवरण लिखें...' : 'Describe your inquiry, feedback, or administrative question here...'}
+            required
             style={{
               width: '100%',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-sm, 10px)',
-              border: '1.5px solid var(--color-line, var(--color-line, #E2D7C3))',
-              fontSize: '14.5px',
+              padding: '11px 14px',
+              borderRadius: '2px',
+              border: '2px solid #181512',
+              fontSize: '14px',
               fontWeight: '600',
-              color: 'var(--color-ink, var(--color-charcoal-900, #181512))',
-              background: 'var(--color-sand-100, var(--color-sand-100, #F3ECE0))',
+              color: '#181512',
+              background: '#FFFFFF',
               outline: 'none',
               boxSizing: 'border-box',
               resize: 'vertical',
@@ -195,15 +200,17 @@ export default function ContactUsModal({ isOpen, onClose }) {
         </div>
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          fullWidth
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (isHi ? 'भेजा जा रहा है...' : 'Sending Message...') : (isHi ? 'संदेश भेजें 🚀' : 'Send Message 🚀')}
-        </Button>
+        <div style={{ marginTop: '4px' }}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (isHi ? 'भेजा जा रहा है...' : 'Sending Message...') : (isHi ? 'संदेश भेजें 🚀' : 'Send Message 🚀')}
+          </Button>
+        </div>
       </form>
     </Modal>
   );

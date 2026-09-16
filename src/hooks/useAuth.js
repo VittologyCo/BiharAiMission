@@ -292,6 +292,7 @@ export const AuthProvider = ({ children }) => {
     };
     if (customMeta.phone || meta.phone) formattedUser.phone = customMeta.phone || meta.phone;
     if (customMeta.district || meta.district) formattedUser.district = customMeta.district || meta.district;
+    if (customMeta.username || meta.username) formattedUser.username = customMeta.username || meta.username;
     return formattedUser;
   };
 
@@ -356,7 +357,7 @@ export const AuthProvider = ({ children }) => {
           try {
             const { data: dbUser, error: checkErr } = await supabase
               .from('user_details')
-              .select('id, full_name, email, designation, district, mobile')
+              .select('id, full_name, email, designation, district, mobile, username')
               .eq('email', currentEmail)
               .maybeSingle();
 
@@ -371,6 +372,7 @@ export const AuthProvider = ({ children }) => {
               const verified = {
                 id: dbUser.id,
                 email: dbUser.email,
+                username: dbUser.username || formatted?.username || null,
                 fullName: dbUser.full_name || formatted?.fullName || dbUser.email.split('@')[0],
                 designation: dbUser.designation || formatted?.designation || 'Member',
                 district: dbUser.district || formatted?.district || null,
@@ -633,6 +635,7 @@ const resetCooldownMap = new Map();
             authenticatedUser = {
               id: verifyResult.user_id || 'usr-' + Date.now(),
               email: verifyResult.email || cleanEmail,
+              username: verifyResult.username || null,
               fullName: verifyResult.full_name || cleanEmail.split('@')[0],
               designation: verifyResult.designation || 'Officer / Citizen',
               mobile: verifyResult.mobile,
@@ -657,7 +660,7 @@ const resetCooldownMap = new Map();
         try {
           const { data: dbUser, error: dbErr } = await supabase
             .from('user_details')
-            .select('id, email, password, full_name, designation, mobile, district')
+            .select('id, email, password, full_name, designation, mobile, district, username')
             .ilike('email', cleanEmail)
             .maybeSingle();
 
@@ -677,6 +680,7 @@ const resetCooldownMap = new Map();
               authenticatedUser = {
                 id: dbUser.id || 'usr-' + Date.now(),
                 email: dbUser.email || cleanEmail,
+                username: dbUser.username || null,
                 fullName: dbUser.full_name || cleanEmail.split('@')[0],
                 designation: dbUser.designation || 'Officer / Citizen',
                 mobile: dbUser.mobile,
@@ -1065,6 +1069,17 @@ const resetCooldownMap = new Map();
     }
   };
 
+  const updateUserSession = useCallback((updates) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updates };
+      try {
+        localStorage.setItem('bihar_ai_user', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
   const authContextValue = useMemo(() => ({
     user,
     loading,
@@ -1076,7 +1091,8 @@ const resetCooldownMap = new Map();
     resetPassword,
     updatePassword,
     loginWithGoogle,
-  }), [user, loading, login, signup, logout, forcePurgeAndLogout, resetPassword, updatePassword, loginWithGoogle]);
+    updateUserSession,
+  }), [user, loading, login, signup, logout, forcePurgeAndLogout, resetPassword, updatePassword, loginWithGoogle, updateUserSession]);
 
   return (
     <AuthContext.Provider value={authContextValue}>

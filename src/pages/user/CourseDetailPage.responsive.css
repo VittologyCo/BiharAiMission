@@ -1,7 +1,85 @@
 /* ============================================================================
-   CourseDetailPage — Responsive Override Styles
-   Targets elements in CourseDetailPage via wrapper class .courseDetailPage
+   CourseDetailPage — Retro UI & Neobrutalist Component System
    ============================================================================ */
+
+.courseDetailPage {
+  background: transparent !important;
+  color: var(--color-ink, #181512) !important;
+}
+
+.courseBreadcrumb {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.courseHero {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.courseHero h1 {
+  font-family: var(--font-display, 'Fraunces', serif) !important;
+  color: var(--color-ink, #181512) !important;
+  font-weight: 800 !important;
+}
+
+.courseStatsGrid > div {
+  background: var(--color-sand-100, #F3ECE0) !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.courseModuleCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+  border-radius: 2px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.courseModuleCard:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+}
+
+.courseSidebar {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 6px 6px 0px #181512 !important;
+  border-radius: 2px !important;
+}
+
+.courseSidebar button {
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+  font-family: var(--font-mono, 'Space Mono', monospace) !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.courseSidebar button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #181512 !important;
+}
+
+.courseSidebar button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #181512 !important;
+}
+
+.courseFaqCard {
+  background: #FFFFFF !important;
+  border: 2px solid #181512 !important;
+  box-shadow: 3px 3px 0px #181512 !important;
+  border-radius: 2px !important;
+}
 
 /* ===================== TABLET (≤1024px) ===================== */
 @media (max-width: 1024px) {
@@ -39,7 +117,7 @@
   /* Hero Section */
   .courseHero {
     padding: 24px 18px !important;
-    border-radius: 16px !important;
+    border-radius: 2px !important;
     margin-bottom: 24px !important;
   }
   .courseHero h1 {
@@ -65,7 +143,7 @@
   }
   .courseModuleCard {
     padding: 20px 16px !important;
-    border-radius: 14px !important;
+    border-radius: 2px !important;
   }
   .courseModuleCard h3 {
     font-size: 16px !important;
@@ -74,19 +152,19 @@
   /* Sidebar / Action Card */
   .courseSidebar {
     padding: 22px 18px !important;
-    border-radius: 16px !important;
+    border-radius: 2px !important;
   }
   .courseSidebar button {
     width: 100% !important;
     min-height: 44px !important;
     font-size: 14px !important;
-    border-radius: 12px !important;
+    border-radius: 2px !important;
   }
 
   /* FAQ Section */
   .courseFaqCard {
     padding: 16px 14px !important;
-    border-radius: 12px !important;
+    border-radius: 2px !important;
   }
 }
 
@@ -94,7 +172,7 @@
 @media (max-width: 480px) {
   .courseHero {
     padding: 20px 14px !important;
-    border-radius: 14px !important;
+    border-radius: 2px !important;
   }
   .courseHero h1 {
     font-size: 20px !important;

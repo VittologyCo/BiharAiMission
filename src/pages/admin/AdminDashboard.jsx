@@ -67,6 +67,7 @@ import { encodeSubmissionForShare, generateWhatsAppShareText } from '../../utils
 import styles from './Admin.module.css';
 import CertificateModal from '../../components/CertificateModal/CertificateModal';
 import AdminAnalyticsPanel from '../../components/AdminAnalyticsPanel/AdminAnalyticsPanel';
+import AdminChitChatHub from '../../components/AdminChitChatHub/AdminChitChatHub';
 import {
   getAllTaskSubmissions,
   reviewTaskSubmission,
@@ -168,7 +169,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
-  const validTabs = ['analytics', 'inquiries', 'live_classes', 'programs', 'exams', 'daily_tasks', 'blogs'];
+  const validTabs = ['analytics', 'inquiries', 'live_classes', 'programs', 'exams', 'daily_tasks', 'blogs', 'chitchat'];
   const activeTab = validTabs.includes(rawTab) ? rawTab : 'analytics';
 
   const setActiveTab = (tabId) => {
@@ -317,12 +318,35 @@ const AdminDashboard = () => {
       setAdminTaskSubmissions(subs || []);
 
       if (supabase) {
-        const { data: users } = await supabase
-          .from('user_details')
-          .select('email, full_name, designation, role_type, organization, department, district');
-        if (users && Array.isArray(users)) {
+        let allUsers = [];
+        let uPage = 0;
+        const U_CHUNK = 1000;
+        let uHasMore = true;
+
+        while (uHasMore) {
+          const from = uPage * U_CHUNK;
+          const to = from + U_CHUNK - 1;
+          const { data: uChunk, error: uErr } = await supabase
+            .from('user_details')
+            .select('email, full_name, username, designation, role_type, organization, department, district')
+            .range(from, to);
+
+          if (uErr) break;
+          if (Array.isArray(uChunk) && uChunk.length > 0) {
+            allUsers.push(...uChunk);
+            if (uChunk.length < U_CHUNK) {
+              uHasMore = false;
+            } else {
+              uPage++;
+            }
+          } else {
+            uHasMore = false;
+          }
+        }
+
+        if (allUsers.length > 0) {
           const map = {};
-          users.forEach((u) => {
+          allUsers.forEach((u) => {
             if (u.email) map[u.email.toLowerCase().trim()] = u;
           });
           setAdminUserDetailsMap(map);
@@ -1108,13 +1132,15 @@ const AdminDashboard = () => {
         const term = searchTerm.toLowerCase();
         list = list.filter(s =>
           (s.full_name && s.full_name.toLowerCase().includes(term)) ||
+          (s.username && s.username.toLowerCase().includes(term)) ||
           (s.email && s.email.toLowerCase().includes(term)) ||
           (s.district && s.district.toLowerCase().includes(term))
         );
       }
-      const headers = ['Name', 'Email', 'Phone', 'Role', 'District', 'Interests', 'Created At'];
+      const headers = ['Name', 'Username', 'Email', 'Phone', 'Role', 'District', 'Interests', 'Created At'];
       const rows = list.map((s) => [
         `"${s.full_name}"`,
+        s.username ? `@${s.username.replace(/^@/, '')}` : '',
         s.email,
         s.mobile,
         s.role_type,
@@ -1815,10 +1841,11 @@ const AdminDashboard = () => {
     const q = searchTerm.toLowerCase();
     return submissions.filter((s) => {
       const name = (s.full_name || '').toLowerCase();
+      const username = (s.username || '').toLowerCase();
       const email = (s.email || '').toLowerCase();
       const role = (s.role_type || '').toLowerCase();
       const district = (s.district || '').toLowerCase();
-      return name.includes(q) || email.includes(q) || role.includes(q) || district.includes(q);
+      return name.includes(q) || username.includes(q) || email.includes(q) || role.includes(q) || district.includes(q);
     });
   }, [submissions, searchTerm]);
 
@@ -1917,6 +1944,16 @@ const AdminDashboard = () => {
         </svg>
       ),
       count: blogs.length,
+    },
+    {
+      id: 'chitchat',
+      label: 'Chit-Chat Hub',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      ),
+      count: 'Live',
     },
   ];
 
@@ -2372,6 +2409,7 @@ const AdminDashboard = () => {
                         <thead>
                           <tr>
                             <th>Name</th>
+                            <th>Username</th>
                             <th>Email</th>
                             <th>Role</th>
                             <th>District</th>
@@ -2383,6 +2421,27 @@ const AdminDashboard = () => {
                           {paginatedSubmissions.map((s) => (
                             <tr key={s.id || s.created_at}>
                               <td style={{ fontWeight: '700', color: '#181512' }}>{s.full_name}</td>
+                              <td>
+                                {s.username ? (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    background: 'rgba(180, 83, 9, 0.08)',
+                                    color: '#B45309',
+                                    fontWeight: '700',
+                                    fontSize: '12px',
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    @{s.username.replace(/^@/, '')}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#9CA3AF', fontSize: '11.5px', fontStyle: 'italic' }}>
+                                    Not Set
+                                  </span>
+                                )}
+                              </td>
                               <td style={{ color: '#443D37' }}>{s.email}</td>
                               <td>
                                 <span
@@ -5692,7 +5751,7 @@ const AdminDashboard = () => {
                     Submission Details
                   </h3>
                   <span style={{ fontSize: '12.5px', color: '#73675C', fontWeight: '600' }}>
-                    {selectedSubmission.full_name || selectedSubmission.name || 'Candidate'} · {selectedSubmission.email}
+                    {selectedSubmission.full_name || selectedSubmission.name || 'Candidate'} {selectedSubmission.username ? `(@${selectedSubmission.username.replace(/^@/, '')})` : ''} · {selectedSubmission.email}
                   </span>
                 </div>
               </div>
@@ -5711,6 +5770,18 @@ const AdminDashboard = () => {
                 <h4>Personal Information</h4>
                 <div className={styles.infoGrid}>
                   <InfoItem label="Full Name" value={selectedSubmission.full_name} />
+                  <InfoItem
+                    label="Username (@)"
+                    value={
+                      selectedSubmission.username ? (
+                        <span style={{ fontWeight: '800', color: '#B45309', fontFamily: 'monospace' }}>
+                          @{selectedSubmission.username.replace(/^@/, '')}
+                        </span>
+                      ) : (
+                        'Not set yet'
+                      )
+                    }
+                  />
                   <InfoItem label="Email" value={selectedSubmission.email} />
                   <InfoItem label="Mobile" value={selectedSubmission.mobile} />
                   <InfoItem label="Gender" value={selectedSubmission.gender} />
@@ -7424,6 +7495,13 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB 7: CHIT-CHAT / GUP-SHUP HUB */}
+        {activeTab === 'chitchat' && (
+          <div>
+            <AdminChitChatHub />
           </div>
         )}
       </main>

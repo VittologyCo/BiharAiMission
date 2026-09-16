@@ -1280,10 +1280,16 @@ export const fetchMasterclassQuestionsFromSupabase = async (classId) => {
       const { data: opData, error: opErr } = await supabase
         .from('officer_program_questions')
         .select('*')
-        .eq('program_id', String(classId))
-        .order('q_id', { ascending: true });
+        .eq('program_id', String(classId));
 
       if (!opErr && Array.isArray(opData) && opData.length > 0) {
+        // Sort safely in JS by q_id or fallback to numeric index to prevent 400 Bad Request if q_id column is missing
+        opData.sort((a, b) => {
+          const numA = Number(a.q_id || a.id || 0);
+          const numB = Number(b.q_id || b.id || 0);
+          return numA - numB;
+        });
+
         const formatted = opData.map((q) => ({
           id: q.q_id || q.id,
           dbId: q.id,
@@ -1301,10 +1307,15 @@ export const fetchMasterclassQuestionsFromSupabase = async (classId) => {
       const { data, error } = await supabase
         .from('masterclass_questions')
         .select('*')
-        .eq('class_id', String(classId))
-        .order('q_id', { ascending: true });
+        .eq('class_id', String(classId));
 
       if (!error && Array.isArray(data) && data.length > 0) {
+        data.sort((a, b) => {
+          const numA = Number(a.q_id || a.id || 0);
+          const numB = Number(b.q_id || b.id || 0);
+          return numA - numB;
+        });
+
         const formatted = data.map((q) => ({
           id: q.q_id || q.id,
           dbId: q.id,

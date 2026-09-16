@@ -19,48 +19,24 @@
 .bentoStatCard {
   position: relative;
   overflow: hidden;
-}
-
-.bentoStatCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  transition: 0.5s;
-  pointer-events: none;
-}
-
-.bentoStatCard:hover::before {
-  left: 100%;
+  border-radius: var(--radius-sm, 2px) !important;
 }
 
 .bentoStatCard:hover {
-  transform: translateY(-4px) !important;
-  border-color: rgba(226, 139, 92, 0.55) !important;
-  box-shadow: 0 20px 42px -10px rgba(193, 85, 44, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-}
-
-.bentoStatCard:active {
-  transform: translateY(-1px) scale(0.99) !important;
+  border-color: var(--color-terracotta-500, #C1552C) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 /* Hero Action Buttons Hover */
 .heroActionBtn:hover {
-  background: rgba(226, 139, 92, 0.22) !important;
-  border-color: rgba(226, 139, 92, 0.55) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.25) !important;
+  background: rgba(193, 85, 44, 0.12) !important;
+  border-color: var(--color-terracotta-500, #C1552C) !important;
 }
 
 .heroLogoutBtn:hover {
-  background: rgba(239, 68, 68, 0.2) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
   border-color: rgba(239, 68, 68, 0.6) !important;
-  color: #FFFFFF !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+  color: #DC2626 !important;
 }
 
 /* Quick stats 4-card grid (desktop) */
@@ -91,13 +67,11 @@
 }
 
 .profileTabs button:not([data-active="true"]):hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #FFFFFF !important;
-  transform: translateY(-1px) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
 }
 
 .profileTabs button[data-active="true"]:hover {
-  transform: translateY(-1px) !important;
+  /* active state */
 }
 
 /* Refresh Button Spin Keyframes & Styling */
@@ -115,15 +89,56 @@
 }
 
 .profileRefreshBtn:hover {
-  background: rgba(193, 85, 44, 0.25) !important;
-  border-color: rgba(226, 139, 92, 0.6) !important;
-  color: #FFFFFF !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 14px rgba(193, 85, 44, 0.3) !important;
+  background: rgba(193, 85, 44, 0.15) !important;
+  border-color: var(--color-terracotta-500, #C1552C) !important;
 }
 
 .profileRefreshBtn:active {
-  transform: scale(0.97) !important;
+  /* no scale bounce */
+}
+
+/* Username Inside-input indicator for profile */
+.profileUsernameInsideIndicator {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.profileInsideSuccess {
+  color: #16A34A;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 1px 2px rgba(22, 163, 74, 0.25));
+  animation: profileTickIn 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.profileInsideError {
+  color: #DC2626;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 1px 2px rgba(220, 38, 38, 0.25));
+  animation: profileTickIn 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.profileInsideChecking {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid #E5E7EB;
+  border-top-color: #B45309;
+  border-radius: 50%;
+  animation: profileSpin 0.6s linear infinite;
+}
+
+@keyframes profileTickIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* ===================== TABLET LANDSCAPE & LAPTOP (≤1180px) ===================== */
@@ -172,6 +187,7 @@
     font-size: 13px !important;
     justify-content: center !important;
     white-space: nowrap !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 }
 
@@ -191,7 +207,7 @@
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 16px !important;
-    border-radius: 16px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .profileHero > div:first-child {
     flex-direction: column !important;
@@ -203,6 +219,7 @@
     width: 56px !important;
     height: 56px !important;
     font-size: 20px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .profileHero h1 {
     font-size: 20px !important;
@@ -219,7 +236,7 @@
   }
   .profileStats > div {
     padding: 16px 18px !important;
-    border-radius: 14px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .profileStats .statNum {
     font-size: 22px !important;
@@ -244,7 +261,7 @@
     font-size: 12px !important;
     white-space: nowrap !important;
     justify-content: center !important;
-    border-radius: 10px !important;
+    border-radius: var(--radius-sm, 2px) !important;
     box-sizing: border-box !important;
   }
 
@@ -257,7 +274,7 @@
   /* Masterclass card */
   .mcCard {
     padding: 20px 18px !important;
-    border-radius: 14px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .mcCard h3 {
     font-size: 15px !important;
@@ -266,13 +283,13 @@
   /* Certificate card */
   .certCard {
     padding: 20px 16px !important;
-    border-radius: 14px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 
   /* Profile form */
   .profileForm {
     padding: 24px 18px !important;
-    border-radius: 16px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .formGrid {
     grid-template-columns: 1fr !important;
@@ -284,7 +301,7 @@
     font-size: 14px !important;
     padding: 10px 12px !important;
     min-height: 42px !important;
-    border-radius: 10px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .formGrid label {
     font-size: 12px !important;
@@ -295,6 +312,7 @@
     width: 100% !important;
     text-align: center !important;
     justify-content: center !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 }
 
@@ -306,7 +324,7 @@
   }
   .profileHero {
     padding: 20px 16px !important;
-    border-radius: 14px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .profileHero h1 {
     font-size: 18px !important;
@@ -318,9 +336,11 @@
   .profileTabs button {
     padding: 8px 12px !important;
     font-size: 11.5px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
   .profileForm {
     padding: 20px 14px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 
   /* Breadcrumb compact */
@@ -331,6 +351,7 @@
     padding: 4px 10px !important;
     font-size: 11px !important;
     min-height: auto !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 }
 
@@ -338,25 +359,26 @@
 .feedbackBanner {
   position: relative;
   overflow: hidden;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  border-radius: var(--radius-sm, 2px) !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .feedbackBanner:hover {
-  border-color: rgba(226, 139, 92, 0.6) !important;
-  box-shadow: 0 14px 34px -8px rgba(193, 85, 44, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  border-color: var(--color-terracotta-500, #C1552C) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 .feedbackBtn {
   outline: none;
+  border-radius: var(--radius-sm, 2px) !important;
 }
 
 .feedbackBtn:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 22px rgba(193, 85, 44, 0.55) !important;
+  background: var(--color-terracotta-600, #A4431E) !important;
 }
 
 .feedbackBtn:active {
-  transform: translateY(0) scale(0.98);
+  /* flat active */
 }
 
 @media (max-width: 768px) {
@@ -365,6 +387,7 @@
     align-items: flex-start !important;
     padding: 16px 16px !important;
     gap: 16px !important;
+    border-radius: var(--radius-sm, 2px) !important;
   }
 
   .feedbackBtn {

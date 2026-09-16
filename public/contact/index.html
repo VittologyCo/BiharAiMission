@@ -66,32 +66,41 @@
   }
   </script>
   <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; padding: 2rem 1.5rem; background: #181512; color: #f0ece1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; }
+    :root { color-scheme: light; }
+    /* When JavaScript is active (normal human visitors), completely hide the static HTML immediately and hand off to SPA */
+    .js body { display: none !important; }
+    body { margin: 0; padding: 2rem 1.5rem; background: #FBF8F3; color: #181512; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; }
     .container { max-width: 860px; margin: 0 auto; }
-    h1 { font-size: 2.25rem; color: #f5af87; margin-bottom: 1rem; }
-    h2 { font-size: 1.5rem; color: #e2d7c3; border-bottom: 1px solid rgba(226,139,92,0.25); padding-bottom: 0.5rem; margin-top: 2rem; }
-    p, li { font-size: 1.05rem; color: #d0c7b7; }
-    a { color: #f5af87; text-decoration: none; }
+    h1 { font-size: 2.25rem; color: #181512; margin-bottom: 1rem; }
+    h2 { font-size: 1.5rem; color: #181512; border-bottom: 1px solid #D8CEBE; padding-bottom: 0.5rem; margin-top: 2rem; }
+    p, li { font-size: 1.05rem; color: #5C554B; }
+    a { color: #C1552C; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .contact-card { background: rgba(193,85,44,0.12); border: 1px solid rgba(226,139,92,0.3); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
-    .contact-card strong { color: #f5af87; }
+    .contact-card { background: #FFFFFF; border: 1px solid #D8CEBE; border-left: 3px solid #C1552C; border-radius: 2px; padding: 1.5rem; margin: 1.5rem 0; }
+    .contact-card strong { color: #181512; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
-    .cell { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1.25rem; }
-    .nav-strip { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.95rem; }
+    .cell { background: #FFFFFF; border: 1px solid #D8CEBE; border-radius: 2px; padding: 1.25rem; }
+    .nav-strip { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #D8CEBE; font-size: 0.95rem; }
     .nav-strip a { margin-right: 1.25rem; }
   </style>
+  <script>
+    document.documentElement.classList.add('js');
+    if (typeof window !== 'undefined' && window.location) {
+      sessionStorage.setItem('spa_redirect', '/contact' + window.location.search + window.location.hash);
+      window.location.replace('/');
+    }
+  </script>
 </head>
 <body>
   <div class="container">
     <header>
-      <a href="/" style="font-weight:700;letter-spacing:0.05em;text-transform:uppercase;font-size:0.9rem;color:#f5af87">&larr; Back to Bihar AI Mission</a>
+      <a href="/" style="font-weight:700;letter-spacing:0.05em;text-transform:uppercase;font-size:0.9rem;color:#C1552C">&larr; Back to Bihar AI Mission</a>
       <h1>Contact Bihar AI Mission</h1>
       <p>Official communication desk for Bihar AI Mission (बिहार AI मिशन). For institutional partnerships, officer workshops, certificate inquiries, exam proctoring support, or citizen inquiries, our secretariat desk is available across multiple official channels.</p>
     </header>
 
     <div class="contact-card">
-      <h3 style="margin-top:0;color:#f5af87">Official Secretariat Headquarters</h3>
+      <h3 style="margin-top:0;color:#181512">Official Secretariat Headquarters</h3>
       <p style="margin-bottom:0.5rem"><strong>Address:</strong> Bihar AI Mission Secretariat, Technology Innovation Corridor, Bailey Road, Patna, Bihar — 800001, India.</p>
       <p style="margin-bottom:0.5rem"><strong>Direct Phone Helpline:</strong> <a href="tel:+916122215000">+91-612-2215000</a></p>
       <p style="margin-bottom:0.5rem"><strong>Official Support Email:</strong> <a href="mailto:contact@biharaimission.org">contact@biharaimission.org</a></p>

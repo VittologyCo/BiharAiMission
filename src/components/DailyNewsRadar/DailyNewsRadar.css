@@ -1,25 +1,24 @@
 /* ==============================================================================
    BIHAR AI MISSION - 60-SECOND DAILY NEWS RADAR COMPONENT
-   Luxury Agency Dark Aesthetic, Real-Time Day/Date Display, Regional Prioritization
+   Tactile Wire-Service Gazette Aesthetic, 2px Solid Ink Borders, Hard Drop-Shadows
    ============================================================================== */
 
 .newsRadarSection {
-  padding: 80px 24px 60px;
-  background: radial-gradient(circle at 50% 0%, rgba(193, 85, 44, 0.08) 0%, rgba(14, 12, 10, 0) 70%),
-              #0E0C0A;
-  color: #F3ECE0;
+  padding: 64px 24px 56px;
+  background: transparent !important;
+  color: var(--color-ink, #181512);
   position: relative;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 2px solid #181512;
 }
 
 .newsRadarContainer {
-  max-width: 1200px;
+  max-width: var(--max-width-content, 1200px);
   margin: 0 auto;
 }
 
 /* ───────────────────────────────────────────────
-   SECTION HEADER (DAY, DATE, LIVE PULSE)
+   SECTION HEADER (DAY, DATE, LIVE STATUS)
    ─────────────────────────────────────────────── */
 .radarHeader {
   text-align: center;
@@ -30,53 +29,54 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: rgba(193, 85, 44, 0.12);
-  border: 1px solid rgba(193, 85, 44, 0.35);
-  padding: 7px 18px;
-  border-radius: 9999px;
-  font-size: 12px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2.5px 2.5px 0px #181512;
+  padding: 6px 16px;
+  border-radius: 2px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #E28B5C;
+  color: var(--color-ink, #181512);
   margin-bottom: 16px;
-  box-shadow: 0 0 20px rgba(193, 85, 44, 0.2);
 }
 
 .liveDot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 10px #10B981;
-  animation: radarPulse 2s infinite;
+  border-radius: 0;
+  background: #15803D;
+  border: 1px solid #181512;
+  display: inline-block;
+  animation: radarBlink 1.4s ease-in-out infinite alternate;
 }
 
-@keyframes radarPulse {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #10B981; }
-  100% { transform: scale(0.95); opacity: 0.8; }
+@keyframes radarBlink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 .radarTitle {
-  font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
-  font-size: clamp(28px, 4vw, 44px);
-  font-weight: 800;
-  color: #FFFFFF;
-  margin: 0 0 12px;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: clamp(26px, 3.8vw, 40px);
+  font-weight: 700;
+  color: var(--color-ink, #181512);
+  margin: 0 0 10px;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
 .radarTitleHighlight {
-  background: linear-gradient(135deg, #FFF6EC 0%, #E28B5C 50%, #C1552C 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-terracotta, #C1552C);
+  font-style: italic;
 }
 
 .radarSubtitle {
-  font-size: 15px;
-  color: #C2B7A3;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-size: 14.5px;
+  color: var(--color-ink-muted, #5C554B);
   max-width: 680px;
   margin: 0 auto;
   line-height: 1.6;
@@ -89,7 +89,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 28px;
   flex-wrap: wrap;
 }
@@ -98,50 +98,66 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #C2B7A3;
-  padding: 12px 24px;
-  border-radius: 16px;
-  font-size: 14px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  color: var(--color-ink, #181512);
+  padding: 10px 22px;
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
   font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 3.5px 3.5px 0px #181512;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .streamTabBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-  transform: translateY(-2px);
+  background: var(--color-sand-100, #F3ECE0);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5px 5px 0px #181512;
+}
+
+.streamTabBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #181512;
 }
 
 .streamTabActive {
-  background: linear-gradient(135deg, #C1552C 0%, #9B3B18 100%);
-  border-color: #E28B5C;
-  color: #FFFFFF;
-  box-shadow: 0 6px 20px rgba(193, 85, 44, 0.4);
+  background: var(--color-terracotta, #C1552C) !important;
+  border-color: #181512 !important;
+  color: #FFFFFF !important;
+  box-shadow: 3.5px 3.5px 0px #181512 !important;
 }
 
 .tabCountBadge {
-  background: rgba(0, 0, 0, 0.35);
-  color: #FFFFFF;
+  background: var(--color-sand-100, #F3ECE0);
+  color: var(--color-ink, #181512);
   font-size: 11px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  padding: 1px 8px;
+  border-radius: 2px;
+  border: 1.5px solid #181512;
+}
+
+.streamTabActive .tabCountBadge {
+  background: #181512;
+  color: #FFFFFF;
+  border-color: #181512;
 }
 
 /* Date & Day Badge on Card */
 .datePill {
-  color: #E28B5C;
-  font-size: 11.5px;
+  color: var(--color-ink, #181512);
+  font-size: 11px;
   font-weight: 700;
-  background: rgba(226, 139, 92, 0.08);
-  border: 1px solid rgba(226, 139, 92, 0.2);
-  padding: 2px 8px;
-  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1.5px solid #181512;
+  padding: 2px 7px;
+  border-radius: 2px;
 }
 
 /* ───────────────────────────────────────────────
@@ -155,22 +171,21 @@
 
 .newsCard {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: 50px 1fr auto;
   gap: 20px;
   align-items: center;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 18px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-left: 6px solid var(--color-terracotta, #C1552C);
+  border-radius: 2px;
   padding: 18px 22px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 4px 4px 0px #181512;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .newsCard:hover {
-  background: rgba(255, 255, 255, 0.045);
-  border-color: rgba(226, 139, 92, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 5.5px 5.5px 0px #181512;
 }
 
 /* Rank Badge (#1 to #10) */
@@ -179,24 +194,25 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 2px;
+  border: 2px solid #181512;
+  font-family: var(--font-mono, monospace);
   font-weight: 900;
   font-size: 16px;
   flex-shrink: 0;
+  box-shadow: 2px 2px 0px #181512;
 }
 
 .rankTop3 {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(193, 85, 44, 0.2) 100%);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  color: #FBBF24;
+  background: var(--color-terracotta, #C1552C);
+  color: #FFFFFF;
 }
 
 .rankStandard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #9CA3AF;
+  background: var(--color-sand-100, #F3ECE0);
+  color: var(--color-ink, #181512);
 }
 
 /* Card Center Content */
@@ -214,65 +230,69 @@
 }
 
 .regionPill {
-  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
   font-weight: 800;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 2px;
+  border: 1.5px solid #181512;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .regionBihar {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  color: #FBBF24;
+  background: var(--color-sand-100, #F3ECE0);
+  color: var(--color-terracotta, #C1552C);
 }
 
 .regionIndia {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #60A5FA;
+  background: #EFF6FF;
+  color: #1E40AF;
 }
 
 .regionGlobal {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: #34D399;
+  background: #F0FDF4;
+  color: #15803D;
 }
 
 .deptTag {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #DDD5C7;
-  font-size: 11px;
+  background: var(--color-sand-50, #FBF8F3);
+  border: 1.5px solid #181512;
+  color: var(--color-ink, #181512);
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 2px;
 }
 
 .timePill {
-  color: #9CA3AF;
+  color: var(--color-ink-muted, #5C554B);
   font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
 }
 
 .newsCardTitle {
-  font-size: 15.5px;
-  font-weight: 800;
-  color: #FFFFFF;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--color-ink, #181512);
   margin: 0;
-  line-height: 1.4;
-  transition: color 0.2s;
+  line-height: 1.35;
+  transition: color 0.15s ease;
 }
 
 .newsCard:hover .newsCardTitle {
-  color: #E28B5C;
+  color: var(--color-terracotta, #C1552C);
 }
 
 .newsCardSummary {
+  font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 13.5px;
-  color: #C2B7A3;
+  color: var(--color-ink-muted, #5C554B);
   margin: 0;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 /* Card Action / Source Link */
@@ -285,9 +305,10 @@
 }
 
 .sourceBadge {
-  font-size: 11.5px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
   font-weight: 700;
-  color: #9CA3AF;
+  color: var(--color-ink-muted, #5C554B);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -297,23 +318,32 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(226, 139, 92, 0.12);
-  border: 1px solid rgba(226, 139, 92, 0.35);
-  color: #E28B5C;
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 12px;
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  color: var(--color-ink, #181512);
+  padding: 6px 14px;
+  border-radius: 2px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
   font-weight: 800;
+  text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  box-shadow: 2.5px 2.5px 0px #181512;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
 }
 
 .sourceLinkBtn:hover {
-  background: #E28B5C;
-  color: #0E0C0A;
-  box-shadow: 0 4px 12px rgba(226, 139, 92, 0.3);
+  background: var(--color-terracotta, #C1552C);
+  color: #FFFFFF;
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0px #181512;
+}
+
+.sourceLinkBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #181512;
 }
 
 /* ───────────────────────────────────────────────
@@ -326,8 +356,8 @@
   }
 
   .rankBadgeBox {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     font-size: 14px;
   }
 
@@ -336,7 +366,46 @@
     flex-direction: row;
     justify-content: space-between;
     width: 100%;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+    border-top: 2px solid #181512;
+  }
+}
+
+@media (max-width: 480px) {
+  .newsRadarSection {
+    padding: 36px 12px 32px;
+  }
+
+  .radarDatePill {
+    font-size: 10px;
+    padding: 4px 10px;
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .radarTitle {
+    font-size: clamp(20px, 6vw, 28px);
+  }
+
+  .newsCard {
+    padding: 14px 12px;
+  }
+
+  .newsCardTitle {
+    font-size: 15px;
+  }
+
+  .newsCardSummary {
+    font-size: 13px;
+  }
+
+  .streamTabsWrap {
+    gap: 8px;
+  }
+
+  .streamTabBtn {
+    padding: 6px 12px;
+    font-size: 11px;
   }
 }

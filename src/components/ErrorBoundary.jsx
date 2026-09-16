@@ -52,8 +52,8 @@ class ErrorBoundary extends React.Component {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--color-charcoal-900, #181512)',
-          color: 'var(--color-sand-100, #F3ECE0)',
+          background: 'var(--color-sand-50, #FBF8F3)',
+          color: 'var(--color-ink, #181512)',
           fontFamily: "'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
           padding: '24px',
           boxSizing: 'border-box'
@@ -61,38 +61,39 @@ class ErrorBoundary extends React.Component {
           <div style={{
             maxWidth: '560px',
             width: '100%',
-            background: '#1F1B17',
-            border: '1px solid rgba(226, 139, 92, 0.25)',
-            borderRadius: '16px',
+            background: 'var(--color-sand-100, #F3ECE0)',
+            border: '1px solid var(--color-ink, #181512)',
+            borderRadius: '2px',
             padding: '36px 32px',
             textAlign: 'center',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.45)'
+            boxShadow: 'var(--shadow-soft, 0 1px 2px rgba(24, 21, 18, 0.04))'
           }}>
             <div style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
               padding: '6px 14px',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '9999px',
+              background: 'rgba(220, 38, 38, 0.08)',
+              border: '1px solid #DC2626',
+              borderRadius: '2px',
               fontSize: '12px',
               fontWeight: 700,
               letterSpacing: '0.08em',
-              color: '#F87171',
+              color: '#DC2626',
               marginBottom: '16px',
               textTransform: 'uppercase'
             }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444' }}></span>
-              500 · System Notice
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#DC2626' }}></span>
+              500 · Official Notice
             </div>
 
             <h1 style={{
-              fontSize: '28px',
-              fontWeight: 800,
-              color: '#F3ECE0',
+              fontSize: '24px',
+              fontWeight: 700,
+              color: 'var(--color-ink, #181512)',
               margin: '0 0 12px 0',
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.02em',
+              fontFamily: "'Playfair Display', Georgia, serif"
             }}>
               Something Went Wrong
             </h1>
@@ -100,7 +101,7 @@ class ErrorBoundary extends React.Component {
             <p style={{
               fontSize: '15px',
               lineHeight: '1.6',
-              color: '#A8A095',
+              color: 'var(--color-ink-muted, #5E554D)',
               margin: '0 0 28px 0'
             }}>
               We encountered an unexpected technical issue processing this request. Our engineering team has been notified. Please refresh the page or return to the home portal.
@@ -111,33 +112,33 @@ class ErrorBoundary extends React.Component {
                 type="button"
                 onClick={this.handleReload}
                 style={{
-                  padding: '12px 22px',
-                  background: '#E28B5C',
-                  color: '#181512',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  fontSize: '14px',
+                  padding: '10px 20px',
+                  background: '#181512',
+                  color: '#FBF8F3',
+                  border: '1px solid #181512',
+                  borderRadius: '2px',
+                  fontWeight: 600,
+                  fontSize: '13px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.15s ease'
                 }}
               >
-                🔄 Refresh Page
+                Refresh Page
               </button>
 
               <button
                 type="button"
                 onClick={this.handleHome}
                 style={{
-                  padding: '12px 22px',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  color: '#F3ECE0',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '10px',
+                  padding: '10px 20px',
+                  background: 'transparent',
+                  color: '#181512',
+                  border: '1px solid #181512',
+                  borderRadius: '2px',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.15s ease'
                 }}
               >
                 ← Return to Home

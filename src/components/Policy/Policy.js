@@ -98,11 +98,15 @@ export default function Policy() {
       <div className="g2">
         {policyList.map((pol, i) => (
           <div className="pb" key={i}>
+            <div className="pb-header">
+              <span className="pb-docket">GAZETTE DOCKET // 0{i + 1}</span>
+              <span className="pb-status">VERIFIED</span>
+            </div>
             <h3>{pol.title}</h3>
             {pol.items.map((item, j) => (
               <div className="p-item" key={j}>
                 <div className="p-dot" style={{ background: pol.dotColor }}></div>
-                {item}
+                <span>{item}</span>
               </div>
             ))}
           </div>

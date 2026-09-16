@@ -1,0 +1,328 @@
+/* ==============================================================================
+   BIHAR AI MISSION - CONTACT PAGE (RETRO NEOBRUTALIST SYSTEM)
+   ============================================================================== */
+
+.pageContainer {
+  min-height: 100vh;
+  background: transparent !important;
+  color: var(--color-ink, #181512);
+  padding: 100px 24px 80px;
+  position: relative;
+  box-sizing: border-box;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+}
+
+.innerWrap {
+  max-width: var(--max-width-content, 1140px);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.headerWrap {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.badgePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  padding: 6px 14px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-terracotta-500, #C1552C);
+  margin-bottom: 18px;
+  box-shadow: 2px 2px 0px #181512;
+}
+
+.pageTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(30px, 4.5vw, 46px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-ink, #181512);
+  margin: 0 0 16px 0;
+}
+
+.pageSubtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-ink-muted, #5E554D);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* 3 Core Trust Cards */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+  margin-bottom: 56px;
+}
+
+.trustCard {
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-radius: 2px;
+  padding: 30px 26px;
+  box-shadow: 4px 4px 0px #181512;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.trustCard:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #181512;
+}
+
+.cardIcon {
+  font-size: 30px;
+  margin-bottom: 14px;
+}
+
+.cardTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-ink, #181512);
+  margin: 0 0 8px 0;
+}
+
+.cardText {
+  font-size: 13.5px;
+  color: var(--color-ink-muted, #5E554D);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.emailPill {
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1.5px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
+  border-radius: 2px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-weight: 700;
+  color: var(--color-terracotta-500, #C1552C);
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.cardNote {
+  margin-top: auto;
+  padding-top: 14px;
+  font-size: 12px;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  color: var(--color-ink-muted, #5E554D);
+  border-top: 1px dashed rgba(24, 21, 18, 0.2);
+}
+
+/* Form Container */
+.formContainer {
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  border-radius: 2px;
+  box-shadow: 6px 6px 0px #181512;
+  padding: 36px 40px;
+  max-width: 800px;
+  margin: 0 auto 60px;
+  box-sizing: border-box;
+}
+
+.formTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-ink, #181512);
+  margin: 0 0 8px 0;
+}
+
+.formSubtitle {
+  font-size: 14.5px;
+  color: var(--color-ink-muted, #5E554D);
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 11px;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-weight: 800;
+  color: var(--color-ink, #181512);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.fieldInput,
+.fieldSelect,
+.fieldTextarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
+  color: var(--color-ink, #181512);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fieldInput:focus,
+.fieldSelect:focus,
+.fieldTextarea:focus {
+  border-color: var(--color-terracotta-500, #C1552C);
+  box-shadow: 3px 3px 0px #181512;
+}
+
+.fullWidthField {
+  grid-column: 1 / -1;
+}
+
+.submitBtn {
+  background: var(--color-terracotta-500, #C1552C);
+  color: #FFFFFF;
+  border: 2px solid #181512;
+  border-radius: 2px;
+  box-shadow: 3px 3px 0px #181512;
+  padding: 13px 26px;
+  font-size: 12.5px;
+  font-family: var(--font-mono, 'Space Mono', monospace);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submitBtn:hover {
+  background: var(--color-terracotta-600, #A2421E);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #181512;
+}
+
+.submitBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #181512;
+}
+
+.successBox {
+  background: #FFFFFF;
+  border: 2px solid #10B981;
+  box-shadow: 4px 4px 0px #181512;
+  border-radius: 2px;
+  padding: 28px;
+  text-align: center;
+  color: var(--color-ink, #181512);
+}
+
+/* FAQ Section */
+.faqSection {
+  max-width: 800px;
+  margin: 0 auto 60px;
+}
+
+.faqTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: var(--color-ink, #181512);
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqItem {
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 3px 3px 0px #181512;
+  border-radius: 2px;
+  padding: 20px 24px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.faqItem:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #181512;
+}
+
+.faqQuestion {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--color-ink, #181512);
+  margin-bottom: 8px;
+}
+
+.faqAnswer {
+  font-size: 14px;
+  color: var(--color-ink-muted, #5E554D);
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 80px 16px 60px;
+  }
+  .formContainer {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageContainer {
+    padding: 60px 12px 40px;
+  }
+  .headerWrap {
+    margin-bottom: 32px;
+  }
+  .pageTitle {
+    font-size: clamp(22px, 6.5vw, 30px);
+  }
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .trustCard {
+    padding: 20px 16px;
+  }
+  .formContainer {
+    padding: 20px 14px;
+  }
+  .faqItem {
+    padding: 16px 14px;
+  }
+}

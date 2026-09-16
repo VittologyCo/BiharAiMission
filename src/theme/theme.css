@@ -43,18 +43,18 @@
   --font-heading: 'Fraunces', 'Libre Bodoni', ui-serif, Georgia, serif;
   --font-mono: 'Fira Code', monospace;
 
-  /* Type Scale Tokens (16px base) */
-  --font-size-hero-h1: clamp(3.5rem, 6vw, 4.75rem);
-  --line-height-hero-h1: 1.05;
+  /* Type Scale Tokens (Fluid 16px base, responsive down to 320px) */
+  --font-size-hero-h1: clamp(1.85rem, 5.5vw, 4.5rem);
+  --line-height-hero-h1: 1.08;
   --font-weight-hero-h1: 600;
   --letter-spacing-hero-h1: -0.025em;
 
-  --font-size-section-h2: clamp(2.25rem, 4vw, 2.85rem);
+  --font-size-section-h2: clamp(1.45rem, 4vw, 2.85rem);
   --line-height-section-h2: 1.15;
   --font-weight-section-h2: 600;
   --letter-spacing-section-h2: -0.02em;
 
-  --font-size-card-h3: 1.25rem;
+  --font-size-card-h3: clamp(1.1rem, 2.5vw, 1.35rem);
   --line-height-card-h3: 1.3;
   --font-weight-card-h3: 600;
 
@@ -70,9 +70,9 @@
      3. SPACING, GRID & SHAPE
      -------------------------------------------------------------------------- */
   --space-unit: 8px;
-  --space-section: clamp(3.5rem, 8vw, 8.75rem);
-  --space-section-desktop: 8.75rem;
-  --space-section-mobile: 3.5rem;
+  --space-section: clamp(2.5rem, 6vw, 7.5rem);
+  --space-section-desktop: 7.5rem;
+  --space-section-mobile: 2.5rem;
 
   --max-width-content: 1200px;
   --max-width-canvas: 1440px;
@@ -111,4 +111,43 @@
   --border-low-contrast: var(--color-line);
   --warning: var(--color-mustard-400);
   --danger: var(--color-error);
+}
+
+/* --------------------------------------------------------------------------
+   5. ULTRA-WIDE, 4K & 8K CONTENT CONTAINMENT TOKENS
+   Scales content containers seamlessly from 1920px up to 7680px (8K)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1920px) {
+  :root {
+    --max-width-content: 1520px;
+    --max-width-canvas: 1720px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --max-width-content: 1980px;
+    --max-width-canvas: 2280px;
+  }
+}
+
+@media (min-width: 3840px) {
+  :root {
+    --max-width-content: 2600px;
+    --max-width-canvas: 3000px;
+  }
+}
+
+@media (min-width: 5120px) {
+  :root {
+    --max-width-content: 3400px;
+    --max-width-canvas: 3800px;
+  }
+}
+
+@media (min-width: 7680px) {
+  :root {
+    --max-width-content: 4400px;
+    --max-width-canvas: 5200px;
+  }
 }

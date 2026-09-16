@@ -1,84 +1,86 @@
-/* StatsPanel.module.css — Bihar AI Mission Luxury Civic Design System */
+/* StatsPanel.module.css — Bihar AI Mission Tactile Retro Telemetry Panel */
 
 .statsPanel {
-  background: rgba(35, 31, 27, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 215, 195, 0.22);
-  border-radius: var(--radius-lg, 20px);
-  padding: 20px;
-  color: var(--color-sand-50, #FBF8F3);
-  box-shadow: 0 20px 40px -12px rgba(24, 21, 18, 0.35);
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  border-radius: 2px;
+  padding: 24px;
+  color: var(--color-ink, #181512);
+  box-shadow: 4px 4px 0px #181512;
 }
 
 .header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(226, 215, 195, 0.12);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #181512;
 }
 
 .hudBadge {
-  font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.65rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  padding: 2px 7px;
-  background: rgba(193, 85, 44, 0.25);
-  color: var(--color-terracotta-300, #E28B5C);
-  border-radius: 4px;
+  padding: 3px 8px;
+  background: #FFFFFF;
+  color: #181512;
+  border: 1.5px solid #181512;
+  border-radius: 2px;
   text-transform: uppercase;
 }
 
 .hudTitle {
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-mono, monospace);
   font-size: 0.813rem;
-  font-weight: 700;
-  color: var(--color-text-on-dark, #FBF8F3);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-ink, #181512);
 }
 
 /* GRID OF STATS */
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .statCard {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(226, 215, 195, 0.1);
-  border-radius: 12px;
-  padding: 12px 14px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-radius: 2px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   position: relative;
-  transition: transform 0.22s var(--ease-smooth), border-color 0.22s var(--ease-smooth);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 2.5px 2.5px 0px #181512;
 }
 
 .statCard:hover {
-  transform: translateY(-2px);
-  border-color: rgba(226, 139, 92, 0.35);
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0px #181512;
 }
 
 /* GOAL CARD DIFFERENTIATED FOR TARGET FIGURE */
 .goalCard {
-  background: rgba(193, 85, 44, 0.1);
-  border: 1.5px dashed rgba(226, 139, 92, 0.45);
+  background: var(--color-sand-50, #FBF8F3);
+  border: 2px dashed #C1552C;
 }
 
 .goalPill {
   align-self: flex-start;
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-mono, monospace);
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   padding: 2px 7px;
   background-color: var(--color-terracotta-500, #C1552C);
-  color: var(--color-sand-50, #FBF8F3);
-  border-radius: 4px;
+  color: #FFFFFF;
+  border: 1px solid #181512;
+  border-radius: 2px;
   margin-bottom: 8px;
   text-transform: uppercase;
 }
@@ -86,22 +88,66 @@
 .numberWrapper {
   display: flex;
   align-items: baseline;
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-mono, monospace);
   font-variant-numeric: tabular-nums;
   margin-bottom: 6px;
 }
 
 .animNum {
   font-size: clamp(1.5rem, 2.2vw, 1.85rem);
-  font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
+  font-weight: 800;
+  color: var(--color-ink, #181512);
   line-height: 1;
 }
+
+.statLabel {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-ink-muted, #5C554B);
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1.5px solid #181512;
+}
+
+.syncText {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--color-ink-muted, #5C554B);
+  font-weight: 600;
+}
+
+.liveIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #15803D;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  background: #15803D;
+  border: 1px solid #181512;
+  display: inline-block;
+}
+
 
 .suffix {
   font-size: clamp(0.95rem, 1.6vw, 1.2rem);
   font-weight: 700;
-  color: var(--color-ochre-400, #D99B26);
+  color: var(--color-terracotta-500, #C1552C);
   margin-left: 2px;
 }
 
@@ -109,23 +155,23 @@
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.75rem;
   line-height: 1.3;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
-  font-weight: 500;
+  color: var(--color-ink-muted, #5E554D);
+  font-weight: 600;
 }
 
 /* MILESTONE STRIP AT BOTTOM */
 .milestoneStrip {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 10px;
+  background: var(--color-sand-50, #FBF8F3);
+  border-radius: var(--radius-sm, 2px);
   padding: 10px 14px;
-  border: 1px solid rgba(226, 215, 195, 0.1);
+  border: 1px solid var(--color-line, #E2D7C3);
 }
 
 .milestoneTitle {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.688rem;
-  font-weight: 700;
-  color: var(--color-ochre-400, #D99B26);
+  font-weight: 800;
+  color: var(--color-terracotta-500, #C1552C);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 6px;
@@ -141,20 +187,20 @@
 }
 
 .mLabel {
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5E554D);
 }
 
 .mValue {
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   font-weight: 700;
 }
 
 @media (max-width: 640px) {
   .statsPanel {
-    padding: 20px 16px;
+    padding: 16px 14px;
   }
   .statsGrid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 }

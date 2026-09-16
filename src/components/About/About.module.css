@@ -1,13 +1,18 @@
-/* About.module.css — Bihar AI Mission Luxury Civic Design */
+/* ============================================================================
+   About.module.css — Bihar AI Mission Tactile Retro Design System
+   About Us Page — Official Institutional Tactile Dossiers & Historical Record
+   ============================================================================ */
 
 .aboutSection {
-  padding: 60px 0 40px;
+  padding: 48px 0 40px;
   position: relative;
   overflow: hidden;
+  font-family: var(--font-body, 'General Sans', sans-serif);
+  color: var(--color-ink, #181512);
 }
 
 .container {
-  max-width: 1140px;
+  max-width: var(--max-width-content, 1200px);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -15,48 +20,50 @@
 /* Header & Eyebrow */
 .headerWrapper {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 44px;
 }
 
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-terracotta-300, #E28B5C);
-  background: rgba(193, 85, 44, 0.15);
-  border: 1px solid rgba(226, 139, 92, 0.3);
-  padding: 6px 14px;
-  border-radius: 999px;
+  color: var(--color-ink, #181512);
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2.5px 2.5px 0px #181512;
+  padding: 4px 14px;
+  border-radius: 2px;
   margin-bottom: 16px;
 }
 
 .sparkle {
-  color: var(--color-mustard-400, #E8B23D);
+  color: var(--color-terracotta, #C1552C);
 }
 
 .mainTitle {
-  font-family: var(--font-display, 'Fraunces', serif);
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  font-weight: 900;
-  line-height: 1.2;
-  color: var(--color-text-on-dark, #FBF8F3);
-  margin-bottom: 16px;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: clamp(2.1rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-ink, #181512);
+  margin-bottom: 14px;
+  letter-spacing: -0.025em;
 }
 
 .highlightText {
-  color: var(--color-terracotta-300, #E28B5C);
+  color: var(--color-terracotta, #C1552C);
   font-style: italic;
 }
 
 .leadSubtitle {
   font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: clamp(1rem, 1.5vw, 1.15rem);
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+  color: var(--color-ink-muted, #5C554B);
   max-width: 760px;
   margin: 0 auto;
   line-height: 1.65;
@@ -66,56 +73,60 @@
 .storyGrid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: 32px;
+  gap: 24px;
   margin-bottom: 48px;
   align-items: stretch;
 }
 
 .storyCard {
-  background: rgba(35, 31, 27, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 215, 195, 0.2);
-  border-radius: var(--radius-lg, 20px);
-  padding: 36px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-top: 5px solid var(--color-terracotta, #C1552C);
+  border-radius: 2px;
+  padding: 32px 28px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-shadow: 4px 4px 0px #181512;
 }
 
 .storyCard h3 {
-  font-family: var(--font-display, 'Fraunces', serif);
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
-  margin-bottom: 18px;
+  color: var(--color-ink, #181512);
+  margin-bottom: 16px;
+  letter-spacing: -0.015em;
 }
 
 .storyParagraph {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.95rem;
-  line-height: 1.75;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
-  margin-bottom: 16px;
+  line-height: 1.7;
+  color: var(--color-ink-muted, #5C554B);
+  margin-bottom: 14px;
 }
 
 .storyParagraph strong {
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
+  font-weight: 700;
 }
 
 .quoteBox {
-  background: rgba(193, 85, 44, 0.1);
-  border-left: 3px solid var(--color-terracotta-500, #C1552C);
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  border-left: 5px solid var(--color-terracotta, #C1552C);
   padding: 16px 20px;
-  border-radius: 0 12px 12px 0;
+  border-radius: 2px;
+  box-shadow: 2px 2px 0px #181512;
   margin-top: 14px;
 }
 
 .quoteText {
-  font-family: var(--font-display, 'Fraunces', serif);
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
   font-style: italic;
   font-size: 0.95rem;
-  color: var(--color-sand-100, #F3ECE0);
+  color: var(--color-ink, #181512);
   line-height: 1.6;
 }
 
@@ -127,121 +138,129 @@
 }
 
 .factCard {
-  background: rgba(35, 31, 27, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 215, 195, 0.15);
-  border-radius: 16px;
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-left: 5px solid var(--color-terracotta, #C1552C);
+  border-radius: 2px;
   padding: 20px 22px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  transition: transform 0.22s var(--ease-smooth), border-color 0.22s var(--ease-smooth);
+  box-shadow: 3px 3px 0px #181512;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .factCard:hover {
-  transform: translateY(-2px);
-  border-color: rgba(226, 139, 92, 0.4);
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px #181512;
 }
 
 .factIcon {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: rgba(193, 85, 44, 0.18);
-  border: 1px solid rgba(226, 139, 92, 0.3);
+  border-radius: 2px;
+  background: var(--color-sand-100, #F3ECE0);
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-size: 1.25rem;
-  color: var(--color-terracotta-300, #E28B5C);
 }
 
 .factContent h4 {
-  font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 1rem;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: 1.05rem;
   font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
-  margin-bottom: 6px;
+  color: var(--color-ink, #181512);
+  margin-bottom: 4px;
 }
 
 .factContent p {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.85rem;
   line-height: 1.55;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  color: var(--color-ink-muted, #5C554B);
   margin: 0;
 }
 
 /* Strategic Pillars Section */
 .pillarsSection {
   margin-top: 48px;
-  margin-bottom: 48px;
+  margin-bottom: 40px;
 }
 
 .sectionHeader {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 30px;
 }
 
 .sectionTag {
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-mustard-400, #E8B23D);
-  margin-bottom: 8px;
-  display: block;
+  color: var(--color-ink, #181512);
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
+  border-radius: 2px;
+  padding: 4px 12px;
+  display: inline-block;
+  margin-bottom: 10px;
 }
 
 .sectionTitle {
-  font-family: var(--font-display, 'Fraunces', serif);
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
   font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
+  letter-spacing: -0.02em;
 }
 
 .pillarsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
 
 .pillarCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(226, 215, 195, 0.12);
-  border-radius: 16px;
-  padding: 24px;
-  transition: transform 0.22s var(--ease-smooth), border-color 0.22s var(--ease-smooth), background-color 0.22s var(--ease-smooth);
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  border-top: 5px solid var(--color-terracotta, #C1552C);
+  border-radius: 2px;
+  padding: 24px 20px;
+  box-shadow: 4px 4px 0px #181512;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .pillarCard:hover {
-  transform: translateY(-3px);
-  border-color: rgba(226, 139, 92, 0.35);
-  background: rgba(255, 255, 255, 0.05);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #181512;
 }
 
 .pillarBadge {
   font-size: 1.5rem;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   display: block;
 }
 
 .pillarTitle {
-  font-family: var(--font-body, 'General Sans', sans-serif);
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--color-sand-50, #FBF8F3);
+  color: var(--color-ink, #181512);
   margin-bottom: 8px;
+  line-height: 1.3;
 }
 
 .pillarDesc {
   font-family: var(--font-body, 'General Sans', sans-serif);
   font-size: 0.85rem;
-  line-height: 1.55;
-  color: var(--color-text-muted-on-dark, #C8BFB3);
+  line-height: 1.6;
+  color: var(--color-ink-muted, #5C554B);
   margin: 0;
 }
 
@@ -250,32 +269,41 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
-  margin-top: 36px;
+  gap: 10px;
+  margin-top: 32px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-body, 'General Sans', sans-serif);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-sand-100, #F3ECE0);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(226, 215, 195, 0.15);
-  padding: 8px 16px;
-  border-radius: 999px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-ink, #181512);
+  background: #FFFFFF;
+  border: 2px solid #181512;
+  box-shadow: 2px 2px 0px #181512;
+  padding: 6px 14px;
+  border-radius: 2px;
 }
 
 .chipDot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: var(--color-success, #2F7A4F);
+  border-radius: 0;
+  border: 1px solid #181512;
+  background: #15803D;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .pillarsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .storyGrid {
     grid-template-columns: 1fr;
@@ -294,3 +322,37 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .aboutSection {
+    padding: 24px 0 16px;
+  }
+  .container {
+    padding: 0 12px;
+  }
+  .mainTitle {
+    font-size: clamp(1.5rem, 6vw, 2.1rem);
+  }
+  .storyCard {
+    padding: 18px 14px;
+  }
+  .storyHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pillarCard {
+    padding: 16px 12px;
+  }
+  .pillarMetrics {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .metricsPill {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    width: 100%;
+    justify-content: center;
+  }
+}
+

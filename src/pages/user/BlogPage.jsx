@@ -105,7 +105,7 @@ const renderInlineMarkdown = (text) => {
             href={linkMatch[2]}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#E28B5C', textDecoration: 'underline' }}
+            style={{ color: 'var(--color-terracotta-500, #C1552C)', textDecoration: 'underline' }}
           >
             {linkMatch[1]}
           </a>
@@ -336,12 +336,12 @@ export default function BlogPage({ onGetInvolved }) {
     return (
       <div className={styles.fullArticlePage}>
         <div className={styles.articleMainWrap}>
-          <div style={{ textAlign: 'center', padding: '100px 20px', color: '#E28B5C' }}>
+          <div style={{ textAlign: 'center', padding: '100px 20px', color: 'var(--color-terracotta-500, #C1552C)' }}>
             <div style={{ fontSize: '36px', marginBottom: '16px' }}>⚡</div>
-            <h2 style={{ fontSize: '20px', color: '#FFFFFF', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '20px', color: 'var(--color-ink, #181512)', marginBottom: '8px', fontFamily: 'var(--font-display, "Fraunces", serif)' }}>
               {isHi ? 'लेख लोड हो रहा है...' : 'Loading Editorial Article...'}
             </h2>
-            <p style={{ color: '#A19A8E', fontSize: '14px' }}>
+            <p style={{ color: 'var(--color-ink-muted, #5E554D)', fontSize: '14px' }}>
               {isHi ? 'कृपया प्रतीक्षा करें...' : 'Fetching research data from Bihar AI Mission...'}
             </p>
           </div>
@@ -362,10 +362,10 @@ export default function BlogPage({ onGetInvolved }) {
         />
         <div className={styles.articleMainWrap} style={{ textAlign: 'center', padding: '80px 20px' }}>
           <div style={{ fontSize: '54px', marginBottom: '16px' }}>🔍</div>
-          <h2 style={{ fontSize: '26px', color: '#FFFFFF', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '26px', color: 'var(--color-ink, #181512)', marginBottom: '12px', fontFamily: 'var(--font-display, "Fraunces", serif)' }}>
             {isHi ? 'लेख नहीं मिला' : 'Article Not Found'}
           </h2>
-          <p style={{ color: '#A19A8E', fontSize: '15px', maxWidth: '440px', margin: '0 auto 28px' }}>
+          <p style={{ color: 'var(--color-ink-muted, #5E554D)', fontSize: '15px', maxWidth: '440px', margin: '0 auto 28px' }}>
             {isHi
               ? 'यह लेख मौजूद नहीं है या हटा दिया गया है।'
               : 'The article you are looking for does not exist or may have been archived.'}
@@ -781,7 +781,7 @@ export default function BlogPage({ onGetInvolved }) {
 
         {/* Content Section */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: '#E28B5C', fontSize: '17px', fontWeight: '700' }}>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-terracotta-500, #C1552C)', fontSize: '17px', fontWeight: '700' }}>
             ⚡ {isHi ? 'लेख लोड हो रहे हैं...' : 'Loading Bihar AI Mission Insights...'}
           </div>
         ) : filteredBlogs.length === 0 ? (
@@ -790,16 +790,17 @@ export default function BlogPage({ onGetInvolved }) {
             style={{
               textAlign: 'center',
               padding: '80px 20px',
-              background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '24px',
-              border: '1px solid rgba(255, 255, 255, 0.07)'
+              background: 'var(--color-sand-100, #F3ECE0)',
+              borderRadius: 'var(--radius-sm, 2px)',
+              border: '2px solid var(--retro-border, #181512)',
+              boxShadow: '4px 4px 0px var(--retro-border, #181512)'
             }}
           >
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-            <h3 style={{ fontSize: '20px', color: '#FFFFFF', margin: '0 0 8px', fontWeight: '800' }}>
+            <h3 style={{ fontSize: '20px', color: 'var(--color-ink, #181512)', margin: '0 0 8px', fontWeight: '800', fontFamily: 'var(--font-display, "Fraunces", serif)' }}>
               {isHi ? 'कोई लेख उपलब्ध नहीं है' : 'No Articles Found'}
             </h3>
-            <p style={{ color: '#A19A8E', fontSize: '14px', maxWidth: '460px', margin: '0 auto' }}>
+            <p style={{ color: 'var(--color-ink-muted, #5E554D)', fontSize: '14px', maxWidth: '460px', margin: '0 auto' }}>
               {searchQuery
                 ? isHi
                   ? 'कृपया अलग कीवर्ड या श्रेणी चुनकर पुनः प्रयास करें।'
