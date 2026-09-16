@@ -79,7 +79,7 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
           type="button"
           onClick={loadData}
           className="liveBadge"
-          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }}
+          style={{ cursor: 'pointer' }}
           title={isHi ? 'ताज़ा करने के लिए क्लिक करें' : 'Click to refresh leaderboard'}
         >
           <span className={`liveDot ${refreshing ? 'spinning' : ''}`} />
@@ -100,11 +100,11 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
           />
         </div>
 
-        <div style={{ fontSize: '13px', color: 'var(--color-sand-200, #C2B7A3)', display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <span>
+        <div className="lbStatsChips">
+          <span className="lbStatChip">
             👥 <strong>{leaderboard.length}</strong> {isHi ? 'अभ्यर्थी' : 'Candidates'}
           </span>
-          <span>
+          <span className="lbStatChip">
             ⚡ <strong>{leaderboard.reduce((acc, c) => acc + (c.total || 0), 0)}</strong> {isHi ? 'कुल कार्य अपलोड' : 'Tasks Uploaded'}
           </span>
         </div>
@@ -117,8 +117,9 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
             const podiumClass = idx === 0 ? 'goldPodium' : idx === 1 ? 'silverPodium' : 'bronzePodium';
             const medalEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
             const medalLabel = idx === 0 ? (isHi ? 'प्रथम स्थान' : '1st Place') : idx === 1 ? (isHi ? 'द्वितीय स्थान' : '2nd Place') : (isHi ? 'तृतीय स्थान' : '3rd Place');
-            const medalBg = idx === 0 ? 'rgba(245, 158, 11, 0.15)' : idx === 1 ? 'rgba(156, 163, 175, 0.15)' : 'rgba(249, 115, 22, 0.15)';
-            const medalColor = idx === 0 ? '#F59E0B' : idx === 1 ? '#E5E7EB' : '#FB923C';
+            const medalBg = idx === 0 ? '#FEF3C7' : idx === 1 ? '#F3F4F6' : '#FFEDD5';
+            const medalColor = idx === 0 ? '#92400E' : idx === 1 ? '#374151' : '#9A3412';
+            const medalBorder = idx === 0 ? '#D97706' : idx === 1 ? '#4B5563' : '#C1552C';
 
             return (
               <div key={top.email || top.name} className={`podiumCard ${podiumClass}`}>
@@ -126,7 +127,7 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
                   <span className="podiumMedal">{medalEmoji}</span>
                   <span
                     className="podiumRankTag"
-                    style={{ background: medalBg, color: medalColor, border: `1px solid ${medalColor}` }}
+                    style={{ background: medalBg, color: medalColor, border: `1.5px solid ${medalBorder}` }}
                   >
                     {medalLabel}
                   </span>
@@ -156,16 +157,16 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
 
       {/* FULL RANKINGS LIST */}
       {loading ? (
-        <div style={{ padding: '50px 0', textAlign: 'center', color: '#E28B5C', fontSize: '15px' }}>
+        <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--color-terracotta-500, #C1552C)', fontSize: '15px', fontWeight: '700' }}>
           ⚡ {isHi ? 'लीडरबोर्ड लोड हो रहा है...' : 'Loading Real-Time Leaderboard...'}
         </div>
       ) : filteredList.length === 0 ? (
-        <div style={{ padding: '50px 20px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔍</div>
-          <h4 style={{ fontSize: '16px', margin: '0 0 6px', color: '#FFFFFF' }}>
+        <div className="lbEmptyState">
+          <div style={{ fontSize: '36px', marginBottom: '10px' }}>🔍</div>
+          <h4 className="lbEmptyStateTitle">
             {isHi ? 'कोई अभ्यर्थी नहीं मिला' : 'No Candidates Found'}
           </h4>
-          <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+          <p className="lbEmptyStateDesc">
             {isHi ? 'कृपया अलग कीवर्ड खोजें।' : 'Try searching with a different candidate name, designation, or district.'}
           </p>
         </div>
@@ -179,7 +180,7 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
                   <th>{isHi ? 'नाम' : 'NAME'}</th>
                   <th>{isHi ? 'पद' : 'DESIGNATION'}</th>
                   <th>{isHi ? 'जिला' : 'DISTRICT'}</th>
-                  <th style={{ textAlign: 'right', paddingRight: '24px' }}>{isHi ? 'अपलोड किए गए कार्य' : 'TASKS UPLOADED'}</th>
+                  <th style={{ textAlign: 'right', paddingRight: '20px' }}>{isHi ? 'अपलोड किए गए कार्य' : 'TASKS UPLOADED'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,7 +189,13 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
                   return (
                     <tr key={item.email || item.name}>
                       {/* 1. RANK */}
-                      <td style={{ textAlign: 'center', fontWeight: '900', fontSize: '15px', color: item.rank <= 3 ? '#F59E0B' : '#C2B7A3' }}>
+                      <td style={{
+                        textAlign: 'center',
+                        fontWeight: '900',
+                        fontSize: '15px',
+                        color: item.rank <= 3 ? 'var(--color-ink, #181512)' : 'var(--color-ink-muted, #5E554D)',
+                        fontFamily: "var(--font-mono, 'Fira Code', monospace)"
+                      }}>
                         {rankIcon}
                       </td>
 
@@ -202,10 +209,12 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
                             background: item.rank === 1
                               ? 'linear-gradient(135deg, #F59E0B, #D97706)'
                               : item.rank === 2
-                              ? 'linear-gradient(135deg, #9CA3AF, #6B7280)'
+                              ? 'linear-gradient(135deg, #6B7280, #4B5563)'
                               : item.rank === 3
-                              ? 'linear-gradient(135deg, #F97316, #EA580C)'
-                              : 'linear-gradient(135deg, #E28B5C, #C1552C)',
+                              ? 'linear-gradient(135deg, #EA580C, #C1552C)'
+                              : 'linear-gradient(135deg, #C1552C, #872E0C)',
+                            border: '1.5px solid var(--color-ink, #181512)',
+                            boxShadow: '1.5px 1.5px 0px var(--color-ink, #181512)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -216,7 +225,7 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
                           }}>
                             {item.name ? item.name[0].toUpperCase() : 'C'}
                           </div>
-                          <strong style={{ color: '#FFFFFF', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
+                          <strong style={{ color: 'var(--color-ink, #181512)', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
                             {item.name}
                           </strong>
                         </div>
@@ -224,7 +233,7 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
 
                       {/* 3. DESIGNATION */}
                       <td>
-                        <div style={{ fontSize: '13px', color: '#E28B5C', fontWeight: '700' }}>
+                        <div style={{ fontSize: '13px', color: 'var(--color-terracotta-500, #C1552C)', fontWeight: '700' }}>
                           💼 {item.designation || 'Participant'}
                           {item.organization ? ` • ${item.organization}` : ''}
                         </div>
@@ -232,34 +241,15 @@ export default function TaskLeaderboard({ isHi = false, title = null, limit = nu
 
                       {/* 4. DISTRICT */}
                       <td>
-                        <span style={{
-                          background: 'rgba(255, 255, 255, 0.06)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          padding: '4px 12px',
-                          borderRadius: '8px',
-                          fontSize: '12.5px',
-                          fontWeight: '600',
-                          color: '#F3ECE0'
-                        }}>
+                        <span className="lbDistrictBadge">
                           📍 {item.district || 'Bihar'}
                         </span>
                       </td>
 
                       {/* 5. TASKS UPLOADED */}
-                      <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                        <span style={{
-                          background: 'rgba(226, 139, 92, 0.15)',
-                          color: '#F3ECE0',
-                          border: '1px solid rgba(226, 139, 92, 0.35)',
-                          padding: '5px 14px',
-                          borderRadius: '9999px',
-                          fontSize: '13px',
-                          fontWeight: '800',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}>
-                          <span style={{ color: '#E28B5C' }}>⚡</span>
+                      <td style={{ textAlign: 'right', paddingRight: '20px' }}>
+                        <span className="lbTaskPill">
+                          <span style={{ color: 'var(--color-terracotta-500, #C1552C)' }}>⚡</span>
                           <strong>{item.total || 0}</strong> {item.total === 1 ? 'Task' : 'Tasks'}
                         </span>
                       </td>
