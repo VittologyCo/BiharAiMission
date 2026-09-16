@@ -13,7 +13,12 @@ import { getUserTaskSubmissions, getDailyTasks } from '../../services/taskServic
 import SEO from '../../components/SEO/SEO';
 import TaskLeaderboard from '../../components/TaskLeaderboard/TaskLeaderboard';
 import ChitChat from '../../components/ChitChat/ChitChat';
-import { isWithinNightChatHours } from '../../services/chitchatService';
+import {
+  isWithinNightChatHours,
+  fetchUnreadMentionCount,
+  markGupshupViewed,
+  playChatNotificationSound
+} from '../../services/chitchatService';
 import './UserProfilePage.responsive.css';
 
 import {
@@ -458,6 +463,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
   const [userTaskSubmissions, setUserTaskSubmissions] = useState([]);
   const [totalTasksCount, setTotalTasksCount] = useState(18);
   const [showGupShupModal, setShowGupShupModal] = useState(false);
+  const [gupshupNotificationCount, setGupshupNotificationCount] = useState(0);
 
   const loadTaskSubmissions = async () => {
     try {
@@ -584,6 +590,84 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
       window.removeEventListener('storage', handleEvents);
     };
   }, [currentUser?.email]);
+
+  // Real-time Gupshup Mention Notifications & Live Counter
+  useEffect(() => {
+    const rawUser = formData.username || existingSubmission?.username || currentUser?.username || '';
+    const myUsername = rawUser.replace(/^@+/, '').trim().toLowerCase();
+    const myEmail = (currentUser?.email || '').toLowerCase().trim();
+    if (!myEmail) return;
+
+    let isMounted = true;
+
+    // 1. Initial count of unread mentions
+    if (myUsername) {
+      fetchUnreadMentionCount(myUsername, myEmail).then((count) => {
+        if (isMounted) setGupshupNotificationCount(count || 0);
+      });
+    }
+
+    // 2. Realtime listener for incoming messages tagging the user
+    const channelId = `gupshup_live_mentions_${myEmail.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}`;
+    const mentionChannel = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chitchat_messages',
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          if (!newMsg || !isMounted) return;
+
+          const senderEmail = (newMsg.sender_email || '').toLowerCase().trim();
+          if (senderEmail === myEmail) return; // Don't notify own messages
+
+          const msgText = newMsg.message_text || '';
+          const isTagged = Boolean(
+            myUsername &&
+            (
+              new RegExp(`@${myUsername}\\b`, 'i').test(msgText) ||
+              msgText.toLowerCase().includes(`@${myUsername}`)
+            )
+          );
+
+          const isDirect = newMsg.channel_type === 'direct' && (
+            newMsg.recipient_email?.toLowerCase() === myEmail ||
+            newMsg.channel_id?.includes(myEmail)
+          );
+
+          if (isTagged || isDirect) {
+            setGupshupNotificationCount((prev) => prev + 1);
+            playChatNotificationSound(true);
+
+            if (isTagged) {
+              toast?.info(
+                isHi
+                  ? `🔔 @${newMsg.sender_username || 'सदस्य'} ने आपको गप-शप में टैग किया: "${msgText.slice(0, 50)}…"`
+                  : `🔔 @${newMsg.sender_username || 'Member'} tagged you in Gup-Shup: "${msgText.slice(0, 50)}…"`,
+                { duration: 6000 }
+              );
+            } else if (isDirect) {
+              toast?.info(
+                isHi
+                  ? `💬 @${newMsg.sender_username || 'मित्र'} से गप-शप में नया संदेश`
+                  : `💬 New message from @${newMsg.sender_username || 'Friend'} in Gup-Shup`,
+                { duration: 5000 }
+              );
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(mentionChannel);
+    };
+  }, [formData.username, existingSubmission?.username, currentUser?.username, currentUser?.email, isHi]);
 
   // Sync existing submission data into formData
   useEffect(() => {
@@ -1989,7 +2073,11 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           {/* 6. GUP-SHUP / CHIT-CHAT (ACTIVE) */}
           <button
             type="button"
-            onClick={() => setActiveTab('gupshup')}
+            onClick={() => {
+              setActiveTab('gupshup');
+              setGupshupNotificationCount(0);
+              markGupshupViewed(currentUser?.email);
+            }}
             style={{
               width: '100%',
               minWidth: 0,
@@ -1998,23 +2086,48 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               fontWeight: '700',
               border: activeTab === 'gupshup'
                 ? '1px solid var(--color-terracotta-500, #C1552C)'
-                : '1px solid var(--color-line, #E2D7C3)',
+                : (gupshupNotificationCount > 0 ? '1.5px solid #DC2626' : '1px solid var(--color-line, #E2D7C3)'),
               borderRadius: 'var(--radius-sm, 2px)',
               background: activeTab === 'gupshup' ? 'var(--color-terracotta-500, #C1552C)' : '#FFFFFF',
               color: activeTab === 'gupshup' ? '#FFFFFF' : 'var(--color-ink, #181512)',
               cursor: 'pointer',
-              transition: 'background 0.2s ease',
+              transition: 'all 0.2s ease',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
               whiteSpace: 'nowrap',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              position: 'relative'
             }}
             title="Gup-Shup (Chit-Chat)"
           >
             <span>💬</span>
             <span>{isHi ? 'गप-शप' : 'Gup-Shup'}</span>
+
+            {/* Realtime Mention / Tag Notification Badge */}
+            {gupshupNotificationCount > 0 && (
+              <span
+                style={{
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '10.5px',
+                  fontWeight: '900',
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  lineHeight: 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  boxShadow: '0 0 8px rgba(220, 38, 38, 0.7)',
+                }}
+                title={isHi ? `${gupshupNotificationCount} नए टैग / संदेश` : `${gupshupNotificationCount} new mentions`}
+              >
+                <span>@</span>
+                <span>{gupshupNotificationCount}</span>
+              </span>
+            )}
+
             <span style={{
               background: activeTab === 'gupshup'
                 ? 'rgba(255, 255, 255, 0.25)'
@@ -3061,23 +3174,25 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
 
         {/* TAB 6: CHIT-CHAT (GUP-SHUP) */}
         {activeTab === 'gupshup' && (
-          <ChitChat
-            currentUser={{
-              ...currentUser,
-              ...formData,
-              username: (formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '').trim()
-            }}
-            isHi={isHi}
-            onGoToProfile={() => {
-              setActiveTab('profile');
-              setTimeout(() => {
-                const el = document.getElementById('createUsernameSection') || document.querySelector('.formGrid');
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }, 120);
-            }}
-          />
+          <div id="gupshupChatSection" style={{ scrollMarginTop: '80px' }}>
+            <ChitChat
+              currentUser={{
+                ...currentUser,
+                ...formData,
+                username: (formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '').trim()
+              }}
+              isHi={isHi}
+              onGoToProfile={() => {
+                setActiveTab('profile');
+                setTimeout(() => {
+                  const el = document.getElementById('createUsernameSection') || document.querySelector('.formGrid');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 120);
+              }}
+            />
+          </div>
         )}
 
       </div>

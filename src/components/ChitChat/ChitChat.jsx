@@ -55,6 +55,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const [mentionCandidates, setMentionCandidates] = useState([]);
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
+  const messageFeedRef = useRef(null);
   const messagesEndRef = useRef(null);
   const realtimeChannelRef = useRef(null);
   const activeChannelRef = useRef(null);
@@ -286,10 +287,16 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             const isFromMe = newMsg.sender_email?.toLowerCase() === myEmail.toLowerCase();
             const currentActiveId = activeChannelRef.current?.id;
 
-            // Check if user is mentioned via @username
+            // Check if user is mentioned via @username (case-insensitive)
+            const cleanMyUser = (myUsername || '').replace(/^@+/, '').trim().toLowerCase();
+            const msgText = newMsg.message_text || '';
             const isTagged = Boolean(
-              newMsg.message_text &&
-              new RegExp(`@${myUsername}\\b`, 'i').test(newMsg.message_text)
+              cleanMyUser &&
+              msgText &&
+              (
+                new RegExp(`@${cleanMyUser}\\b`, 'i').test(msgText) ||
+                msgText.toLowerCase().includes(`@${cleanMyUser}`)
+              )
             );
 
             if (newMsg.channel_id === currentActiveId) {
@@ -302,7 +309,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
 
               if (!isFromMe && isTagged) {
                 playChatNotificationSound(true);
-                toast?.info(`🔔 @${newMsg.sender_username} tagged you: "${newMsg.message_text.slice(0, 50)}..."`);
+                toast?.info(`🔔 @${newMsg.sender_username || 'Member'} tagged you: "${msgText.slice(0, 50)}..."`);
               }
             } else {
               // Message arrived on another group or friend channel
@@ -322,13 +329,13 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                 if (isTagged) {
                   setMentionAlerts((prev) => ({
                     ...prev,
-                    [newMsg.channel_id]: true,
+                    [newMsg.channel_id]: (prev[newMsg.channel_id] || 0) + 1,
                   }));
                   playChatNotificationSound(true);
-                  toast?.info(`🔔 @${newMsg.sender_username} mentioned you: "${newMsg.message_text.slice(0, 50)}..."`);
+                  toast?.info(`🔔 @${newMsg.sender_username || 'Member'} mentioned you: "${msgText.slice(0, 50)}..."`);
                 } else {
                   playChatNotificationSound(false);
-                  toast?.info(`💬 New message from @${newMsg.sender_username}`);
+                  toast?.info(`💬 New message from @${newMsg.sender_username || 'Member'}`);
                 }
               }
             }
@@ -349,17 +356,25 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     };
   }, [isUnlocked, myEmail, myUsername]);
 
-  const scrollToBottom = () => {
+  // Internal smooth scroll for message feed only (never scrolls the outer window or page)
+  const scrollToBottom = (smooth = true) => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+      if (messageFeedRef.current) {
+        const el = messageFeedRef.current;
+        if (smooth) {
+          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        } else {
+          el.scrollTop = el.scrollHeight;
+        }
+      }
+    }, 60);
   };
 
   // Select channel and clear unread & mention flags
   const selectChannel = (channelObj) => {
     setActiveChannel(channelObj);
     setUnreadCounts((prev) => ({ ...prev, [channelObj.id]: 0 }));
-    setMentionAlerts((prev) => ({ ...prev, [channelObj.id]: false }));
+    setMentionAlerts((prev) => ({ ...prev, [channelObj.id]: 0 }));
   };
 
   // ─── 5. SEARCH USERS FOR FRIEND CONNECTIONS ───
@@ -513,7 +528,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     setMessageInput(replaced + textAfter);
     setMentionCandidates([]);
     setIsMentionSearching(false);
-    textInputRef.current?.focus();
+    textInputRef.current?.focus({ preventScroll: true });
   };
 
   // Format message text with highlighted WhatsApp-style mention pills
@@ -857,6 +872,11 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     );
   }
 
+  const totalMentionsInSidebar = Object.values(mentionAlerts).reduce(
+    (acc, v) => acc + (typeof v === 'number' ? v : (v ? 1 : 0)),
+    0
+  );
+
   // ══════════════════════════════════════════════════════════════════════════
   // RENDER: ACTIVE CHIT-CHAT APPLICATION
   // ══════════════════════════════════════════════════════════════════════════
@@ -881,6 +901,27 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
           </div>
           <p className={styles.userSubText}>
             <span className={styles.userTag} style={{ fontSize: '13px', letterSpacing: '0.02em' }}>@{myUsername}</span>
+            {totalMentionsInSidebar > 0 && (
+              <span
+                style={{
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  padding: '1px 6px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  marginLeft: 'auto',
+                  boxShadow: '0 0 6px rgba(220, 38, 38, 0.4)'
+                }}
+                title={isHi ? `${totalMentionsInSidebar} टैग सूचनाएं` : `${totalMentionsInSidebar} mention alerts`}
+              >
+                <span>@</span>
+                <span>{totalMentionsInSidebar}</span>
+              </span>
+            )}
           </p>
         </div>
 
@@ -904,8 +945,10 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                   <p className={styles.channelName}>{g.name}</p>
                   <p className={styles.channelDesc}>{isHi ? 'राज्य स्तरीय समग्र समूह' : 'Statewide General Forum'}</p>
                 </div>
-                {mentionAlerts[g.id] && (
-                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>@</span>
+                {Boolean(mentionAlerts[g.id]) && (
+                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>
+                    @{typeof mentionAlerts[g.id] === 'number' && mentionAlerts[g.id] > 1 ? ` ${mentionAlerts[g.id]}` : ''}
+                  </span>
                 )}
                 {Boolean(unreadCounts[g.id]) && (
                   <span className={styles.unreadBadge}>{unreadCounts[g.id]}</span>
@@ -925,8 +968,10 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                   <p className={styles.channelName}>{myDeptGroup.name}</p>
                   <p className={styles.channelDesc}>{isHi ? 'आपका संबंधित विभाग' : 'Your Respective Department'}</p>
                 </div>
-                {mentionAlerts[myDeptGroup.id] && (
-                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>@</span>
+                {Boolean(mentionAlerts[myDeptGroup.id]) && (
+                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>
+                    @{typeof mentionAlerts[myDeptGroup.id] === 'number' && mentionAlerts[myDeptGroup.id] > 1 ? ` ${mentionAlerts[myDeptGroup.id]}` : ''}
+                  </span>
                 )}
                 {Boolean(unreadCounts[myDeptGroup.id]) && (
                   <span className={styles.unreadBadge}>{unreadCounts[myDeptGroup.id]}</span>
@@ -947,8 +992,10 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                   <p className={styles.channelName}>{g.name}</p>
                   <p className={styles.channelDesc}>{g.description || (isHi ? 'विशेष समूह' : 'Special Cohort')}</p>
                 </div>
-                {mentionAlerts[g.id] && (
-                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>@</span>
+                {Boolean(mentionAlerts[g.id]) && (
+                  <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>
+                    @{typeof mentionAlerts[g.id] === 'number' && mentionAlerts[g.id] > 1 ? ` ${mentionAlerts[g.id]}` : ''}
+                  </span>
                 )}
                 {Boolean(unreadCounts[g.id]) && (
                   <span className={styles.unreadBadge}>{unreadCounts[g.id]}</span>
@@ -1028,8 +1075,10 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                       <p className={styles.channelName}>{f.friend_name}</p>
                       <p className={styles.channelDesc}>@{f.friend_username}</p>
                     </div>
-                    {mentionAlerts[dmId] && (
-                      <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>@</span>
+                    {Boolean(mentionAlerts[dmId]) && (
+                      <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>
+                        @{typeof mentionAlerts[dmId] === 'number' && mentionAlerts[dmId] > 1 ? ` ${mentionAlerts[dmId]}` : ''}
+                      </span>
                     )}
                     {Boolean(unreadCounts[dmId]) && (
                       <span className={styles.unreadBadge}>{unreadCounts[dmId]}</span>
@@ -1065,7 +1114,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
         </div>
 
         {/* MESSAGES FEED */}
-        <div className={styles.messageFeed}>
+        <div className={styles.messageFeed} ref={messageFeedRef}>
           {messages.length === 0 ? (
             <div className={styles.emptyState}>
               <span style={{ fontSize: '32px', display: 'block', marginBottom: '8px' }}>💬</span>

@@ -573,3 +573,44 @@ export const playChatNotificationSound = (isMention = false) => {
   }
 };
 
+/**
+ * Fetch unread mention count for a given username and email
+ */
+export const fetchUnreadMentionCount = async (username, userEmail) => {
+  if (!username) return 0;
+  const cleanU = (username || '').replace(/^@+/, '').trim().toLowerCase();
+  const cleanEmail = (userEmail || '').toLowerCase().trim();
+  if (!cleanU) return 0;
+
+  const fifteenDaysAgo = new Date(Date.now() - FIFTEEN_DAYS_MS).toISOString();
+  const lastViewed = localStorage.getItem(`gupshup_last_viewed_${cleanEmail}`) || fifteenDaysAgo;
+
+  try {
+    const { data, error } = await supabase
+      .from('chitchat_messages')
+      .select('id, sender_email, message_text, created_at')
+      .gt('created_at', lastViewed)
+      .neq('sender_email', cleanEmail)
+      .ilike('message_text', `%@${cleanU}%`)
+      .limit(100);
+
+    if (!error && Array.isArray(data)) {
+      return data.length;
+    }
+  } catch (err) {
+    console.warn('Fetch unread mention count error:', err);
+  }
+  return 0;
+};
+
+/**
+ * Mark Gupshup as viewed by updating the timestamp in localStorage
+ */
+export const markGupshupViewed = (userEmail) => {
+  if (!userEmail) return;
+  const cleanEmail = userEmail.toLowerCase().trim();
+  try {
+    localStorage.setItem(`gupshup_last_viewed_${cleanEmail}`, new Date().toISOString());
+  } catch (e) {}
+};
+
