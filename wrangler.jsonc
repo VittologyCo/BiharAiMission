@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bihar-ai-mission",
+  "account_id": "3988d39c91bd9dafdcb36d672b9ac129",
   "main": "worker.js",
   "compatibility_date": "2026-04-19",
   "observability": {
