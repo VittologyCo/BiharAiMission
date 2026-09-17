@@ -179,7 +179,7 @@ export const fetchChannelMessages = async (channelId) => {
   try {
     const { data, error } = await supabase
       .from('chitchat_messages')
-      .select('*')
+      .select('id, channel_id, sender_name, sender_email, sender_role, message_text, media_url, voice_url, reply_to_id, created_at, designation, is_pinned')
       .eq('channel_id', channelId)
       .gte('created_at', fifteenDaysAgoISO)
       .order('created_at', { ascending: true })
@@ -246,7 +246,7 @@ export const fetchUserFriends = async (userEmail) => {
   try {
     const { data, error } = await supabase
       .from('chitchat_friends')
-      .select('*')
+      .select('id, user_email, sender_email, friend_email, friend_name, designation, status, created_at')
       .eq('user_email', clean)
       .eq('status', 'accepted')
       .order('created_at', { ascending: false })
@@ -278,7 +278,7 @@ export const fetchPendingFriendRequests = async (userEmail) => {
   try {
     const { data, error } = await supabase
       .from('chitchat_friends')
-      .select('*')
+      .select('id, user_email, sender_email, friend_email, friend_name, designation, status, created_at')
       .eq('user_email', clean)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -304,7 +304,7 @@ export const fetchSentFriendRequests = async (userEmail) => {
   try {
     const { data, error } = await supabase
       .from('chitchat_friends')
-      .select('*')
+      .select('id, user_email, sender_email, friend_email, friend_name, designation, status, created_at')
       .eq('sender_email', clean)
       .eq('status', 'pending');
 

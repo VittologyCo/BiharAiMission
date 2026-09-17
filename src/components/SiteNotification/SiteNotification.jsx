@@ -70,10 +70,11 @@ export default function SiteNotification() {
 
       const { data, error } = await supabase
         .from('site_notifications')
-        .select('*')
+        .select('id, title, description, banner_image, notification_type, priority, is_active, expires_at, created_at')
         .eq('is_active', true)
         .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10);
 
       if (error) {
         console.warn('SiteNotification fetch notice:', error.message);

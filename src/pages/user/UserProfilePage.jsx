@@ -754,7 +754,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
     const targetEmail = currentUser?.email;
     if (!targetEmail) return;
     try {
-      const all = await fetchExamSubmissionsFromSupabase();
+      const all = await fetchExamSubmissionsFromSupabase(targetEmail);
       if (all && Array.isArray(all)) {
         const userName = (currentUser?.fullName || '').toLowerCase();
         const filtered = all.filter((sub) => {

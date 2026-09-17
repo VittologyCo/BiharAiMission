@@ -36,15 +36,24 @@ export const saveBlogsToStorage = (blogs) => {
   }
 };
 
+let cachedBlogsData = null;
+let cachedBlogsTimestamp = 0;
+const BLOGS_CACHE_TTL_MS = 30000; // 30 seconds in-memory cache to prevent redundant Supabase egress
+
 /**
  * Fetch all published blogs directly from Supabase database
  */
 export const fetchBlogsFromSupabase = async () => {
   try {
+    const now = Date.now();
+    if (cachedBlogsData && (now - cachedBlogsTimestamp < BLOGS_CACHE_TTL_MS)) {
+      return cachedBlogsData;
+    }
+
     if (supabase) {
       const { data, error } = await supabase
         .from('blogs')
-        .select('*')
+        .select('id, slug, title, category, author, author_role, date, read_time, excerpt, content, image, tags, target_page, keywords, is_published, views, created_at')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
@@ -67,6 +76,8 @@ export const fetchBlogsFromSupabase = async () => {
           views: Number(b.views || 0),
           createdAt: b.created_at || new Date().toISOString(),
         }));
+        cachedBlogsData = formatted;
+        cachedBlogsTimestamp = now;
         cacheBlogsSilently(formatted);
         return formatted;
       }
