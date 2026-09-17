@@ -2457,28 +2457,42 @@ const AdminDashboard = () => {
           {/* TAB 1: INQUIRIES & APPLICATIONS */}
           {activeTab === 'inquiries' && (
             <>
+              {/* STATS SECTION */}
               <div className={styles.statsGrid}>
                 <div className={styles.statCard} style={{ borderLeft: '4px solid #C1552C' }}>
-                  <span className={styles.statLabel}>Total Submissions</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className={styles.statLabel}>Total Submissions</span>
+                    <span style={{ fontSize: '18px', opacity: 0.85 }}>👥</span>
+                  </div>
                   <span className={styles.statValue} style={{ color: '#181512' }}>{stats.total}</span>
+                  <span style={{ fontSize: '11.5px', color: '#786F66', marginTop: '4px' }}>All-time registered applicants & inquiries</span>
                 </div>
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #E8B23D' }}>
-                  <span className={styles.statLabel}>New Today</span>
+                <div className={styles.statCard} style={{ borderLeft: '4px solid #D97706' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className={styles.statLabel}>New Today</span>
+                    <span style={{ fontSize: '18px', opacity: 0.85 }}>⚡</span>
+                  </div>
                   <span className={styles.statValue} style={{ color: '#C1552C' }}>{stats.today}</span>
+                  <span style={{ fontSize: '11.5px', color: '#786F66', marginTop: '4px' }}>Submissions received in the last 24h</span>
                 </div>
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #2F7A4F' }}>
-                  <span className={styles.statLabel}>System Status</span>
-                  <span className={styles.statValue} style={{ fontSize: '17px', color: '#2F7A4F', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2F7A4F', display: 'inline-block' }}></span>
+                <div className={styles.statCard} style={{ borderLeft: '4px solid #059669' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span className={styles.statLabel}>System & Database</span>
+                    <span style={{ fontSize: '18px', opacity: 0.85 }}>☁️</span>
+                  </div>
+                  <span className={styles.statValue} style={{ fontSize: '18px', color: '#059669', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#059669', display: 'inline-block', boxShadow: '0 0 8px rgba(5, 150, 105, 0.6)' }}></span>
                     Active & Syncing
                   </span>
+                  <span style={{ fontSize: '11.5px', color: '#786F66', marginTop: '4px' }}>Live real-time sync with Supabase</span>
                 </div>
               </div>
 
+              {/* TABLE CONTAINER WITH TWO-TIER RESPONSIVE CONTROLS */}
               <div className={styles.tableContainer}>
                 <div className={styles.tableHeader}>
-                  <div className={styles.tableHeaderControls}>
-                    {/* Search Input */}
+                  {/* TOP BAR: Search Input (Left) & Actions (Right) */}
+                  <div className={styles.tableTopBar}>
                     <div className={styles.searchWrapper}>
                       <svg
                         className={styles.searchIcon}
@@ -2517,117 +2531,11 @@ const AdminDashboard = () => {
                       )}
                     </div>
 
-                    {/* Filter Section Beside Search Bar */}
-                    <div className={styles.filtersSection}>
-                      {/* 1. Designation Wise */}
-                      <div className={styles.filterItem} title="Filter Designation-wise">
-                        <span className={styles.filterIcon}>💼</span>
-                        <select
-                          value={filterDesignation}
-                          onChange={(e) => {
-                            setFilterDesignation(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterDesignation !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Designations</option>
-                          {uniqueFilterOptions.designations.map((d) => (
-                            <option key={d} value={d}>{d}</option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className={styles.tableTopActions}>
+                      <span className={styles.filterResultsPill}>
+                        Showing <strong>{filteredSubmissions.length}</strong> of {submissions.length} items
+                      </span>
 
-                      {/* 2. Department Wise */}
-                      <div className={styles.filterItem} title="Filter Department-wise">
-                        <span className={styles.filterIcon}>🏢</span>
-                        <select
-                          value={filterDepartment}
-                          onChange={(e) => {
-                            setFilterDepartment(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterDepartment !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Departments</option>
-                          {uniqueFilterOptions.departments.map((dept) => (
-                            <option key={dept} value={dept}>{dept}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 3. Organization Wise */}
-                      <div className={styles.filterItem} title="Filter Organization-wise">
-                        <span className={styles.filterIcon}>🏛️</span>
-                        <select
-                          value={filterOrganization}
-                          onChange={(e) => {
-                            setFilterOrganization(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterOrganization !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Organizations</option>
-                          {uniqueFilterOptions.organizations.map((org) => (
-                            <option key={org} value={org}>{org}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 4. Role Type */}
-                      <div className={styles.filterItem} title="Filter Role Type-wise">
-                        <span className={styles.filterIcon}>🏷️</span>
-                        <select
-                          value={filterRole}
-                          onChange={(e) => {
-                            setFilterRole(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterRole !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Roles</option>
-                          {uniqueFilterOptions.roles.map((r) => (
-                            <option key={r} value={r}>{formatRoleLabel(r)}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 5. Gender Wise */}
-                      <div className={styles.filterItem} title="Filter Gender-wise">
-                        <span className={styles.filterIcon}>👤</span>
-                        <select
-                          value={filterGender}
-                          onChange={(e) => {
-                            setFilterGender(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterGender !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Genders</option>
-                          {uniqueFilterOptions.genders.map((g) => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 6. Location / District Wise */}
-                      <div className={styles.filterItem} title="Filter Location / District-wise">
-                        <span className={styles.filterIcon}>📍</span>
-                        <select
-                          value={filterDistrict}
-                          onChange={(e) => {
-                            setFilterDistrict(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className={`${styles.filterSelect} ${filterDistrict !== 'ALL' ? styles.filterSelectActive : ''}`}
-                        >
-                          <option value="ALL">All Locations</option>
-                          {uniqueFilterOptions.districts.map((dist) => (
-                            <option key={dist} value={dist}>{dist}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Reset / Clear All Filters */}
                       {activeFiltersCount > 0 && (
                         <button
                           type="button"
@@ -2635,58 +2543,168 @@ const AdminDashboard = () => {
                           className={styles.resetFiltersBtn}
                           title="Reset all active filters"
                         >
-                          ✕ Reset ({activeFiltersCount})
+                          ✕ Reset Filters ({activeFiltersCount})
                         </button>
                       )}
+
+                      <button
+                        onClick={exportCSV}
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1.5px solid rgba(24, 21, 18, 0.15)',
+                          color: '#181512',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontWeight: '700',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.18s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = '#C1552C';
+                          e.currentTarget.style.color = '#C1552C';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(24, 21, 18, 0.15)';
+                          e.currentTarget.style.color = '#181512';
+                        }}
+                        title="Download full CSV export of submissions"
+                      >
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Export CSV
+                      </button>
                     </div>
                   </div>
 
-                  <div className={styles.tableHeaderActions}>
-                    {activeFiltersCount > 0 && (
-                      <span className={styles.filterResultsPill}>
-                        Showing <strong>{filteredSubmissions.length}</strong> / {submissions.length}
-                      </span>
-                    )}
-                    <button
-                      onClick={exportCSV}
-                      style={{
-                        background: '#FFFFFF',
-                        border: '1.5px solid rgba(24, 21, 18, 0.15)',
-                        color: '#181512',
-                        padding: '8px 14px',
-                        borderRadius: '8px',
-                        fontWeight: '700',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.18s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#C1552C';
-                        e.currentTarget.style.color = '#C1552C';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'rgba(24, 21, 18, 0.15)';
-                        e.currentTarget.style.color = '#181512';
-                      }}
-                    >
-                      <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                  {/* BOTTOM BAR: Uniform Responsive Filter Grid (6 Equal Columns) */}
+                  <div className={styles.filtersGrid}>
+                    {/* 1. Designation Wise */}
+                    <div className={`${styles.filterItem} ${filterDesignation !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by Designation">
+                      <span className={styles.filterIcon}>💼</span>
+                      <select
+                        value={filterDesignation}
+                        onChange={(e) => {
+                          setFilterDesignation(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterDesignation !== 'ALL' ? styles.filterSelectActive : ''}`}
                       >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      Export CSV
-                    </button>
+                        <option value="ALL">All Designations</option>
+                        {uniqueFilterOptions.designations.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2. Department Wise */}
+                    <div className={`${styles.filterItem} ${filterDepartment !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by Department">
+                      <span className={styles.filterIcon}>🏢</span>
+                      <select
+                        value={filterDepartment}
+                        onChange={(e) => {
+                          setFilterDepartment(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterDepartment !== 'ALL' ? styles.filterSelectActive : ''}`}
+                      >
+                        <option value="ALL">All Departments</option>
+                        {uniqueFilterOptions.departments.map((dept) => (
+                          <option key={dept} value={dept}>{dept}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 3. Organization Wise */}
+                    <div className={`${styles.filterItem} ${filterOrganization !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by Organization">
+                      <span className={styles.filterIcon}>🏛️</span>
+                      <select
+                        value={filterOrganization}
+                        onChange={(e) => {
+                          setFilterOrganization(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterOrganization !== 'ALL' ? styles.filterSelectActive : ''}`}
+                      >
+                        <option value="ALL">All Organizations</option>
+                        {uniqueFilterOptions.organizations.map((org) => (
+                          <option key={org} value={org}>{org}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 4. Role Type Wise */}
+                    <div className={`${styles.filterItem} ${filterRole !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by Role Type">
+                      <span className={styles.filterIcon}>🏷️</span>
+                      <select
+                        value={filterRole}
+                        onChange={(e) => {
+                          setFilterRole(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterRole !== 'ALL' ? styles.filterSelectActive : ''}`}
+                      >
+                        <option value="ALL">All Roles</option>
+                        {uniqueFilterOptions.roles.map((r) => (
+                          <option key={r} value={r}>{formatRoleLabel(r)}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 5. Gender Wise */}
+                    <div className={`${styles.filterItem} ${filterGender !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by Gender">
+                      <span className={styles.filterIcon}>👤</span>
+                      <select
+                        value={filterGender}
+                        onChange={(e) => {
+                          setFilterGender(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterGender !== 'ALL' ? styles.filterSelectActive : ''}`}
+                      >
+                        <option value="ALL">All Genders</option>
+                        {uniqueFilterOptions.genders.map((g) => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 6. Location / District Wise */}
+                    <div className={`${styles.filterItem} ${filterDistrict !== 'ALL' ? styles.filterItemActive : ''}`} title="Filter by District Location">
+                      <span className={styles.filterIcon}>📍</span>
+                      <select
+                        value={filterDistrict}
+                        onChange={(e) => {
+                          setFilterDistrict(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className={`${styles.filterSelect} ${filterDistrict !== 'ALL' ? styles.filterSelectActive : ''}`}
+                      >
+                        <option value="ALL">All Locations</option>
+                        {uniqueFilterOptions.districts.map((dist) => (
+                          <option key={dist} value={dist}>{dist}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                </div>
+
+                {/* MOBILE HORIZONTAL SCROLL HINT */}
+                <div className={styles.mobileScrollHint}>
+                  ← Swipe horizontally to see all columns →
                 </div>
 
                 <div className={styles.scrollArea}>
@@ -2747,26 +2765,19 @@ const AdminDashboard = () => {
                               </td>
                               <td>
                                 {s.username ? (
-                                  <span style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(180, 83, 9, 0.08)',
-                                    color: '#B45309',
-                                    fontWeight: '700',
-                                    fontSize: '12px',
-                                    fontFamily: 'monospace'
-                                  }}>
+                                  <span
+                                    className={styles.usernameBadge}
+                                    title={`@${s.username.replace(/^@/, '')}`}
+                                  >
                                     @{s.username.replace(/^@/, '')}
                                   </span>
                                 ) : (
-                                  <span style={{ color: '#9CA3AF', fontSize: '11.5px', fontStyle: 'italic' }}>
+                                  <span className={styles.usernameNotSet}>
                                     Not Set
                                   </span>
                                 )}
                               </td>
-                              <td style={{ color: '#443D37' }}>{s.email}</td>
+                              <td style={{ color: '#443D37', fontFamily: 'inherit' }}>{s.email}</td>
                               <td>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
                                   <span
@@ -2781,26 +2792,28 @@ const AdminDashboard = () => {
                                     {formatRoleLabel(s.role_type)}
                                   </span>
                                   {s.gender && (
-                                    <span style={{ fontSize: '11px', color: '#5E554D', fontWeight: 600 }}>
+                                    <span style={{ fontSize: '11px', color: '#5E554D', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                                       {s.gender === 'Male' ? '♂ Male' : s.gender === 'Female' ? '♀ Female' : s.gender}
                                     </span>
                                   )}
                                 </div>
                               </td>
                               <td style={{ color: '#443D37' }}>{s.district}</td>
-                              <td style={{ color: '#786F66' }}>
+                              <td style={{ color: '#786F66', whiteSpace: 'nowrap' }}>
                                 {new Date(s.created_at).toLocaleDateString()}
                               </td>
                               <td style={{ textAlign: 'right' }}>
-                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                <div className={styles.actionBtnGroup}>
                                   <button
-                                    className={styles.viewBtn}
+                                    type="button"
+                                    className={styles.viewActionBtn}
                                     onClick={() => setSelectedSubmission(s)}
                                     title="View Details"
+                                    aria-label="View Application Details"
                                   >
                                     <svg
-                                      width="18"
-                                      height="18"
+                                      width="15"
+                                      height="15"
                                       viewBox="0 0 24 24"
                                       fill="none"
                                       stroke="currentColor"
@@ -2809,27 +2822,28 @@ const AdminDashboard = () => {
                                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                                       <circle cx="12" cy="12" r="3" />
                                     </svg>
+                                    <span>View</span>
                                   </button>
 
                                   <button
+                                    type="button"
+                                    className={styles.deleteActionBtn}
                                     onClick={() => handleDeleteSubmission(s)}
-                                    style={{
-                                      background: '#FEF2F2',
-                                      color: '#DC2626',
-                                      border: '1px solid #FCA5A5',
-                                      padding: '5px 10px',
-                                      borderRadius: '6px',
-                                      fontWeight: '700',
-                                      fontSize: '12px',
-                                      cursor: 'pointer',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      transition: 'all 0.2s ease'
-                                    }}
                                     title="Delete Application / Inquiry from Database"
+                                    aria-label="Delete Application"
                                   >
-                                    🗑️ Delete
+                                    <svg
+                                      width="14"
+                                      height="14"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                    >
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span>Delete</span>
                                   </button>
                                 </div>
                               </td>

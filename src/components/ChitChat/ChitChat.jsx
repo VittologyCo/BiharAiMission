@@ -1092,8 +1092,8 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     0
   );
 
-  // Filter groups strictly based on designation and department (Requirement 4)
-  const visibleGroups = filterGroupsForUser(allGroups, currentUser?.department, myDesignation);
+  // Filter groups strictly based on designation, department, or specific user whitelist (e.g. AI Club)
+  const visibleGroups = filterGroupsForUser(allGroups, currentUser?.department, myDesignation, myEmail, myUsername);
 
   // ══════════════════════════════════════════════════════════════════════════
   // RENDER: ACTIVE CHIT-CHAT APPLICATION

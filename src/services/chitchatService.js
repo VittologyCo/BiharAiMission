@@ -550,20 +550,44 @@ export const fetchChitChatGroups = async () => {
 };
 
 /**
- * Filter groups visible to a specific user based on their profile Designation and Department.
- * Requirement 4: When Admin creates a custom group specifying designations (e.g. "Revenue Officer"),
- * ONLY users who set their designation in profile as Revenue Officer can see this group!
+ * Filter groups visible to a specific user based on their profile Designation, Department,
+ * or Specific User Whitelist (e.g. "AI Club").
  */
-export const filterGroupsForUser = (allGroups, userDept, userDesignation) => {
+export const filterGroupsForUser = (allGroups, userDept, userDesignation, userEmail, userUsername) => {
   if (!Array.isArray(allGroups)) return [];
   const cleanDept = (userDept || '').toLowerCase().trim();
   const cleanDesig = (userDesignation || '').toLowerCase().trim();
+  const cleanEmail = (userEmail || '').toLowerCase().trim();
+  const cleanUser = (userUsername || '').toLowerCase().trim().replace(/^@/, '');
 
   return allGroups.filter((group) => {
     // 1. Statewide overall group is open to all
     if (group.id === 'overall') return true;
 
-    // 2. Designation-restricted custom group
+    // 2. SPECIFIC SELECTED USERS RESTRICTED GROUP (e.g. "AI Club" or curated cohort)
+    const allowedUsersList = [
+      ...(Array.isArray(group.allowed_users) ? group.allowed_users : []),
+      ...(Array.isArray(group.departments)
+        ? group.departments
+            .filter((d) => typeof d === 'string' && d.startsWith('USER:'))
+            .map((d) => d.replace(/^USER:/i, ''))
+        : [])
+    ]
+      .map((u) => (u || '').toLowerCase().trim().replace(/^@/, ''))
+      .filter(Boolean);
+
+    if (allowedUsersList.length > 0) {
+      const isAllowed = allowedUsersList.some(
+        (target) =>
+          target === cleanEmail ||
+          target === cleanUser ||
+          (cleanEmail && target.includes(cleanEmail)) ||
+          (cleanUser && target === cleanUser)
+      );
+      return isAllowed;
+    }
+
+    // 3. DESIGNATION-RESTRICTED CUSTOM GROUP (Clubbed multiple designations)
     if (Array.isArray(group.designations) && group.designations.length > 0) {
       if (!cleanDesig) return false;
       const normUser = cleanDesig.replace(/[^a-z0-9]/g, '');
@@ -581,12 +605,13 @@ export const filterGroupsForUser = (allGroups, userDept, userDesignation) => {
       return desigMatches;
     }
 
-    // 3. Department or clubbed groups
+    // 4. Department or clubbed groups
     if (Array.isArray(group.departments) && group.departments.length > 0) {
-      if (group.departments.includes('ALL')) return true;
+      const actualDepts = group.departments.filter((d) => typeof d === 'string' && !d.startsWith('USER:'));
+      if (actualDepts.includes('ALL')) return true;
+      if (actualDepts.length === 0) return true;
 
-      // Check if departments list specifies designation keywords or departments
-      const matches = group.departments.some((d) => {
+      const matches = actualDepts.some((d) => {
         const cd = (d || '').toLowerCase().trim();
         if (!cd) return false;
         return (

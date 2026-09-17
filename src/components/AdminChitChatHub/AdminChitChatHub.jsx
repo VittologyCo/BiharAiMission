@@ -27,6 +27,14 @@ export default function AdminChitChatHub() {
   const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
+  // Group targeting mode: 'designation' (club designations) | 'specific_users' (e.g. AI Club)
+  const [groupTargetMode, setGroupTargetMode] = useState('designation');
+  const [allRegisteredUsers, setAllRegisteredUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]); // array of user objects
+  const [userSearchFilter, setUserSearchFilter] = useState('');
+  const [designationCounts, setDesignationCounts] = useState({});
+
   // ─── 3. OVERSIGHT STATE ───
   const [selectedOversightGroup, setSelectedOversightGroup] = useState('overall');
   const [oversightMessages, setOversightMessages] = useState([]);
@@ -58,30 +66,39 @@ export default function AdminChitChatHub() {
     setGroups(list);
   };
 
-  // Load distinct designations directly from user_details table (same as Applications & Inquiries filter)
-  const loadAvailableDesignations = async () => {
+  // Load distinct designations and registered users directly from user_details table
+  const loadAvailableDesignationsAndUsers = async () => {
     setIsLoadingDesignations(true);
+    setIsLoadingUsers(true);
     try {
       const { data, error } = await supabase
         .from('user_details')
-        .select('designation')
-        .not('designation', 'is', null);
+        .select('email, full_name, username, designation, district')
+        .order('full_name', { ascending: true })
+        .limit(1000);
 
       if (!error && Array.isArray(data)) {
+        setAllRegisteredUsers(data);
         const desigSet = new Set();
+        const counts = {};
         data.forEach((row) => {
           if (row.designation && typeof row.designation === 'string') {
             const trimmed = row.designation.trim();
-            if (trimmed) desigSet.add(trimmed);
+            if (trimmed) {
+              desigSet.add(trimmed);
+              counts[trimmed] = (counts[trimmed] || 0) + 1;
+            }
           }
         });
         const sortFn = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
         setAvailableDesignations(Array.from(desigSet).sort(sortFn));
+        setDesignationCounts(counts);
       }
     } catch (err) {
-      console.warn('Failed to load designations for group selector:', err);
+      console.warn('Failed to load designations/users for group creator:', err);
     } finally {
       setIsLoadingDesignations(false);
+      setIsLoadingUsers(false);
     }
   };
 
@@ -108,7 +125,7 @@ export default function AdminChitChatHub() {
   useEffect(() => {
     loadAccessCodes();
     loadGroups();
-    loadAvailableDesignations();
+    loadAvailableDesignationsAndUsers();
 
     // 1-second interval to tick countdown timers in real time across the table
     const timer = setInterval(() => {
@@ -222,38 +239,83 @@ export default function AdminChitChatHub() {
     toast?.success(`Copied code: ${code}`);
   };
 
-  // Create Custom / Clubbed Group (with Designation Restriction)
+  // Create Custom / Clubbed Group (with Designation Clubbing or Specific Selected Users e.g. "AI Club")
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroupName.trim()) {
       toast?.warning('Please enter a group name.');
       return;
     }
+
+    if (groupTargetMode === 'specific_users' && selectedUsers.length === 0) {
+      toast?.warning('Please select at least one user for this exclusive curated group.');
+      return;
+    }
+
+    if (groupTargetMode === 'designation' && selectedDesignationTags.length === 0 && !newGroupDesignations.trim()) {
+      toast?.warning('Please select at least one designation to club in this group.');
+      return;
+    }
+
     const groupId = (newGroupId.trim() || `grp_${Date.now()}`).toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    const deptsArray = newGroupDepts
-      .split(',')
-      .map(d => d.trim())
-      .filter(Boolean);
-    const manualDesigs = newGroupDesignations
-      .split(',')
-      .map(d => d.trim())
-      .filter(Boolean);
-    const desigsArray = Array.from(new Set([...selectedDesignationTags, ...manualDesigs]));
+
+    let deptsArray = [];
+    let desigsArray = [];
+    let allowedUsersArray = [];
+
+    if (groupTargetMode === 'specific_users') {
+      allowedUsersArray = selectedUsers.map(u => (u.email || u.username).toLowerCase().trim());
+      // Store USER:email in departments array for zero-downtime backwards compatibility
+      deptsArray = allowedUsersArray.map(u => `USER:${u}`);
+      desigsArray = [];
+    } else {
+      const depts = newGroupDepts
+        .split(',')
+        .map(d => d.trim())
+        .filter(Boolean);
+      deptsArray = depts.length > 0 ? depts : ['ALL'];
+      const manualDesigs = newGroupDesignations
+        .split(',')
+        .map(d => d.trim())
+        .filter(Boolean);
+      desigsArray = Array.from(new Set([...selectedDesignationTags, ...manualDesigs]));
+      allowedUsersArray = [];
+    }
 
     setIsCreatingGroup(true);
     try {
-      const { error } = await supabase
-        .from('chitchat_groups')
-        .insert([{
-          id: groupId,
-          name: newGroupName.trim(),
-          description: newGroupDesc.trim() || null,
-          departments: deptsArray.length > 0 ? deptsArray : ['ALL'],
-          designations: desigsArray,
-          created_by: 'Admin'
-        }]);
+      const payloadBase = {
+        id: groupId,
+        name: newGroupName.trim(),
+        description: newGroupDesc.trim() || null,
+        departments: deptsArray,
+        designations: desigsArray,
+        created_by: 'Admin'
+      };
 
-      if (!error) {
+      let insertError = null;
+
+      if (allowedUsersArray.length > 0) {
+        // First try inserting with allowed_users column
+        const { error: colErr } = await supabase
+          .from('chitchat_groups')
+          .insert([{ ...payloadBase, allowed_users: allowedUsersArray }]);
+
+        if (colErr) {
+          // If allowed_users column doesn't exist yet on remote table, fallback to departments USER: prefix
+          const { error: fallbackErr } = await supabase
+            .from('chitchat_groups')
+            .insert([payloadBase]);
+          insertError = fallbackErr;
+        }
+      } else {
+        const { error: stdErr } = await supabase
+          .from('chitchat_groups')
+          .insert([payloadBase]);
+        insertError = stdErr;
+      }
+
+      if (!insertError) {
         toast?.success(`🎉 Group "${newGroupName}" created successfully!`);
         setNewGroupName('');
         setNewGroupId('');
@@ -261,9 +323,11 @@ export default function AdminChitChatHub() {
         setNewGroupDepts('');
         setNewGroupDesignations('');
         setSelectedDesignationTags([]);
+        setSelectedUsers([]);
+        setUserSearchFilter('');
         loadGroups();
       } else {
-        toast?.error(error.message || 'Failed to create group.');
+        toast?.error(insertError.message || 'Failed to create group.');
       }
     } catch (err) {
       toast?.error(err.message || 'Group creation error.');
@@ -628,20 +692,105 @@ export default function AdminChitChatHub() {
       {activeSubTab === 'groups' && (
         <div>
           <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Create Custom / Clubbed Department Group</h3>
-            <p style={{ fontSize: '12.5px', color: '#5E554D', margin: '0 0 14px' }}>
-              Create specific groups for specialized cohorts, or club multiple departments together (e.g. "Revenue + Police", "Agriculture + Rural Tech").
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 className={styles.cardTitle} style={{ margin: 0 }}>Create Custom / Clubbed Community Group</h3>
+                <p style={{ fontSize: '12.5px', color: '#5E554D', margin: '4px 0 0' }}>
+                  Club multiple designations together (e.g. "Revenue Officer + Circle Officer") or create private curated groups for selected users (e.g. "AI Club").
+                </p>
+              </div>
+            </div>
+
+            {/* TARGETING MODE TOGGLE */}
+            <div className={styles.targetModeBar}>
+              <button
+                type="button"
+                className={`${styles.targetModeBtn} ${groupTargetMode === 'designation' ? styles.targetModeBtnActive : ''}`}
+                onClick={() => {
+                  setGroupTargetMode('designation');
+                  if (!newGroupName.trim() || newGroupName === 'AI Club') {
+                    setNewGroupName(selectedDesignationTags.length > 0 ? `${selectedDesignationTags.join(' + ')} Forum` : '');
+                  }
+                }}
+              >
+                <span>🎖️</span>
+                <span>Option 1: Club Multiple Designations</span>
+                {selectedDesignationTags.length > 0 && (
+                  <span style={{ background: '#B45309', color: '#FFFFFF', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+                    {selectedDesignationTags.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.targetModeBtn} ${groupTargetMode === 'specific_users' ? styles.targetModeBtnActive : ''}`}
+                onClick={() => {
+                  setGroupTargetMode('specific_users');
+                  if (!newGroupName.trim() || selectedDesignationTags.some(t => newGroupName.includes(t))) {
+                    setNewGroupName('AI Club');
+                  }
+                  if (!newGroupDesc.trim()) {
+                    setNewGroupDesc('Exclusive curated AI Club for selected innovators and officers.');
+                  }
+                }}
+              >
+                <span>👥</span>
+                <span>Option 2: Select Specific Users (e.g. "AI Club")</span>
+                {selectedUsers.length > 0 && (
+                  <span style={{ background: '#B45309', color: '#FFFFFF', padding: '1px 7px', borderRadius: '10px', fontSize: '11px' }}>
+                    {selectedUsers.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             <form onSubmit={handleCreateGroup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* GROUP NAME & DESCRIPTION ROW */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-                {/* 1. Group Name */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
-                    Group Name *
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#292524' }}>
+                      Group Name *
+                    </label>
+                    {groupTargetMode === 'designation' && selectedDesignationTags.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setNewGroupName(`${selectedDesignationTags.join(' + ')} Forum`)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#C1552C',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        ✨ Suggest Combined Name
+                      </button>
+                    )}
+                    {groupTargetMode === 'specific_users' && !newGroupName.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setNewGroupName('AI Club')}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#C1552C',
+                          fontSize: '11.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        ✨ Use "AI Club"
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
-                    placeholder="e.g. Revenue Officer, B.P.R.O. Forum, or Agri Tech"
+                    placeholder={groupTargetMode === 'specific_users' ? 'e.g. AI Club, Innovation Fellowship' : 'e.g. Revenue Officer + Circle Officer Forum'}
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                     className={styles.textInput}
@@ -650,167 +799,366 @@ export default function AdminChitChatHub() {
                   />
                 </div>
 
-                {/* 2. Target Designation Dropdown (Same options as Applications & Inquiries filter) */}
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
-                    Target Designation (Choose from Profile Designations)
+                    Description / Purpose
                   </label>
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (!val) return;
-                      if (!selectedDesignationTags.includes(val)) {
-                        const next = [...selectedDesignationTags, val];
-                        setSelectedDesignationTags(next);
-                        if (!newGroupName.trim()) {
-                          setNewGroupName(val);
-                        }
-                        if (!newGroupDesc.trim()) {
-                          setNewGroupDesc(`Official discussion and collaboration group for ${val}s across Bihar.`);
-                        }
-                      }
-                    }}
+                  <input
+                    type="text"
+                    placeholder={groupTargetMode === 'specific_users' ? 'e.g. Exclusive discussion hub for AI Club members' : 'e.g. Official collaboration forum for clubbed officers across Bihar'}
+                    value={newGroupDesc}
+                    onChange={(e) => setNewGroupDesc(e.target.value)}
                     className={styles.textInput}
-                    style={{ width: '100%', boxSizing: 'border-box', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
-                  >
-                    <option value="">
-                      {isLoadingDesignations
-                        ? 'Loading profile designations…'
-                        : `-- Choose Designation Option (${availableDesignations.length} available) --`}
-                    </option>
-                    {availableDesignations.map((desig) => (
-                      <option key={desig} value={desig}>
-                        💼 {desig}
-                      </option>
-                    ))}
-                  </select>
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
                 </div>
               </div>
 
-              {/* Active Selected Designation Chips */}
-              {selectedDesignationTags.length > 0 && (
-                <div style={{
-                  padding: '10px 14px',
-                  backgroundColor: '#FEF3C7',
-                  border: '1px solid #FCD34D',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#92400E' }}>
-                      Selected Profile Designations for this Group:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDesignationTags([])}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#DC2626',
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
+              {/* ─────────────────────────────────────────────────────────── */}
+              {/* TARGET MODE 1: CLUB MULTIPLE DESIGNATIONS */}
+              {/* ─────────────────────────────────────────────────────────── */}
+              {groupTargetMode === 'designation' && (
+                <div style={{ background: '#FAF7F2', border: '1px solid #E2D7C3', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '800', marginBottom: '6px', color: '#92400E' }}>
+                      🎖️ Add Designations to Club (Select 2, 3, or more from 166 Profile Options)
+                    </label>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) return;
+                        if (!selectedDesignationTags.includes(val)) {
+                          const next = [...selectedDesignationTags, val];
+                          setSelectedDesignationTags(next);
+                          if (!newGroupName.trim() || newGroupName.includes('Forum') || newGroupName.includes('+')) {
+                            setNewGroupName(next.length === 1 ? next[0] : `${next.join(' + ')} Forum`);
+                          }
+                          if (!newGroupDesc.trim()) {
+                            setNewGroupDesc(`Official discussion and collaboration group for ${next.join(', ')}s across Bihar.`);
+                          }
+                        }
                       }}
+                      className={styles.textInput}
+                      style={{ width: '100%', boxSizing: 'border-box', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
                     >
-                      Clear Selection
-                    </button>
+                      <option value="">
+                        {isLoadingDesignations
+                          ? 'Loading profile designations…'
+                          : `-- Click to add a designation (${availableDesignations.length} available) --`}
+                      </option>
+                      {availableDesignations.map((desig) => {
+                        const isChosen = selectedDesignationTags.includes(desig);
+                        const memberCount = designationCounts[desig] || 0;
+                        return (
+                          <option key={desig} value={desig} disabled={isChosen}>
+                            {isChosen ? '✓ ' : '💼 '} {desig} ({memberCount} registered member{memberCount === 1 ? '' : 's'})
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {selectedDesignationTags.map((tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          backgroundColor: '#FFFFFF',
-                          color: '#B45309',
-                          border: '1px solid #F59E0B',
-                          borderRadius: '16px',
-                          padding: '3px 10px',
-                          fontSize: '12px',
-                          fontWeight: '800',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                        }}
-                      >
-                        🎖️ {tag}
+
+                  {/* Clubbed Designation Tags */}
+                  {selectedDesignationTags.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #FCD34D' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#92400E' }}>
+                          Clubbed Designations in this Group ({selectedDesignationTags.length}):
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setSelectedDesignationTags(selectedDesignationTags.filter(t => t !== tag))}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#DC2626',
-                            cursor: 'pointer',
-                            fontWeight: '900',
-                            padding: 0,
-                            lineHeight: 1
-                          }}
-                          title="Remove designation"
+                          onClick={() => setSelectedDesignationTags([])}
+                          style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
                         >
-                          ✕
+                          Clear All
                         </button>
-                      </span>
-                    ))}
+                      </div>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {selectedDesignationTags.map((tag) => (
+                          <span
+                            key={tag}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              backgroundColor: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #F59E0B',
+                              borderRadius: '16px',
+                              padding: '4px 12px',
+                              fontSize: '12.5px',
+                              fontWeight: '800'
+                            }}
+                          >
+                            🎖️ {tag} <span style={{ opacity: 0.75, fontSize: '11px', fontWeight: 600 }}>({designationCounts[tag] || 0})</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDesignationTags(selectedDesignationTags.filter(t => t !== tag))}
+                              style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: '900', padding: 0, lineHeight: 1 }}
+                              title="Remove designation"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+
+                      <div style={{ fontSize: '11.5px', color: '#166534', background: '#F0FDF4', padding: '6px 10px', borderRadius: '4px', border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>👥</span>
+                        <span>
+                          <strong>Combined Cohort Size:</strong> Approximately{' '}
+                          <strong>{selectedDesignationTags.reduce((sum, tag) => sum + (designationCounts[tag] || 0), 0)} registered officers</strong>{' '}
+                          with these {selectedDesignationTags.length} designations will automatically see and have access to this group.
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: '12px', color: '#78716C' }}>
+                      💡 Tip: Select 2 or 3 designations from the dropdown above to club them together into one unified group.
+                    </p>
+                  )}
+
+                  {/* Optional: Additional Manual Designations or Departments */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', marginTop: '4px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
+                        Additional Manual Designations (Optional, comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Circle Officer, BPRO"
+                        value={newGroupDesignations}
+                        onChange={(e) => setNewGroupDesignations(e.target.value)}
+                        className={styles.textInput}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
+                        Departments to Club (Optional, comma-separated)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Revenue, General Administration"
+                        value={newGroupDepts}
+                        onChange={(e) => setNewGroupDepts(e.target.value)}
+                        className={styles.textInput}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                  <span style={{ fontSize: '11px', color: '#78350F' }}>
-                    🔒 <strong>Strict Visibility:</strong> ONLY registered users who have set {selectedDesignationTags.map(t => `"${t}"`).join(' or ')} in their profile will see and enter this group.
-                  </span>
                 </div>
               )}
 
-              {/* 3. Description / Purpose */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
-                  Description / Purpose
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Official discussion and collaboration group for Revenue Officers across Bihar"
-                  value={newGroupDesc}
-                  onChange={(e) => setNewGroupDesc(e.target.value)}
-                  className={styles.textInput}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
+              {/* ─────────────────────────────────────────────────────────── */}
+              {/* TARGET MODE 2: SPECIFIC SELECTED USERS (e.g. AI CLUB) */}
+              {/* ─────────────────────────────────────────────────────────── */}
+              {groupTargetMode === 'specific_users' && (
+                <div className={styles.userPickerBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: '800', color: '#181512', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🔒</span> Select Users for this Group (e.g. "AI Club")
+                      </span>
+                      <span style={{ fontSize: '11.5px', color: '#5E554D', display: 'block', marginTop: '2px' }}>
+                        Only the selected users will see and use this group. Completely hidden from other registered users.
+                      </span>
+                    </div>
 
-              {/* Optional: Additional Manual Designations or Departments */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
-                    Additional Manual Designations (Optional, comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Circle Officer, BPRO"
-                    value={newGroupDesignations}
-                    onChange={(e) => setNewGroupDesignations(e.target.value)}
-                    className={styles.textInput}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#B45309', background: '#FEF3C7', padding: '4px 10px', borderRadius: '12px' }}>
+                        👥 {selectedUsers.length} Selected
+                      </span>
+                      {selectedUsers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUsers([])}
+                          style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected Users Chips */}
+                  {selectedUsers.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px', maxHeight: '100px', overflowY: 'auto', background: '#FFFFFF', padding: '8px 10px', borderRadius: '6px', border: '1px solid #E2D7C3' }}>
+                      {selectedUsers.map((user) => (
+                        <span
+                          key={user.email}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#F3ECE0',
+                            color: '#181512',
+                            borderRadius: '14px',
+                            padding: '3px 8px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            border: '1px solid rgba(24, 21, 18, 0.15)'
+                          }}
+                        >
+                          <span>👤</span>
+                          <span>{user.full_name || user.email}</span>
+                          {user.username && <span style={{ color: '#B45309', fontFamily: 'monospace' }}>@{user.username.replace(/^@/, '')}</span>}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUsers(selectedUsers.filter(u => u.email !== user.email))}
+                            style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: '800', padding: 0 }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Search input for users */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type="text"
+                        placeholder="🔍 Search users by name, email, @username, designation, district..."
+                        value={userSearchFilter}
+                        onChange={(e) => setUserSearchFilter(e.target.value)}
+                        className={styles.textInput}
+                        style={{ width: '100%', boxSizing: 'border-box', height: '36px', fontSize: '12.5px' }}
+                      />
+                      {userSearchFilter && (
+                        <button
+                          type="button"
+                          onClick={() => setUserSearchFilter('')}
+                          style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontWeight: '800' }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {userSearchFilter && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filtered = allRegisteredUsers.filter((u) => {
+                            const q = userSearchFilter.toLowerCase().trim();
+                            return (
+                              (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+                              (u.email && u.email.toLowerCase().includes(q)) ||
+                              (u.username && u.username.toLowerCase().includes(q)) ||
+                              (u.designation && u.designation.toLowerCase().includes(q)) ||
+                              (u.district && u.district.toLowerCase().includes(q))
+                            );
+                          });
+                          const map = new Map(selectedUsers.map(u => [u.email, u]));
+                          filtered.forEach(u => map.set(u.email, u));
+                          setSelectedUsers(Array.from(map.values()));
+                        }}
+                        style={{ padding: '6px 12px', background: '#FFFFFF', border: '1px solid #B45309', color: '#B45309', borderRadius: '4px', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        + Select All Matching
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Scrollable Checklist of registered users */}
+                  <div className={styles.userListScroll}>
+                    {isLoadingUsers ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#78716C', fontSize: '12px' }}>
+                        Loading registered users…
+                      </div>
+                    ) : (
+                      (() => {
+                        const filtered = allRegisteredUsers.filter((u) => {
+                          if (!userSearchFilter.trim()) return true;
+                          const q = userSearchFilter.toLowerCase().trim();
+                          return (
+                            (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+                            (u.email && u.email.toLowerCase().includes(q)) ||
+                            (u.username && u.username.toLowerCase().includes(q)) ||
+                            (u.designation && u.designation.toLowerCase().includes(q)) ||
+                            (u.district && u.district.toLowerCase().includes(q))
+                          );
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div style={{ padding: '20px', textAlign: 'center', color: '#78716C', fontSize: '12.5px' }}>
+                              No users match "{userSearchFilter}".
+                            </div>
+                          );
+                        }
+
+                        return filtered.slice(0, 100).map((user) => {
+                          const isChecked = selectedUsers.some(u => u.email === user.email);
+                          return (
+                            <div
+                              key={user.email}
+                              className={`${styles.userRowItem} ${isChecked ? styles.userRowItemSelected : ''}`}
+                              onClick={() => {
+                                if (isChecked) {
+                                  setSelectedUsers(selectedUsers.filter(u => u.email !== user.email));
+                                } else {
+                                  setSelectedUsers([...selectedUsers, user]);
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // Handled by parent div onClick
+                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                              />
+                              <div className={styles.userAvatarMini}>
+                                {(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <strong style={{ fontSize: '12.5px', color: '#181512' }}>
+                                    {user.full_name || 'Candidate'}
+                                  </strong>
+                                  {user.username && (
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#B45309', fontFamily: 'monospace' }}>
+                                      @{user.username.replace(/^@/, '')}
+                                    </span>
+                                  )}
+                                  {user.district && (
+                                    <span style={{ fontSize: '11px', color: '#78716C', background: '#F3ECE0', padding: '1px 6px', borderRadius: '3px' }}>
+                                      📍 {user.district}
+                                    </span>
+                                  )}
+                                </div>
+                                <span style={{ fontSize: '11.5px', color: '#5E554D', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {user.email} {user.designation ? `· 💼 ${user.designation}` : ''}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
-                    Departments to Club (Optional, comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Revenue, General Administration"
-                    value={newGroupDepts}
-                    onChange={(e) => setNewGroupDepts(e.target.value)}
-                    className={styles.textInput}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
+              )}
 
               <div>
-                <button type="submit" disabled={isCreatingGroup} className={styles.primaryBtn} style={{ padding: '10px 22px', fontSize: '13.5px' }}>
-                  {isCreatingGroup ? 'Creating Group…' : '+ Create Group'}
+                <button
+                  type="submit"
+                  disabled={isCreatingGroup}
+                  className={styles.primaryBtn}
+                  style={{ padding: '10px 24px', fontSize: '13.5px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <span>{isCreatingGroup ? '⏳' : groupTargetMode === 'specific_users' ? '⭐' : '🎖️'}</span>
+                  <span>
+                    {isCreatingGroup
+                      ? 'Creating Group…'
+                      : groupTargetMode === 'specific_users'
+                      ? `Create "${newGroupName || 'AI Club'}" for ${selectedUsers.length} Selected User${selectedUsers.length === 1 ? '' : 's'}`
+                      : `Create Group for ${selectedDesignationTags.length || 'Clubbed'} Designation${selectedDesignationTags.length === 1 ? '' : 's'}`}
+                  </span>
                 </button>
               </div>
             </form>
@@ -826,33 +1174,75 @@ export default function AdminChitChatHub() {
               <thead>
                 <tr>
                   <th>Group Name</th>
-                  <th>Target Depts & Designations</th>
+                  <th>Audience / Targeting Mode</th>
                   <th>Description</th>
                   <th>Created By</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {groups.map((g) => (
-                  <tr key={g.id}>
-                    <td><strong>{g.name}</strong></td>
-                    <td>
-                      {Array.isArray(g.departments) && g.departments.map((d, i) => (
-                        <span key={`dept_${i}`} style={{ background: '#F3ECE0', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', display: 'inline-block', marginBottom: '2px' }}>🏢 {d}</span>
-                      ))}
-                      {Array.isArray(g.designations) && g.designations.map((des, i) => (
-                        <span key={`des_${i}`} style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', fontWeight: '700', display: 'inline-block', marginBottom: '2px' }}>🎖️ {des}</span>
-                      ))}
-                    </td>
-                    <td style={{ fontSize: '12px', color: '#5E554D' }}>{g.description || '—'}</td>
-                    <td>{g.created_by}</td>
-                    <td>
-                      {g.id !== 'overall' && (
-                        <button type="button" onClick={() => handleDeleteGroup(g.id)} className={styles.dangerBtn}>Delete</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {groups.map((g) => {
+                  const allowedUsersList = [
+                    ...(Array.isArray(g.allowed_users) ? g.allowed_users : []),
+                    ...(Array.isArray(g.departments) ? g.departments.filter(d => typeof d === 'string' && d.startsWith('USER:')).map(d => d.replace(/^USER:/i, '')) : [])
+                  ];
+                  const isPrivateUserClub = allowedUsersList.length > 0;
+                  const isClubbedDesignations = Array.isArray(g.designations) && g.designations.length > 0;
+
+                  return (
+                    <tr key={g.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{isPrivateUserClub ? '⭐' : isClubbedDesignations ? '🎖️' : '🏛️'}</span>
+                          <strong>{g.name}</strong>
+                          {isPrivateUserClub && (
+                            <span style={{ fontSize: '10px', fontWeight: '800', background: '#FEF3C7', color: '#92400E', padding: '1px 6px', borderRadius: '4px', border: '1px solid #FCD34D' }}>
+                              PRIVATE CLUB
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {isPrivateUserClub ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <span style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', width: 'fit-content' }}>
+                              👥 Whitelist: {allowedUsersList.length} Selected Member{allowedUsersList.length === 1 ? '' : 's'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#78716C', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={allowedUsersList.join(', ')}>
+                              {allowedUsersList.slice(0, 3).join(', ')}{allowedUsersList.length > 3 ? ` +${allowedUsersList.length - 3} more` : ''}
+                            </span>
+                          </div>
+                        ) : isClubbedDesignations ? (
+                          <div>
+                            <span style={{ fontSize: '11px', fontWeight: '800', color: '#92400E', display: 'block', marginBottom: '2px' }}>
+                              🎖️ {g.designations.length} Clubbed Designation{g.designations.length === 1 ? '' : 's'}:
+                            </span>
+                            {g.designations.map((des, i) => (
+                              <span key={`des_${i}`} style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', fontWeight: '700', display: 'inline-block', marginBottom: '2px' }}>
+                                💼 {des}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div>
+                            {Array.isArray(g.departments) && g.departments.filter(d => !d.startsWith('USER:')).map((d, i) => (
+                              <span key={`dept_${i}`} style={{ background: '#F3ECE0', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', display: 'inline-block', marginBottom: '2px' }}>
+                                🏢 {d}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ fontSize: '12px', color: '#5E554D' }}>{g.description || '—'}</td>
+                      <td>{g.created_by}</td>
+                      <td>
+                        {g.id !== 'overall' && (
+                          <button type="button" onClick={() => handleDeleteGroup(g.id)} className={styles.dangerBtn}>Delete</button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

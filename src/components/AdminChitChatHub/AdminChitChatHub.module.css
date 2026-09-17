@@ -184,3 +184,88 @@
   align-items: flex-start;
   gap: 12px;
 }
+
+/* ─── TARGETING MODE SELECTOR & USER PICKER ─── */
+.targetModeBar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.targetModeBtn {
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  border: 1.5px solid var(--color-line, #E2D7C3);
+  background: #FFFFFF;
+  color: var(--color-ink-muted, #5E554D);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.18s ease;
+}
+
+.targetModeBtn:hover {
+  border-color: #B45309;
+  color: #B45309;
+}
+
+.targetModeBtnActive {
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+  border-color: #F59E0B !important;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+}
+
+.userPickerBox {
+  border: 1.5px solid var(--color-line, #E2D7C3);
+  border-radius: 8px;
+  background: #FAF7F2;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+.userListScroll {
+  max-height: 250px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid rgba(24, 21, 18, 0.1);
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.userRowItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(24, 21, 18, 0.05);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.userRowItem:hover {
+  background: #FEF3C7;
+}
+
+.userRowItemSelected {
+  background: #FFFBEB;
+}
+
+.userAvatarMini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #B45309;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
