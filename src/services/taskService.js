@@ -115,7 +115,7 @@ export const getDailyTasks = async () => {
   try {
     const { data, error } = await supabase
       .from('daily_tasks')
-      .select('id, num, tool_name, title, classwork, instructions, image, doc_url, sample_solution_url, submission_type, deadline, is_active')
+      .select('id, num, tool_name, title, classwork, instructions, final_submission, category, is_active')
       .eq('is_active', true)
       .order('num', { ascending: true });
 
