@@ -131,7 +131,7 @@ export default function AdminChitChatHub() {
     }
   };
 
-  // Delete / deactivate code
+  // Delete code
   const handleDeleteCode = async (id) => {
     try {
       await supabase.from('chitchat_access_codes').delete().eq('id', id);
@@ -139,6 +139,21 @@ export default function AdminChitChatHub() {
       loadAccessCodes();
     } catch (e) {
       toast?.error('Failed to delete code.');
+    }
+  };
+
+  // Pause / Reactivate code for multi-user access
+  const handleToggleCodeActive = async (id, currentStatus) => {
+    try {
+      const nextStatus = !currentStatus;
+      await supabase
+        .from('chitchat_access_codes')
+        .update({ is_active: nextStatus })
+        .eq('id', id);
+      toast?.info(nextStatus ? 'Code activated for multi-user access.' : 'Code paused / deactivated.');
+      loadAccessCodes();
+    } catch (e) {
+      toast?.error('Failed to update code status.');
     }
   };
 
@@ -337,9 +352,9 @@ export default function AdminChitChatHub() {
       {activeSubTab === 'codes' && (
         <div>
           <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Generate Timed Access Code</h3>
+            <h3 className={styles.cardTitle}>Generate Timed Access Code (Multi-User Shared Pass)</h3>
             <p style={{ fontSize: '12.5px', color: '#5E554D', margin: '0 0 14px' }}>
-              Create a unique 6-digit code with a specified validity duration in minutes. When users enter this code in their profile, they unlock Chit-Chat for that exact duration even outside the 8:00 PM – 8:00 AM IST window.
+              Create a unique 6-digit access code for your team or cohort. Once generated, you can share this single code with multiple users, officers, or community members. Each user who enters the code will unlock Chit-Chat for that exact duration, even outside the 8:00 PM – 8:00 AM IST window.
             </p>
             <div className={styles.codeGenRow}>
               <select
@@ -400,10 +415,10 @@ export default function AdminChitChatHub() {
                   </tr>
                 ) : (
                   accessCodes.map((c) => {
-                    const isClaimed = !c.is_active || Boolean(c.claimed_by);
+                    const claimedList = c.claimed_by ? c.claimed_by.split(',').map(s => s.trim()).filter(Boolean) : [];
                     const userCount = (c.claimed_count !== undefined && c.claimed_count !== null)
                       ? c.claimed_count
-                      : (isClaimed ? 1 : 0);
+                      : claimedList.length;
 
                     return (
                       <tr key={c.id}>
@@ -414,30 +429,53 @@ export default function AdminChitChatHub() {
                         <td><strong>{c.duration_minutes} mins</strong></td>
                         <td>
                           {c.is_active ? (
-                            <span style={{ color: '#16A34A', fontWeight: '800' }}>● Unclaimed (Active)</span>
+                            <span style={{ color: '#16A34A', fontWeight: '800' }}>● Active (Multi-User)</span>
                           ) : (
-                            <span style={{ color: '#DC2626', fontWeight: '700' }}>Claimed / Inactive</span>
+                            <span style={{ color: '#DC2626', fontWeight: '700' }}>Paused / Inactive</span>
                           )}
                         </td>
                         <td>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '3px 10px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            backgroundColor: userCount > 0 ? '#ECFDF5' : '#F3F4F6',
-                            color: userCount > 0 ? '#065F46' : '#6B7280',
-                            border: userCount > 0 ? '1px solid #A7F3D0' : '1px solid #E5E7EB'
-                          }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 10px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              backgroundColor: userCount > 0 ? '#ECFDF5' : '#F3F4F6',
+                              color: userCount > 0 ? '#065F46' : '#6B7280',
+                              border: userCount > 0 ? '1px solid #A7F3D0' : '1px solid #E5E7EB',
+                              cursor: userCount > 0 ? 'help' : 'default'
+                            }}
+                            title={userCount > 0 ? `Claimed by:\n${claimedList.join('\n')}` : 'No users have claimed this code yet'}
+                          >
                             👥 {userCount} {userCount === 1 ? 'user' : 'users'}
                           </span>
                         </td>
                         <td>{c.expires_at ? formatMessageTime(c.expires_at) : '—'}</td>
                         <td>
-                          <button type="button" onClick={() => handleDeleteCode(c.id)} className={styles.dangerBtn}>Delete</button>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCodeActive(c.id, c.is_active)}
+                              style={{
+                                padding: '5px 9px',
+                                fontSize: '11.5px',
+                                fontWeight: '700',
+                                borderRadius: '4px',
+                                border: '1px solid var(--color-line, #E2D7C3)',
+                                background: c.is_active ? '#FEF3C7' : '#DCFCE7',
+                                color: c.is_active ? '#B45309' : '#166534',
+                                cursor: 'pointer'
+                              }}
+                              title={c.is_active ? 'Pause / Deactivate this code' : 'Reactivate this code'}
+                            >
+                              {c.is_active ? '⏸️ Pause' : '▶️ Activate'}
+                            </button>
+                            <button type="button" onClick={() => handleDeleteCode(c.id)} className={styles.dangerBtn}>Delete</button>
+                          </div>
                         </td>
                       </tr>
                     );

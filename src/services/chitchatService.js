@@ -435,7 +435,58 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
     return { success: false, error: 'Access code must be exactly 6 characters/digits.' };
   }
 
-  // 1. Try RPC
+  // 1. Direct table claim with multi-user support
+  try {
+    const { data: codeRec, error: fetchErr } = await supabase
+      .from('chitchat_access_codes')
+      .select('*')
+      .eq('code', cleanCode)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!fetchErr && codeRec) {
+      const durationMins = codeRec.duration_minutes || 60;
+      const userExpiresAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
+
+      // Maintain list of all users/emails who have unlocked with this code
+      let updatedClaimedBy = cleanEmail;
+      if (codeRec.claimed_by) {
+        const existingList = codeRec.claimed_by.split(',').map(s => s.trim()).filter(Boolean);
+        if (!existingList.some(e => e.toLowerCase() === cleanEmail)) {
+          existingList.push(cleanEmail);
+        }
+        updatedClaimedBy = existingList.join(', ');
+      }
+
+      // Keep is_active = true so MULTIPLE users shared by admin can unlock!
+      await supabase
+        .from('chitchat_access_codes')
+        .update({
+          claimed_by: updatedClaimedBy,
+          claimed_at: new Date().toISOString(),
+          is_active: true
+        })
+        .eq('id', codeRec.id);
+
+      // Save individual timed session pass in browser localStorage
+      saveLocalSessionPass({
+        code: cleanCode,
+        durationMinutes: durationMins,
+        expiresAt: userExpiresAt
+      });
+
+      return {
+        success: true,
+        duration_minutes: durationMins,
+        expires_at: userExpiresAt,
+        message: `Unlocked! Access granted for ${durationMins} minutes.`
+      };
+    }
+  } catch (dirErr) {
+    console.warn('Direct code claim fallback notice:', dirErr);
+  }
+
+  // 2. Fallback to RPC if direct table fails
   try {
     const { data, error } = await supabase.rpc('claim_chitchat_code', {
       p_user_email: cleanEmail,
@@ -456,47 +507,7 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
     console.warn('RPC claim code fallback:', rpcErr);
   }
 
-  // 2. Direct table fallback
-  try {
-    const { data: codeRec, error: fetchErr } = await supabase
-      .from('chitchat_access_codes')
-      .select('*')
-      .eq('code', cleanCode)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!fetchErr && codeRec) {
-      const durationMins = codeRec.duration_minutes || 60;
-      const expiresAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
-
-      await supabase
-        .from('chitchat_access_codes')
-        .update({
-          claimed_by: cleanEmail,
-          claimed_at: new Date().toISOString(),
-          expires_at: expiresAt,
-          is_active: false
-        })
-        .eq('id', codeRec.id);
-
-      saveLocalSessionPass({
-        code: cleanCode,
-        durationMinutes: durationMins,
-        expiresAt: expiresAt
-      });
-
-      return {
-        success: true,
-        duration_minutes: durationMins,
-        expires_at: expiresAt,
-        message: `Unlocked! Access granted for ${durationMins} minutes.`
-      };
-    }
-  } catch (dirErr) {
-    console.warn('Direct code claim fallback:', dirErr);
-  }
-
-  return { success: false, error: 'Invalid or already claimed 6-digit code. Please contact Admin.' };
+  return { success: false, error: 'Invalid or inactive 6-digit access code. Please contact Admin.' };
 };
 
 /**
