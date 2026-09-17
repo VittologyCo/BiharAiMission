@@ -8,8 +8,12 @@ import {
   sendChitChatMessage,
   uploadChitChatFile,
   fetchUserFriends,
-  addChitChatFriend,
+  fetchPendingFriendRequests,
+  fetchSentFriendRequests,
+  sendChitChatFriendRequest,
+  respondChitChatFriendRequest,
   fetchChitChatGroups,
+  filterGroupsForUser,
   resolveUserDepartmentGroup,
   searchRegisteredUsers,
   claimAdminAccessCode,
@@ -17,6 +21,8 @@ import {
   saveLocalSessionPass,
   clearLocalSessionPass,
   playChatNotificationSound,
+  getChannelReadTimestamp,
+  markChannelAsRead,
 } from '../../services/chitchatService';
 import { toast } from '../../context/ToastContext';
 import styles from './ChitChat.module.css';
@@ -34,6 +40,9 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const [allGroups, setAllGroups] = useState([]);
   const [myDeptGroup, setMyDeptGroup] = useState(null);
   const [friendsList, setFriendsList] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
+  const [isRespondingRequest, setIsRespondingRequest] = useState(false);
   const [activeChannel, setActiveChannel] = useState(null); // { id, name, type, icon, subtitle }
   const [unreadCounts, setUnreadCounts] = useState({});
   const [mentionAlerts, setMentionAlerts] = useState({});
@@ -59,6 +68,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const messageFeedRef = useRef(null);
   const messagesEndRef = useRef(null);
   const realtimeChannelRef = useRef(null);
+  const realtimeFriendsRef = useRef(null);
   const activeChannelRef = useRef(null);
 
   // Keep activeChannelRef synced
@@ -217,12 +227,20 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
       setAllGroups(groups);
 
       // 2. Resolve user's matching department group
-      const deptGroup = resolveUserDepartmentGroup(groups, currentUser?.department, currentUser?.designation);
+      const deptGroup = resolveUserDepartmentGroup(groups, currentUser?.department, myDesignation);
       setMyDeptGroup(deptGroup);
 
-      // 3. Fetch user's friends (enforce 5 max)
+      // 3. Fetch user's accepted friends
       const friends = await fetchUserFriends(myEmail);
       setFriendsList(friends);
+
+      // 4. Fetch incoming & sent friend requests
+      const [incoming, outgoing] = await Promise.all([
+        fetchPendingFriendRequests(myEmail),
+        fetchSentFriendRequests(myEmail)
+      ]);
+      setPendingRequests(incoming);
+      setSentRequests(outgoing);
 
       // Default active channel to Overall
       if (!activeChannel) {
@@ -235,12 +253,13 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             icon: '🏛️',
             subtitle: overall.description
           });
+          markChannelAsRead(overall.id, myEmail);
         }
       }
     };
 
     loadChannelsAndFriends();
-  }, [isUnlocked, myEmail, currentUser?.department, currentUser?.designation]);
+  }, [isUnlocked, myEmail, currentUser?.department, myDesignation]);
 
   // ─── 3. FETCH MESSAGES FOR ACTIVE CHANNEL ───
   useEffect(() => {
@@ -248,6 +267,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
 
     let isMounted = true;
     const channelId = activeChannel.id;
+    markChannelAsRead(channelId, myEmail);
 
     // Fetch existing messages strictly within the 15-day window
     fetchChannelMessages(channelId).then((data) => {
@@ -260,14 +280,15 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     return () => {
       isMounted = false;
     };
-  }, [isUnlocked, activeChannel?.id]);
+  }, [isUnlocked, activeChannel?.id, myEmail]);
 
-  // ─── 4. GLOBAL REALTIME CHAT & MENTION NOTIFICATION LISTENER ───
+  // ─── 4. GLOBAL REALTIME CHAT & NOTIFICATION LISTENERS ───
   useEffect(() => {
     if (!isUnlocked) return;
     let isMounted = true;
 
     try {
+      // 1. Chat Messages Live Stream
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
       }
@@ -306,6 +327,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                 if (prev.some((m) => m.id === newMsg.id)) return prev;
                 return [...prev, newMsg];
               });
+              markChannelAsRead(currentActiveId, myEmail);
               scrollToBottom();
 
               if (!isFromMe && isTagged) {
@@ -345,6 +367,55 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
         .subscribe();
 
       realtimeChannelRef.current = channelSub;
+
+      // 2. Friend Requests & Approvals Live Stream
+      if (realtimeFriendsRef.current) {
+        supabase.removeChannel(realtimeFriendsRef.current);
+      }
+
+      const friendsSub = supabase
+        .channel('chitchat_friends_feed')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'chitchat_friends'
+          },
+          async (payload) => {
+            if (!isMounted) return;
+            const rec = payload.new || payload.old;
+            if (!rec) return;
+
+            const recUser = (rec.user_email || '').toLowerCase().trim();
+            const recFriend = (rec.friend_email || '').toLowerCase().trim();
+            const recSender = (rec.sender_email || '').toLowerCase().trim();
+
+            if (recUser === myEmail || recFriend === myEmail || recSender === myEmail) {
+              const [updatedFriends, updatedPending, updatedSent] = await Promise.all([
+                fetchUserFriends(myEmail),
+                fetchPendingFriendRequests(myEmail),
+                fetchSentFriendRequests(myEmail)
+              ]);
+              if (isMounted) {
+                setFriendsList(updatedFriends);
+                setPendingRequests(updatedPending);
+                setSentRequests(updatedSent);
+              }
+
+              if (payload.eventType === 'INSERT' && recUser === myEmail && rec.status === 'pending') {
+                playChatNotificationSound(true);
+                toast?.info(`📬 New friend request from @${rec.sender_username || 'Member'}!`);
+              } else if (payload.eventType === 'UPDATE' && rec.status === 'accepted') {
+                playChatNotificationSound(true);
+                toast?.success(`🎉 @${rec.friend_username || rec.sender_username || 'Peer'} is now your connected friend!`);
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      realtimeFriendsRef.current = friendsSub;
     } catch (e) {
       console.warn('Realtime subscription notice:', e);
     }
@@ -353,6 +424,9 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
       isMounted = false;
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
+      }
+      if (realtimeFriendsRef.current) {
+        supabase.removeChannel(realtimeFriendsRef.current);
       }
     };
   }, [isUnlocked, myEmail, myUsername]);
@@ -374,6 +448,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // Select channel and clear unread & mention flags
   const selectChannel = (channelObj) => {
     setActiveChannel(channelObj);
+    markChannelAsRead(channelObj.id, myEmail);
     setUnreadCounts((prev) => ({ ...prev, [channelObj.id]: 0 }));
     setMentionAlerts((prev) => ({ ...prev, [channelObj.id]: 0 }));
     setMobileTab('chat');
@@ -395,22 +470,76 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     }
   };
 
-  const handleAddFriend = async (targetUser) => {
+  // Send friend request
+  const handleSendFriendRequest = async (targetUser) => {
     if (friendsList.length >= 5) {
       toast?.warning(isHi ? 'मित्र सीमा पूर्ण हो चुकी है (अधिकतम 5 मित्र)।' : 'Friend limit reached. You can chat separately with up to 5 friends only.');
       return;
     }
 
-    const res = await addChitChatFriend(myEmail, targetUser);
+    const res = await sendChitChatFriendRequest(
+      { email: myEmail, fullName: myName, username: myUsername, designation: myDesignation },
+      targetUser
+    );
     if (res.success) {
-      toast?.success(isHi ? `🎉 @${targetUser.username} को मित्र सूची में जोड़ लिया गया!` : `🎉 Connected with @${targetUser.username}!`);
-      const updated = await fetchUserFriends(myEmail);
-      setFriendsList(updated);
+      toast?.success(isHi ? `🎉 @${targetUser.username} को मित्रता अनुरोध भेजा गया!` : `🎉 Friend request sent to @${targetUser.username}!`);
+      const outgoing = await fetchSentFriendRequests(myEmail);
+      setSentRequests(outgoing);
       setShowFriendSearch(false);
       setFriendSearchQuery('');
       setSearchResults([]);
     } else {
-      toast?.error(res.error || 'Failed to add friend.');
+      toast?.error(res.error || 'Failed to send friend request.');
+    }
+  };
+
+  // Accept incoming friend request
+  const handleAcceptFriendRequest = async (req) => {
+    if (friendsList.length >= 5) {
+      toast?.warning(isHi ? 'आपकी मित्र सूची पूर्ण है (अधिकतम 5 मित्र)।' : 'Friend limit reached (max 5 friends).');
+      return;
+    }
+    setIsRespondingRequest(true);
+    try {
+      const res = await respondChitChatFriendRequest(
+        req.id,
+        myEmail,
+        'accept',
+        { fullName: myName, username: myUsername, designation: myDesignation }
+      );
+      if (res.success) {
+        toast?.success(isHi ? `🎉 @${req.sender_username || req.friend_username} के साथ जुड़े!` : `🎉 Connected with @${req.sender_username || req.friend_username}!`);
+        const [friends, incoming] = await Promise.all([
+          fetchUserFriends(myEmail),
+          fetchPendingFriendRequests(myEmail)
+        ]);
+        setFriendsList(friends);
+        setPendingRequests(incoming);
+      } else {
+        toast?.error(res.error || 'Failed to accept friend request.');
+      }
+    } finally {
+      setIsRespondingRequest(false);
+    }
+  };
+
+  // Decline incoming friend request
+  const handleDeclineFriendRequest = async (req) => {
+    setIsRespondingRequest(true);
+    try {
+      const res = await respondChitChatFriendRequest(
+        req.id,
+        myEmail,
+        'decline',
+        { fullName: myName, username: myUsername, designation: myDesignation }
+      );
+      if (res.success) {
+        toast?.info(isHi ? 'अनुरोध हटाया गया।' : 'Friend request declined.');
+        const incoming = await fetchPendingFriendRequests(myEmail);
+        setPendingRequests(incoming);
+      }
+    } finally {
+      setIsRespondingRequest(false);
     }
   };
 
@@ -879,6 +1008,14 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     0
   );
 
+  const totalUnreadCount = Object.values(unreadCounts).reduce(
+    (acc, v) => acc + (typeof v === 'number' ? v : (v ? 1 : 0)),
+    0
+  );
+
+  // Filter groups strictly based on designation and department (Requirement 4)
+  const visibleGroups = filterGroupsForUser(allGroups, currentUser?.department, myDesignation);
+
   // ══════════════════════════════════════════════════════════════════════════
   // RENDER: ACTIVE CHIT-CHAT APPLICATION
   // ══════════════════════════════════════════════════════════════════════════
@@ -915,6 +1052,19 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
           </div>
           <p className={styles.userSubText}>
             <span className={styles.userTag} style={{ fontSize: '13px', letterSpacing: '0.02em' }}>@{myUsername}</span>
+
+            {/* REAL-TIME UNREAD MESSAGES NOTIFICATION BADGE BESIDE USERNAME (Requirement 2) */}
+            {totalUnreadCount > 0 && (
+              <span
+                className={styles.userUnreadBadge}
+                title={isHi ? `${totalUnreadCount} नए अपठित संदेश` : `${totalUnreadCount} unread message${totalUnreadCount > 1 ? 's' : ''}`}
+              >
+                <span className={styles.userUnreadDot}></span>
+                <span className={styles.userUnreadIcon}>🔔</span>
+                <span className={styles.userUnreadCount}>{totalUnreadCount}</span>
+              </span>
+            )}
+
             {totalMentionsInSidebar > 0 && (
               <span
                 style={{
@@ -947,7 +1097,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             </div>
 
             {/* OVERALL GROUP */}
-            {allGroups.filter(g => g.id === 'overall').map((g) => (
+            {visibleGroups.filter(g => g.id === 'overall').map((g) => (
               <button
                 key={g.id}
                 type="button"
@@ -971,7 +1121,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             ))}
 
             {/* USER'S RESPECTIVE DEPARTMENT GROUP */}
-            {myDeptGroup && myDeptGroup.id !== 'overall' && (
+            {myDeptGroup && myDeptGroup.id !== 'overall' && visibleGroups.some(g => g.id === myDeptGroup.id) && (
               <button
                 type="button"
                 className={`${styles.channelItem} ${activeChannel?.id === myDeptGroup.id ? styles.channelItemActive : ''}`}
@@ -993,8 +1143,8 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
               </button>
             )}
 
-            {/* ADMIN-CREATED CUSTOM GROUPS */}
-            {allGroups.filter(g => g.id !== 'overall' && (!myDeptGroup || g.id !== myDeptGroup.id)).map((g) => (
+            {/* ADMIN-CREATED CUSTOM GROUPS RESTRICTED BY DESIGNATION (Requirement 4) */}
+            {visibleGroups.filter(g => g.id !== 'overall' && (!myDeptGroup || g.id !== myDeptGroup.id)).map((g) => (
               <button
                 key={g.id}
                 type="button"
@@ -1004,7 +1154,11 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                 <span className={styles.channelIcon}>⭐</span>
                 <div className={styles.channelMeta}>
                   <p className={styles.channelName}>{g.name}</p>
-                  <p className={styles.channelDesc}>{g.description || (isHi ? 'विशेष समूह' : 'Special Cohort')}</p>
+                  <p className={styles.channelDesc}>
+                    {Array.isArray(g.designations) && g.designations.length > 0
+                      ? `🎖️ ${g.designations.join(', ')}`
+                      : g.description || (isHi ? 'विशेष समूह' : 'Special Cohort')}
+                  </p>
                 </div>
                 {Boolean(mentionAlerts[g.id]) && (
                   <span className={styles.mentionBadge} title={isHi ? 'आपको टैग किया गया है' : 'You were mentioned'}>
@@ -1033,6 +1187,53 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
               )}
             </div>
 
+            {/* INCOMING FRIEND REQUESTS (RECEIVER APPROVAL REQUIRED) (Requirement 3) */}
+            {pendingRequests.length > 0 && (
+              <div className={styles.friendRequestsContainer}>
+                <div className={styles.friendRequestsHeader}>
+                  <span>📬 {isHi ? 'मित्रता अनुरोध' : 'Friend Requests'}</span>
+                  <span className={styles.pendingBadge}>{pendingRequests.length}</span>
+                </div>
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className={styles.friendRequestCard}>
+                    <div className={styles.friendRequestMeta}>
+                      <p className={styles.friendRequestName}>
+                        {req.sender_name || req.friend_name || 'Peer Member'}
+                      </p>
+                      <p className={styles.friendRequestTag}>
+                        @{req.sender_username || req.friend_username}
+                      </p>
+                      {(req.sender_designation || req.friend_designation) && (
+                        <span className={styles.friendRequestDesig}>
+                          {req.sender_designation || req.friend_designation}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.friendRequestBtns}>
+                      <button
+                        type="button"
+                        className={styles.acceptFriendBtn}
+                        onClick={() => handleAcceptFriendRequest(req)}
+                        disabled={isRespondingRequest || friendsList.length >= 5}
+                        title={isHi ? 'मित्रता स्वीकारें' : 'Accept Request'}
+                      >
+                        ✓ {isHi ? 'स्वीकारें' : 'Accept'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.declineFriendBtn}
+                        onClick={() => handleDeclineFriendRequest(req)}
+                        disabled={isRespondingRequest}
+                        title={isHi ? 'अस्वीकार करें' : 'Decline'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* USER SEARCH DRAWER */}
             {showFriendSearch && (
               <div className={styles.friendSearchBox}>
@@ -1047,19 +1248,35 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                 {isSearching && <p style={{ fontSize: '11px', color: '#6B7280', margin: '6px 0 0' }}>⏳ {isHi ? 'खोज रहे हैं…' : 'Searching…'}</p>}
                 {searchResults.map((usr) => {
                   const alreadyFriend = friendsList.some(f => f.friend_email === usr.email?.toLowerCase());
+                  const isPendingSent = sentRequests.some(s => s.user_email === usr.email?.toLowerCase() || s.friend_email === usr.email?.toLowerCase());
+                  const incomingReq = pendingRequests.find(p => p.friend_email === usr.email?.toLowerCase() || p.sender_email === usr.email?.toLowerCase());
+
                   return (
                     <div key={usr.id} className={styles.searchResultItem}>
                       <div>
                         <p style={{ margin: 0, fontSize: '12px', fontWeight: '700' }}>{usr.full_name}</p>
                         <p style={{ margin: 0, fontSize: '11px', fontFamily: 'monospace', color: '#B45309' }}>@{usr.username}</p>
+                        {usr.designation && <span style={{ fontSize: '10px', color: '#6B7280' }}>{usr.designation}</span>}
                       </div>
                       <button
                         type="button"
                         className={styles.connectBtn}
-                        disabled={alreadyFriend || friendsList.length >= 5}
-                        onClick={() => handleAddFriend(usr)}
+                        disabled={alreadyFriend || isPendingSent || friendsList.length >= 5}
+                        onClick={() => {
+                          if (incomingReq) {
+                            handleAcceptFriendRequest(incomingReq);
+                          } else {
+                            handleSendFriendRequest(usr);
+                          }
+                        }}
                       >
-                        {alreadyFriend ? '✓ Added' : '+ Add'}
+                        {alreadyFriend
+                          ? '✓ Connected'
+                          : isPendingSent
+                          ? '⏳ Sent'
+                          : incomingReq
+                          ? '📬 Accept'
+                          : '+ Add'}
                       </button>
                     </div>
                   );
@@ -1070,7 +1287,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             {/* FRIENDS LIST */}
             {friendsList.length === 0 ? (
               <p style={{ fontSize: '11.5px', color: '#9CA3AF', padding: '0 8px', margin: '4px 0' }}>
-                {isHi ? 'कोई मित्र नहीं जुड़ा है। 5 मित्रों तक खोजकर जोड़ें।' : 'No friends connected yet. Search by @username to add up to 5 friends.'}
+                {isHi ? 'कोई मित्र नहीं जुड़ा है। 5 मित्रों तक खोजकर अनुरोध भेजें।' : 'No friends connected yet. Search by @username to add up to 5 friends.'}
               </p>
             ) : (
               friendsList.map((f) => {

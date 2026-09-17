@@ -215,7 +215,7 @@ export const sendChitChatMessage = async (msgPayload) => {
 };
 
 /**
- * Fetch user's friends (enforces 5 friends max per user)
+ * Fetch user's friends (enforces 5 friends max per user, strictly accepted connections)
  */
 export const fetchUserFriends = async (userEmail) => {
   if (!userEmail) return [];
@@ -226,6 +226,7 @@ export const fetchUserFriends = async (userEmail) => {
       .from('chitchat_friends')
       .select('*')
       .eq('user_email', clean)
+      .eq('status', 'accepted')
       .order('created_at', { ascending: false })
       .limit(5);
 
@@ -238,88 +239,234 @@ export const fetchUserFriends = async (userEmail) => {
 
   // Local fallback
   const local = localStorage.getItem(`chitchat_friends_${clean}`);
-  return local ? JSON.parse(local).slice(0, 5) : [];
+  if (local) {
+    const parsed = JSON.parse(local);
+    return parsed.filter(f => f.status === 'accepted' || !f.status).slice(0, 5);
+  }
+  return [];
 };
 
 /**
- * Add a friend with strict 5-friend limit
+ * Fetch incoming pending friend requests for user approval
  */
-export const addChitChatFriend = async (userEmail, friendData) => {
-  if (!userEmail || !friendData?.email) {
+export const fetchPendingFriendRequests = async (userEmail) => {
+  if (!userEmail) return [];
+  const clean = userEmail.toLowerCase().trim();
+
+  try {
+    const { data, error } = await supabase
+      .from('chitchat_friends')
+      .select('*')
+      .eq('user_email', clean)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (e) {
+    console.warn('Pending friend requests fetch notice:', e);
+  }
+
+  const local = localStorage.getItem(`chitchat_pending_req_${clean}`);
+  return local ? JSON.parse(local) : [];
+};
+
+/**
+ * Fetch outgoing sent friend requests by user that are pending approval
+ */
+export const fetchSentFriendRequests = async (userEmail) => {
+  if (!userEmail) return [];
+  const clean = userEmail.toLowerCase().trim();
+
+  try {
+    const { data, error } = await supabase
+      .from('chitchat_friends')
+      .select('*')
+      .eq('sender_email', clean)
+      .eq('status', 'pending');
+
+    if (!error && data) {
+      return data;
+    }
+  } catch (e) {
+    console.warn('Sent friend requests fetch notice:', e);
+  }
+  return [];
+};
+
+/**
+ * Send a Friend Request (Receiver must approve before 1-on-1 chat begins)
+ */
+export const sendChitChatFriendRequest = async (senderUser, targetFriend) => {
+  if (!senderUser?.email || !targetFriend?.email) {
     return { success: false, error: 'User details missing.' };
   }
-  const cleanUser = userEmail.toLowerCase().trim();
-  const cleanFriend = friendData.email.toLowerCase().trim();
+  const cleanSender = senderUser.email.toLowerCase().trim();
+  const cleanReceiver = targetFriend.email.toLowerCase().trim();
 
-  if (cleanUser === cleanFriend) {
+  if (cleanSender === cleanReceiver) {
     return { success: false, error: 'You cannot add yourself as a friend.' };
   }
 
+  const senderName = senderUser.fullName || senderUser.name || 'Peer Member';
+  const senderUname = (senderUser.username || '').replace(/^@+/, '').trim();
+  const senderDesig = senderUser.designation || 'Civic Member';
+
+  const receiverName = targetFriend.fullName || targetFriend.name || targetFriend.full_name || 'Member';
+  const receiverUname = (targetFriend.username || '').replace(/^@+/, '').trim();
+  const receiverDesig = targetFriend.designation || targetFriend.role_type || 'Member';
+
   // 1. Try secure RPC
   try {
-    const { data: rpcData, error: rpcErr } = await supabase.rpc('add_chitchat_friend', {
-      p_user_email: cleanUser,
-      p_friend_email: cleanFriend,
-      p_friend_name: friendData.fullName || friendData.name || 'Peer Member',
-      p_friend_username: (friendData.username || '').replace(/^@+/, ''),
-      p_friend_designation: friendData.designation || 'Member',
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('send_chitchat_friend_request', {
+      p_sender_email: cleanSender,
+      p_sender_name: senderName,
+      p_sender_username: senderUname,
+      p_sender_designation: senderDesig,
+      p_receiver_email: cleanReceiver,
+      p_receiver_name: receiverName,
+      p_receiver_username: receiverUname,
+      p_receiver_designation: receiverDesig,
     });
 
     if (!rpcErr && rpcData) {
       return rpcData;
     }
   } catch (rpcEx) {
-    console.warn('RPC add friend fallback:', rpcEx);
+    console.warn('RPC send friend request notice:', rpcEx);
   }
 
-  // 2. Direct query fallback
+  // 2. Direct table fallback
   try {
-    const { data: existing } = await supabase
+    // Check sender's accepted friend count
+    const { data: currentFriends } = await supabase
       .from('chitchat_friends')
       .select('id')
-      .eq('user_email', cleanUser);
+      .eq('user_email', cleanSender)
+      .eq('status', 'accepted');
 
-    if (existing && existing.length >= 5) {
-      return {
-        success: false,
-        error: 'Friend limit reached. You can chat separately with up to 5 friends only.'
-      };
+    if (currentFriends && currentFriends.length >= 5) {
+      return { success: false, error: 'Friend limit reached (max 5 friends).' };
     }
 
     const { error: insErr } = await supabase
       .from('chitchat_friends')
       .upsert({
-        user_email: cleanUser,
-        friend_email: cleanFriend,
-        friend_name: friendData.fullName || friendData.name || 'Peer Member',
-        friend_username: (friendData.username || '').replace(/^@+/, ''),
-        friend_designation: friendData.designation || 'Member',
+        user_email: cleanReceiver,
+        friend_email: cleanSender,
+        friend_name: senderName,
+        friend_username: senderUname,
+        friend_designation: senderDesig,
+        sender_email: cleanSender,
+        sender_name: senderName,
+        sender_username: senderUname,
+        sender_designation: senderDesig,
+        status: 'pending',
+        created_at: new Date().toISOString()
       }, { onConflict: 'user_email,friend_email' });
 
     if (!insErr) {
-      return { success: true, message: 'Friend added successfully!' };
+      return { success: true, message: 'Friend request sent successfully!' };
     }
-  } catch (insEx) {
-    console.warn('Direct insert friend fallback:', insEx);
+  } catch (dirErr) {
+    console.warn('Direct friend request fallback notice:', dirErr);
   }
 
   // 3. LocalStorage fallback
-  const key = `chitchat_friends_${cleanUser}`;
-  const list = JSON.parse(localStorage.getItem(key) || '[]');
-  if (list.length >= 5) {
-    return { success: false, error: 'Friend limit reached (Max 5 friends).' };
-  }
-  if (!list.some(f => f.friend_email === cleanFriend)) {
+  const receiverKey = `chitchat_pending_req_${cleanReceiver}`;
+  const list = JSON.parse(localStorage.getItem(receiverKey) || '[]');
+  if (!list.some(r => r.sender_email === cleanSender)) {
     list.push({
-      friend_email: cleanFriend,
-      friend_name: friendData.fullName || friendData.name,
-      friend_username: (friendData.username || '').replace(/^@+/, ''),
-      friend_designation: friendData.designation,
+      id: `req_${Date.now()}`,
+      user_email: cleanReceiver,
+      friend_email: cleanSender,
+      sender_email: cleanSender,
+      sender_name: senderName,
+      sender_username: senderUname,
+      sender_designation: senderDesig,
+      status: 'pending',
       created_at: new Date().toISOString()
     });
-    localStorage.setItem(key, JSON.stringify(list));
+    localStorage.setItem(receiverKey, JSON.stringify(list));
   }
-  return { success: true, message: 'Friend added successfully!' };
+
+  return { success: true, message: 'Friend request sent successfully!' };
+};
+
+/**
+ * Accept or Decline an incoming Friend Request
+ */
+export const respondChitChatFriendRequest = async (requestId, userEmail, action, currentUser) => {
+  if (!requestId || !userEmail) {
+    return { success: false, error: 'Missing request ID or user info.' };
+  }
+  const cleanUser = userEmail.toLowerCase().trim();
+  const myName = currentUser?.fullName || currentUser?.name || 'Member';
+  const myUsername = (currentUser?.username || '').replace(/^@+/, '').trim();
+  const myDesig = currentUser?.designation || 'Member';
+
+  // 1. Try secure RPC
+  try {
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('respond_chitchat_friend_request', {
+      p_request_id: requestId,
+      p_user_email: cleanUser,
+      p_action: action,
+      p_user_name: myName,
+      p_user_username: myUsername,
+      p_user_designation: myDesig,
+    });
+
+    if (!rpcErr && rpcData) {
+      return rpcData;
+    }
+  } catch (e) {
+    console.warn('RPC respond friend request fallback:', e);
+  }
+
+  // 2. Direct table fallback
+  try {
+    if (action === 'decline') {
+      await supabase.from('chitchat_friends').delete().eq('id', requestId);
+      return { success: true, message: 'Friend request declined.' };
+    }
+
+    if (action === 'accept') {
+      // Find request record
+      const { data: reqRecord } = await supabase
+        .from('chitchat_friends')
+        .select('*')
+        .eq('id', requestId)
+        .maybeSingle();
+
+      if (reqRecord) {
+        // Update request row to accepted
+        await supabase
+          .from('chitchat_friends')
+          .update({ status: 'accepted' })
+          .eq('id', requestId);
+
+        // Upsert reciprocal row for the requester so both are mutually connected
+        await supabase
+          .from('chitchat_friends')
+          .upsert({
+            user_email: reqRecord.friend_email.toLowerCase().trim(),
+            friend_email: cleanUser,
+            friend_name: myName,
+            friend_username: myUsername,
+            friend_designation: myDesig,
+            sender_email: reqRecord.friend_email,
+            status: 'accepted'
+          }, { onConflict: 'user_email,friend_email' });
+
+        return { success: true, message: 'Friend request accepted! You can now chat in real time.' };
+      }
+    }
+  } catch (err) {
+    console.warn('Direct respond friend request notice:', err);
+  }
+
+  return { success: true, message: action === 'accept' ? 'Friend request accepted!' : 'Request removed.' };
 };
 
 /**
@@ -381,6 +528,53 @@ export const fetchChitChatGroups = async () => {
 };
 
 /**
+ * Filter groups visible to a specific user based on their profile Designation and Department.
+ * Requirement 4: When Admin creates a custom group specifying designations (e.g. "Revenue Officer"),
+ * ONLY users who set their designation in profile as Revenue Officer can see this group!
+ */
+export const filterGroupsForUser = (allGroups, userDept, userDesignation) => {
+  if (!Array.isArray(allGroups)) return [];
+  const cleanDept = (userDept || '').toLowerCase().trim();
+  const cleanDesig = (userDesignation || '').toLowerCase().trim();
+
+  return allGroups.filter((group) => {
+    // 1. Statewide overall group is open to all
+    if (group.id === 'overall') return true;
+
+    // 2. Designation-restricted custom group
+    if (Array.isArray(group.designations) && group.designations.length > 0) {
+      if (!cleanDesig) return false;
+      const desigMatches = group.designations.some((d) => {
+        const cd = (d || '').toLowerCase().trim();
+        return cd && (cleanDesig.includes(cd) || cd.includes(cleanDesig));
+      });
+      return desigMatches;
+    }
+
+    // 3. Department or clubbed groups
+    if (Array.isArray(group.departments) && group.departments.length > 0) {
+      if (group.departments.includes('ALL')) return true;
+
+      // Check if departments list specifies designation keywords or departments
+      const matches = group.departments.some((d) => {
+        const cd = (d || '').toLowerCase().trim();
+        if (!cd) return false;
+        return (
+          (cleanDept && cleanDept.includes(cd)) ||
+          (cleanDesig && cleanDesig.includes(cd)) ||
+          cd.includes(cleanDept) ||
+          cd.includes(cleanDesig)
+        );
+      });
+      return matches;
+    }
+
+    // Default: visible if no restrictive rules configured
+    return true;
+  });
+};
+
+/**
  * Resolve user's respective department group from their profile department/designation
  */
 export const resolveUserDepartmentGroup = (allGroups, userDept, userDesignation) => {
@@ -425,7 +619,8 @@ export const searchRegisteredUsers = async (queryText, currentEmail) => {
 };
 
 /**
- * Validate and claim Admin 6-digit access code
+ * Validate and claim Admin 6-digit access code with Synchronized Global Expiration
+ * Requirement 1: Countdown starts from code creation, so all users sharing this code see the exact same remaining time in real-time.
  */
 export const claimAdminAccessCode = async (userEmail, codeStr) => {
   const cleanCode = (codeStr || '').trim().toUpperCase();
@@ -435,7 +630,7 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
     return { success: false, error: 'Access code must be exactly 6 characters/digits.' };
   }
 
-  // 1. Direct table claim with multi-user support
+  // 1. Direct table claim with multi-user support & global synchronized expiration
   try {
     const { data: codeRec, error: fetchErr } = await supabase
       .from('chitchat_access_codes')
@@ -446,7 +641,17 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
 
     if (!fetchErr && codeRec) {
       const durationMins = codeRec.duration_minutes || 60;
-      const userExpiresAt = new Date(Date.now() + durationMins * 60 * 1000).toISOString();
+      // Calculate or retrieve authoritative global expires_at from code creation
+      const globalExpiresAt = codeRec.expires_at ||
+        new Date(new Date(codeRec.created_at || Date.now()).getTime() + durationMins * 60 * 1000).toISOString();
+
+      // Enforce global expiration: reject if already expired
+      if (new Date(globalExpiresAt).getTime() <= Date.now()) {
+        return {
+          success: false,
+          error: 'This access code has already expired. Please ask the Admin for a new active code.'
+        };
+      }
 
       // Maintain list of all users/emails who have unlocked with this code
       let updatedClaimedBy = cleanEmail;
@@ -464,22 +669,25 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
         .update({
           claimed_by: updatedClaimedBy,
           claimed_at: new Date().toISOString(),
+          expires_at: globalExpiresAt,
           is_active: true
         })
         .eq('id', codeRec.id);
 
-      // Save individual timed session pass in browser localStorage
+      // Save synchronized global session pass in browser localStorage
       saveLocalSessionPass({
         code: cleanCode,
         durationMinutes: durationMins,
-        expiresAt: userExpiresAt
+        expiresAt: globalExpiresAt
       });
+
+      const remainingMinutes = Math.max(1, Math.round((new Date(globalExpiresAt).getTime() - Date.now()) / (60 * 1000)));
 
       return {
         success: true,
         duration_minutes: durationMins,
-        expires_at: userExpiresAt,
-        message: `Unlocked! Access granted for ${durationMins} minutes.`
+        expires_at: globalExpiresAt,
+        message: `Unlocked! Active session with ~${remainingMinutes}m remaining.`
       };
     }
   } catch (dirErr) {
@@ -508,6 +716,33 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
   }
 
   return { success: false, error: 'Invalid or inactive 6-digit access code. Please contact Admin.' };
+};
+
+/**
+ * Channel Last-Read Timestamps (for individual user unread badges)
+ */
+const READ_TIMESTAMPS_KEY = 'chitchat_read_ts_';
+
+export const getChannelReadTimestamp = (channelId, userEmail) => {
+  if (!userEmail || !channelId) return null;
+  try {
+    const raw = localStorage.getItem(`${READ_TIMESTAMPS_KEY}${userEmail.toLowerCase().trim()}`);
+    const map = raw ? JSON.parse(raw) : {};
+    return map[channelId] || null;
+  } catch {
+    return null;
+  }
+};
+
+export const markChannelAsRead = (channelId, userEmail) => {
+  if (!userEmail || !channelId) return;
+  try {
+    const key = `${READ_TIMESTAMPS_KEY}${userEmail.toLowerCase().trim()}`;
+    const raw = localStorage.getItem(key);
+    const map = raw ? JSON.parse(raw) : {};
+    map[channelId] = new Date().toISOString();
+    localStorage.setItem(key, JSON.stringify(map));
+  } catch {}
 };
 
 /**

@@ -20,6 +20,7 @@ export default function AdminChitChatHub() {
   const [newGroupId, setNewGroupId] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupDepts, setNewGroupDepts] = useState('');
+  const [newGroupDesignations, setNewGroupDesignations] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   // ─── 3. OVERSIGHT STATE ───
@@ -104,6 +105,7 @@ export default function AdminChitChatHub() {
 
     setIsGeneratingCode(true);
     const newCode = generateRandom6Digit();
+    const globalExpiresAt = new Date(Date.now() + finalDuration * 60 * 1000).toISOString();
 
     try {
       const { data, error } = await supabase
@@ -112,13 +114,14 @@ export default function AdminChitChatHub() {
           code: newCode,
           duration_minutes: finalDuration,
           created_by: 'Admin',
+          expires_at: globalExpiresAt,
           is_active: true
         }])
         .select()
         .single();
 
       if (!error && data) {
-        toast?.success(`🎉 Generated Code: ${newCode} (${finalDuration} mins)`);
+        toast?.success(`🎉 Generated Code: ${newCode} (${finalDuration} mins) · Starts now!`);
         loadAccessCodes();
         setCustomDuration('');
       } else {
@@ -163,7 +166,7 @@ export default function AdminChitChatHub() {
     toast?.success(`Copied code: ${code}`);
   };
 
-  // Create Custom / Clubbed Group
+  // Create Custom / Clubbed Group (with Designation Restriction)
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroupName.trim()) {
@@ -172,6 +175,10 @@ export default function AdminChitChatHub() {
     }
     const groupId = (newGroupId.trim() || `grp_${Date.now()}`).toLowerCase().replace(/[^a-z0-9_]/g, '_');
     const deptsArray = newGroupDepts
+      .split(',')
+      .map(d => d.trim())
+      .filter(Boolean);
+    const desigsArray = newGroupDesignations
       .split(',')
       .map(d => d.trim())
       .filter(Boolean);
@@ -185,6 +192,7 @@ export default function AdminChitChatHub() {
           name: newGroupName.trim(),
           description: newGroupDesc.trim() || null,
           departments: deptsArray.length > 0 ? deptsArray : ['ALL'],
+          designations: desigsArray,
           created_by: 'Admin'
         }]);
 
@@ -194,6 +202,7 @@ export default function AdminChitChatHub() {
         setNewGroupId('');
         setNewGroupDesc('');
         setNewGroupDepts('');
+        setNewGroupDesignations('');
         loadGroups();
       } else {
         toast?.error(error.message || 'Failed to create group.');
@@ -521,6 +530,23 @@ export default function AdminChitChatHub() {
                 />
               </div>
 
+              <div>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>
+                  Target Designations (Optional, comma-separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Revenue Officer, BPRO, Circle Officer"
+                  value={newGroupDesignations}
+                  onChange={(e) => setNewGroupDesignations(e.target.value)}
+                  className={styles.textInput}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+                <span style={{ fontSize: '10.5px', color: '#B45309', display: 'block', marginTop: '2px' }}>
+                  * If specified, ONLY registered users with these designations will see and enter this group.
+                </span>
+              </div>
+
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>Description / Purpose</label>
                 <input
@@ -551,7 +577,7 @@ export default function AdminChitChatHub() {
               <thead>
                 <tr>
                   <th>Group Name</th>
-                  <th>Target Departments</th>
+                  <th>Target Depts & Designations</th>
                   <th>Description</th>
                   <th>Created By</th>
                   <th>Actions</th>
@@ -563,7 +589,10 @@ export default function AdminChitChatHub() {
                     <td><strong>{g.name}</strong></td>
                     <td>
                       {Array.isArray(g.departments) && g.departments.map((d, i) => (
-                        <span key={i} style={{ background: '#F3ECE0', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px' }}>{d}</span>
+                        <span key={`dept_${i}`} style={{ background: '#F3ECE0', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', display: 'inline-block', marginBottom: '2px' }}>🏢 {d}</span>
+                      ))}
+                      {Array.isArray(g.designations) && g.designations.map((des, i) => (
+                        <span key={`des_${i}`} style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A', padding: '1px 6px', borderRadius: '3px', fontSize: '11px', marginRight: '4px', fontWeight: '700', display: 'inline-block', marginBottom: '2px' }}>🎖️ {des}</span>
                       ))}
                     </td>
                     <td style={{ fontSize: '12px', color: '#5E554D' }}>{g.description || '—'}</td>
