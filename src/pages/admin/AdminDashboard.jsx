@@ -191,6 +191,14 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Application Filter States (Designation, Department, Organization, Role, Gender, Location)
+  const [filterDesignation, setFilterDesignation] = useState('ALL');
+  const [filterDepartment, setFilterDepartment] = useState('ALL');
+  const [filterOrganization, setFilterOrganization] = useState('ALL');
+  const [filterRole, setFilterRole] = useState('ALL');
+  const [filterGender, setFilterGender] = useState('ALL');
+  const [filterDistrict, setFilterDistrict] = useState('ALL');
+
   // Courses & Programs CRUD State
   const [courses, setCourses] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -1119,33 +1127,33 @@ const AdminDashboard = () => {
 
   const exportCSV = async () => {
     try {
-      const { data: itemsUD } = await supabase.from('user_details').select('*').order('created_at', { ascending: false });
-
-      const map = new Map();
-      [...(itemsUD || []), ...getLocalSubmissions()].forEach((s) => {
-        const key = (s.email || s.id || '').toLowerCase().trim();
-        if (key && !map.has(key)) map.set(key, s);
-      });
-
-      let list = Array.from(map.values());
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        list = list.filter(s =>
-          (s.full_name && s.full_name.toLowerCase().includes(term)) ||
-          (s.username && s.username.toLowerCase().includes(term)) ||
-          (s.email && s.email.toLowerCase().includes(term)) ||
-          (s.district && s.district.toLowerCase().includes(term))
-        );
-      }
-      const headers = ['Name', 'Username', 'Email', 'Phone', 'Role', 'District', 'Interests', 'Created At'];
+      const list = filteredSubmissions;
+      const headers = [
+        'Name',
+        'Username',
+        'Email',
+        'Phone',
+        'Role',
+        'Designation',
+        'Department',
+        'Organization',
+        'Gender',
+        'District',
+        'Interests',
+        'Created At'
+      ];
       const rows = list.map((s) => [
-        `"${s.full_name}"`,
+        `"${(s.full_name || '').replace(/"/g, '""')}"`,
         s.username ? `@${s.username.replace(/^@/, '')}` : '',
-        s.email,
-        s.mobile,
-        s.role_type,
-        s.district,
-        `"${(s.interests || []).join(', ')}"`,
+        s.email || '',
+        s.mobile || '',
+        formatRoleLabel(s.role_type),
+        `"${(s.designation || '').replace(/"/g, '""')}"`,
+        `"${(s.department || '').replace(/"/g, '""')}"`,
+        `"${(s.organization || '').replace(/"/g, '""')}"`,
+        s.gender || '',
+        `"${(s.district || '').replace(/"/g, '""')}"`,
+        `"${((s.interests || []).join(', ')).replace(/"/g, '""')}"`,
         new Date(s.created_at).toLocaleString(),
       ]);
 
@@ -1162,6 +1170,7 @@ const AdminDashboard = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toast.success(`Exported ${list.length} records to CSV.`);
     } catch (err) {
       toast.error('Export failed');
     }
@@ -1836,18 +1845,159 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredSubmissions = useMemo(() => {
-    if (!searchTerm.trim()) return submissions;
-    const q = searchTerm.toLowerCase();
-    return submissions.filter((s) => {
-      const name = (s.full_name || '').toLowerCase();
-      const username = (s.username || '').toLowerCase();
-      const email = (s.email || '').toLowerCase();
-      const role = (s.role_type || '').toLowerCase();
-      const district = (s.district || '').toLowerCase();
-      return name.includes(q) || username.includes(q) || email.includes(q) || role.includes(q) || district.includes(q);
+  const formatRoleLabel = (roleStr) => {
+    if (!roleStr) return 'Not Specified';
+    const map = {
+      government_officer: 'Government Officer',
+      startup_founder: 'Startup Founder',
+      student: 'Student',
+      teacher_professor: 'Teacher / Professor',
+      working_professional: 'Working Professional'
+    };
+    if (map[roleStr.toLowerCase()]) return map[roleStr.toLowerCase()];
+    return roleStr
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
+
+  const uniqueFilterOptions = useMemo(() => {
+    const roles = new Set();
+    const departments = new Set();
+    const designations = new Set();
+    const organizations = new Set();
+    const genders = new Set();
+    const districts = new Set();
+
+    submissions.forEach((s) => {
+      if (s.role_type && typeof s.role_type === 'string' && s.role_type.trim()) {
+        roles.add(s.role_type.trim());
+      }
+      if (s.department && typeof s.department === 'string' && s.department.trim()) {
+        departments.add(s.department.trim());
+      }
+      if (s.designation && typeof s.designation === 'string' && s.designation.trim()) {
+        designations.add(s.designation.trim());
+      }
+      if (s.organization && typeof s.organization === 'string' && s.organization.trim()) {
+        organizations.add(s.organization.trim());
+      }
+      if (s.gender && typeof s.gender === 'string' && s.gender.trim()) {
+        genders.add(s.gender.trim());
+      }
+      if (s.district && typeof s.district === 'string' && s.district.trim()) {
+        districts.add(s.district.trim());
+      }
     });
-  }, [submissions, searchTerm]);
+
+    const sortFn = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+    return {
+      roles: Array.from(roles).sort(sortFn),
+      departments: Array.from(departments).sort(sortFn),
+      designations: Array.from(designations).sort(sortFn),
+      organizations: Array.from(organizations).sort(sortFn),
+      genders: Array.from(genders).sort(sortFn),
+      districts: Array.from(districts).sort(sortFn),
+    };
+  }, [submissions]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filterDesignation !== 'ALL') count++;
+    if (filterDepartment !== 'ALL') count++;
+    if (filterOrganization !== 'ALL') count++;
+    if (filterRole !== 'ALL') count++;
+    if (filterGender !== 'ALL') count++;
+    if (filterDistrict !== 'ALL') count++;
+    return count;
+  }, [filterDesignation, filterDepartment, filterOrganization, filterRole, filterGender, filterDistrict]);
+
+  const handleClearAllFilters = () => {
+    setSearchTerm('');
+    setFilterDesignation('ALL');
+    setFilterDepartment('ALL');
+    setFilterOrganization('ALL');
+    setFilterRole('ALL');
+    setFilterGender('ALL');
+    setFilterDistrict('ALL');
+    setCurrentPage(1);
+  };
+
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter((s) => {
+      // 1. Search term match
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const name = (s.full_name || '').toLowerCase();
+        const username = (s.username || '').toLowerCase();
+        const email = (s.email || '').toLowerCase();
+        const role = (s.role_type || '').toLowerCase();
+        const district = (s.district || '').toLowerCase();
+        const dept = (s.department || '').toLowerCase();
+        const desig = (s.designation || '').toLowerCase();
+        const org = (s.organization || '').toLowerCase();
+        const matchesSearch =
+          name.includes(q) ||
+          username.includes(q) ||
+          email.includes(q) ||
+          role.includes(q) ||
+          district.includes(q) ||
+          dept.includes(q) ||
+          desig.includes(q) ||
+          org.includes(q);
+
+        if (!matchesSearch) return false;
+      }
+
+      // 2. Designation filter
+      if (filterDesignation !== 'ALL') {
+        const sDesig = (s.designation || '').trim().toLowerCase();
+        if (sDesig !== filterDesignation.trim().toLowerCase()) return false;
+      }
+
+      // 3. Department filter
+      if (filterDepartment !== 'ALL') {
+        const sDept = (s.department || '').trim().toLowerCase();
+        if (sDept !== filterDepartment.trim().toLowerCase()) return false;
+      }
+
+      // 4. Organization filter
+      if (filterOrganization !== 'ALL') {
+        const sOrg = (s.organization || '').trim().toLowerCase();
+        if (sOrg !== filterOrganization.trim().toLowerCase()) return false;
+      }
+
+      // 5. Role filter
+      if (filterRole !== 'ALL') {
+        const sRole = (s.role_type || '').trim().toLowerCase();
+        if (sRole !== filterRole.trim().toLowerCase()) return false;
+      }
+
+      // 6. Gender filter
+      if (filterGender !== 'ALL') {
+        const sGender = (s.gender || '').trim().toLowerCase();
+        if (sGender !== filterGender.trim().toLowerCase()) return false;
+      }
+
+      // 7. District / Location filter
+      if (filterDistrict !== 'ALL') {
+        const sDist = (s.district || '').trim().toLowerCase();
+        if (sDist !== filterDistrict.trim().toLowerCase()) return false;
+      }
+
+      return true;
+    });
+  }, [
+    submissions,
+    searchTerm,
+    filterDesignation,
+    filterDepartment,
+    filterOrganization,
+    filterRole,
+    filterGender,
+    filterDistrict
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE));
   const paginatedSubmissions = useMemo(() => {
@@ -2327,31 +2477,176 @@ const AdminDashboard = () => {
 
               <div className={styles.tableContainer}>
                 <div className={styles.tableHeader}>
-                  <div className={styles.searchWrapper}>
-                    <svg
-                      className={styles.searchIcon}
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      type="text"
-                      className={styles.searchInput}
-                      placeholder="Search applications (name, email, role, district)..."
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                    />
+                  <div className={styles.tableHeaderControls}>
+                    {/* Search Input */}
+                    <div className={styles.searchWrapper}>
+                      <svg
+                        className={styles.searchIcon}
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="Search name, email, role, district..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                      />
+                      {searchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchTerm('');
+                            setCurrentPage(1);
+                          }}
+                          className={styles.searchClearBtn}
+                          title="Clear search"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filter Section Beside Search Bar */}
+                    <div className={styles.filtersSection}>
+                      {/* 1. Designation Wise */}
+                      <div className={styles.filterItem} title="Filter Designation-wise">
+                        <span className={styles.filterIcon}>💼</span>
+                        <select
+                          value={filterDesignation}
+                          onChange={(e) => {
+                            setFilterDesignation(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterDesignation !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Designations</option>
+                          {uniqueFilterOptions.designations.map((d) => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 2. Department Wise */}
+                      <div className={styles.filterItem} title="Filter Department-wise">
+                        <span className={styles.filterIcon}>🏢</span>
+                        <select
+                          value={filterDepartment}
+                          onChange={(e) => {
+                            setFilterDepartment(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterDepartment !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Departments</option>
+                          {uniqueFilterOptions.departments.map((dept) => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 3. Organization Wise */}
+                      <div className={styles.filterItem} title="Filter Organization-wise">
+                        <span className={styles.filterIcon}>🏛️</span>
+                        <select
+                          value={filterOrganization}
+                          onChange={(e) => {
+                            setFilterOrganization(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterOrganization !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Organizations</option>
+                          {uniqueFilterOptions.organizations.map((org) => (
+                            <option key={org} value={org}>{org}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 4. Role Type */}
+                      <div className={styles.filterItem} title="Filter Role Type-wise">
+                        <span className={styles.filterIcon}>🏷️</span>
+                        <select
+                          value={filterRole}
+                          onChange={(e) => {
+                            setFilterRole(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterRole !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Roles</option>
+                          {uniqueFilterOptions.roles.map((r) => (
+                            <option key={r} value={r}>{formatRoleLabel(r)}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 5. Gender Wise */}
+                      <div className={styles.filterItem} title="Filter Gender-wise">
+                        <span className={styles.filterIcon}>👤</span>
+                        <select
+                          value={filterGender}
+                          onChange={(e) => {
+                            setFilterGender(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterGender !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Genders</option>
+                          {uniqueFilterOptions.genders.map((g) => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 6. Location / District Wise */}
+                      <div className={styles.filterItem} title="Filter Location / District-wise">
+                        <span className={styles.filterIcon}>📍</span>
+                        <select
+                          value={filterDistrict}
+                          onChange={(e) => {
+                            setFilterDistrict(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className={`${styles.filterSelect} ${filterDistrict !== 'ALL' ? styles.filterSelectActive : ''}`}
+                        >
+                          <option value="ALL">All Locations</option>
+                          {uniqueFilterOptions.districts.map((dist) => (
+                            <option key={dist} value={dist}>{dist}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Reset / Clear All Filters */}
+                      {activeFiltersCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearAllFilters}
+                          className={styles.resetFiltersBtn}
+                          title="Reset all active filters"
+                        >
+                          ✕ Reset ({activeFiltersCount})
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+                  <div className={styles.tableHeaderActions}>
+                    {activeFiltersCount > 0 && (
+                      <span className={styles.filterResultsPill}>
+                        Showing <strong>{filteredSubmissions.length}</strong> / {submissions.length}
+                      </span>
+                    )}
                     <button
                       onClick={exportCSV}
                       style={{
@@ -2401,7 +2696,29 @@ const AdminDashboard = () => {
                     </div>
                   ) : filteredSubmissions.length === 0 ? (
                     <div className={styles.emptyState}>
-                      {searchTerm ? `No applications matching "${searchTerm}"` : 'No submissions found.'}
+                      <p style={{ margin: '0 0 10px' }}>
+                        {activeFiltersCount > 0
+                          ? `No applications matching the selected filters.`
+                          : (searchTerm ? `No applications matching "${searchTerm}"` : 'No submissions found.')}
+                      </p>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearAllFilters}
+                          style={{
+                            background: '#C1552C',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            fontWeight: '700',
+                            fontSize: '12.5px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Reset All Filters
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -2420,7 +2737,14 @@ const AdminDashboard = () => {
                         <tbody>
                           {paginatedSubmissions.map((s) => (
                             <tr key={s.id || s.created_at}>
-                              <td style={{ fontWeight: '700', color: '#181512' }}>{s.full_name}</td>
+                              <td style={{ fontWeight: '700', color: '#181512' }}>
+                                <div>{s.full_name}</div>
+                                {(s.designation || s.department || s.organization) && (
+                                  <div style={{ fontSize: '11px', color: '#786F66', fontWeight: 500, marginTop: '2px' }}>
+                                    {[s.designation, s.department, s.organization].filter(Boolean).join(' · ')}
+                                  </div>
+                                )}
+                              </td>
                               <td>
                                 {s.username ? (
                                   <span style={{
@@ -2444,17 +2768,24 @@ const AdminDashboard = () => {
                               </td>
                               <td style={{ color: '#443D37' }}>{s.email}</td>
                               <td>
-                                <span
-                                  className={`${styles.roleBadge} ${
-                                    s.role_type === 'Government Officer'
-                                      ? styles.roleGov
-                                      : s.role_type === 'Student'
-                                      ? styles.roleStudent
-                                      : styles.roleDefault
-                                  }`}
-                                >
-                                  {s.role_type}
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
+                                  <span
+                                    className={`${styles.roleBadge} ${
+                                      s.role_type === 'Government Officer' || s.role_type === 'government_officer'
+                                        ? styles.roleGov
+                                        : s.role_type === 'Student' || s.role_type === 'student'
+                                        ? styles.roleStudent
+                                        : styles.roleDefault
+                                    }`}
+                                  >
+                                    {formatRoleLabel(s.role_type)}
+                                  </span>
+                                  {s.gender && (
+                                    <span style={{ fontSize: '11px', color: '#5E554D', fontWeight: 600 }}>
+                                      {s.gender === 'Male' ? '♂ Male' : s.gender === 'Female' ? '♀ Female' : s.gender}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td style={{ color: '#443D37' }}>{s.district}</td>
                               <td style={{ color: '#786F66' }}>

@@ -906,29 +906,46 @@
   background: #EFEAE5;
 }
 
+.tableHeaderControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tableHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .searchWrapper {
   position: relative;
-  flex: 1;
-  max-width: 360px;
-  min-width: 220px;
+  flex: 0 1 280px;
+  min-width: 200px;
 }
 
 .searchInput {
   width: 100%;
   padding: 8px 14px;
   padding-left: 36px;
-  background: #EFEAE5;
-  border: 1px solid rgba(17, 24, 39, 0.08);
+  padding-right: 28px;
+  background: #FFFFFF;
+  border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 6px;
   font-size: 13px;
   color: #111827;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .searchInput:focus {
-  border-color: #000000;
-  box-shadow: 0 0 8px rgba(24, 21, 18, 0.15);
+  border-color: #C1552C;
+  box-shadow: 0 0 0 3px rgba(193, 85, 44, 0.12);
 }
 
 .searchInput::placeholder {
@@ -937,10 +954,118 @@
 
 .searchIcon {
   position: absolute;
-  left: 12px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
-  color: #000000;
+  color: #786F66;
+  pointer-events: none;
+}
+
+.searchClearBtn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.searchClearBtn:hover {
+  color: #181512;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ─── FILTERS SECTION BESIDE SEARCH BAR ─── */
+.filtersSection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filterItem {
+  display: inline-flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 6px;
+  padding: 0 4px 0 8px;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+}
+
+.filterItem:hover {
+  border-color: rgba(193, 85, 44, 0.4);
+  box-shadow: 0 2px 6px rgba(24, 21, 18, 0.04);
+}
+
+.filterIcon {
+  font-size: 13px;
+  margin-right: 4px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.filterSelect {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: #181512;
+  padding: 7px 4px 7px 0;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  font-weight: 600;
+  max-width: 140px;
+}
+
+.filterSelect:focus {
+  outline: none;
+}
+
+.filterSelectActive {
+  font-weight: 700;
+  color: #C1552C;
+}
+
+.resetFiltersBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.resetFiltersBtn:hover {
+  background: #FEE2E2;
+  border-color: #EF4444;
+}
+
+.filterResultsPill {
+  font-size: 12px;
+  color: #5E554D;
+  background: rgba(24, 21, 18, 0.06);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* DataTable */
