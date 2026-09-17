@@ -2073,6 +2073,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
           {/* 6. GUP-SHUP / CHIT-CHAT (ACTIVE) */}
           <button
             type="button"
+            data-active={activeTab === 'gupshup'}
             onClick={() => {
               setActiveTab('gupshup');
               setGupshupNotificationCount(0);
@@ -3183,7 +3184,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               }}
               isHi={isHi}
               onGoToProfile={() => {
-                setActiveTab('profile');
+                setActiveTab('get_involved');
                 setTimeout(() => {
                   const el = document.getElementById('createUsernameSection') || document.querySelector('.formGrid');
                   if (el) {

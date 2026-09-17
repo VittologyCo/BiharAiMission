@@ -648,7 +648,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // ══════════════════════════════════════════════════════════════════════════
   if (isCheckingUsername) {
     return (
-      <div className={styles.container} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '380px' }}>
+      <div className={styles.gatewayContainer} style={{ minHeight: '280px' }}>
         <div style={{ textAlign: 'center', color: '#5E554D' }}>
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔄</div>
           <div style={{ fontSize: '13.5px', fontWeight: '700' }}>
@@ -664,7 +664,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // ══════════════════════════════════════════════════════════════════════════
   if (!actualUsername) {
     return (
-      <div className={styles.container}>
+      <div className={styles.gatewayContainer}>
         <div className={styles.lockGateway} style={{ maxWidth: '580px', borderTop: '4px solid #C1552C' }}>
           <div style={{
             width: '60px',
@@ -820,7 +820,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // ══════════════════════════════════════════════════════════════════════════
   if (!isUnlocked) {
     return (
-      <div className={styles.container}>
+      <div className={styles.gatewayContainer}>
         <div className={styles.lockGateway}>
           <div className={styles.lockIconBox}>🔒</div>
           <h2 className={styles.lockTitle}>
@@ -834,14 +834,14 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
 
           <div className={styles.scheduleBox}>
             <div className={styles.scheduleRow}>
-              <span style={{ fontWeight: '700', color: '#181512' }}>🕒 {isHi ? 'भारतीय मानक समय (IST):' : 'Current IST Clock:'}</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: '800', color: '#B45309' }}>{istClock}</span>
+              <span className={styles.scheduleLabel}>🕒 {isHi ? 'भारतीय मानक समय (IST):' : 'Current IST Clock:'}</span>
+              <span className={styles.scheduleValueIst}>{istClock}</span>
             </div>
             <div className={styles.scheduleRow}>
-              <span style={{ fontWeight: '700', color: '#181512' }}>🌙 {isHi ? 'रात्रि चैट अवधि:' : 'Nightly Chat Hours:'}</span>
-              <span style={{ fontWeight: '800', color: '#166534' }}>8:00 PM – 8:00 AM IST</span>
+              <span className={styles.scheduleLabel}>🌙 {isHi ? 'रात्रि चैट अवधि:' : 'Nightly Chat Hours:'}</span>
+              <span className={styles.scheduleValueHours}>8:00 PM – 8:00 AM IST</span>
             </div>
-            <span style={{ fontSize: '11px', color: '#786F66', display: 'block', marginTop: '6px' }}>
+            <span className={styles.scheduleNote}>
               💡 {isHi ? 'आपकी पिछली सभी बातचीत और मीडिया सुरक्षित हैं और अनलॉक होते ही वहीं से जारी रहेंगी।' : 'Note: All your previous chat history and media are safely preserved and will immediately resume.'}
             </span>
           </div>

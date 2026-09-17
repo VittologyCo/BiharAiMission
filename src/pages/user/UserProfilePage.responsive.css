@@ -70,8 +70,15 @@
   background: rgba(0, 0, 0, 0.05) !important;
 }
 
+.profileTabs button[data-active="true"] {
+  background: var(--color-terracotta-500, #C1552C) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-terracotta-500, #C1552C) !important;
+}
+
 .profileTabs button[data-active="true"]:hover {
-  /* active state */
+  background: var(--color-terracotta-600, #A3411B) !important;
+  color: #FFFFFF !important;
 }
 
 /* Refresh Button Spin Keyframes & Styling */

@@ -524,27 +524,38 @@
   cursor: not-allowed;
 }
 
-/* ─── LOCKED SCREEN GATEWAY ─── */
+/* ─── LOCKED SCREEN GATEWAY & ONBOARDING ─── */
+.gatewayContainer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 24px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
 .lockGateway {
-  margin: auto;
+  width: 100%;
   max-width: 520px;
-  width: 90%;
+  margin: 0 auto;
   padding: 32px 28px;
   background: #FFFFFF;
   border: 1px solid var(--color-line, #E2D7C3);
-  border-top: 4px solid #B45309;
+  border-top: 4px solid var(--color-terracotta-500, #C1552C);
   border-radius: var(--radius-sm, 4px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(24, 21, 18, 0.06);
   text-align: center;
+  box-sizing: border-box;
 }
 
 .lockIconBox {
-  width: 56px;
-  height: 56px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   background: #FEF3C7;
   color: #B45309;
-  font-size: 26px;
+  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -558,6 +569,7 @@
   color: var(--color-ink, #181512);
   margin: 0 0 8px;
   font-family: var(--font-heading, "Fraunces", Georgia, serif);
+  letter-spacing: -0.01em;
 }
 
 .lockDesc {
@@ -570,9 +582,9 @@
 .scheduleBox {
   background: var(--color-sand-50, #FBF8F3);
   border: 1px solid var(--color-line, #E2D7C3);
-  border-radius: 4px;
-  padding: 14px;
-  margin-bottom: 24px;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
   text-align: left;
 }
 
@@ -580,8 +592,57 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(226, 215, 195, 0.45);
   font-size: 13px;
+}
+
+.scheduleRow:last-of-type {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.scheduleLabel {
+  font-weight: 700;
+  color: var(--color-ink, #181512);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.scheduleValueIst {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border: 1px solid #FDE68A;
+}
+
+.scheduleValueHours {
+  font-weight: 800;
+  color: #166534;
+  background: #DCFCE7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  border: 1px solid #BBF7D0;
+  white-space: nowrap;
+}
+
+.scheduleNote {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-ink-muted, #786F66);
+  display: block;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-line, #E2D7C3);
 }
 
 .codeUnlockBox {
@@ -594,37 +655,54 @@
   font-size: 12.5px;
   font-weight: 700;
   color: var(--color-ink, #181512);
-  display: block;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  line-height: 1.4;
 }
 
 .codeInputRow {
   display: flex;
   gap: 10px;
+  align-items: center;
 }
 
 .codeInput {
   flex: 1;
-  height: 42px;
+  min-width: 0;
+  height: 44px;
   padding: 0 14px;
   border: 1.5px solid var(--color-line, #E2D7C3);
   border-radius: 4px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 4px;
   text-transform: uppercase;
   text-align: center;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #FFFFFF;
+  color: var(--color-ink, #181512);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.codeInput::placeholder {
+  letter-spacing: 2px;
+  color: #A8A196;
+  font-size: 13px;
 }
 
 .codeInput:focus {
-  border-color: #B45309;
+  outline: none;
+  border-color: var(--color-terracotta-500, #C1552C);
+  box-shadow: 0 0 0 3px rgba(193, 85, 44, 0.12);
 }
 
 .unlockBtn {
-  height: 42px;
+  height: 44px;
   padding: 0 20px;
-  background: #B45309;
+  background: var(--color-terracotta-500, #C1552C);
   color: #FFFFFF;
   border: none;
   border-radius: 4px;
@@ -632,11 +710,24 @@
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.unlockBtn:not(:disabled):hover {
+  background: var(--color-terracotta-600, #A3411B);
+  box-shadow: 0 2px 8px rgba(193, 85, 44, 0.25);
 }
 
 .unlockBtn:disabled {
-  background: #9CA3AF;
+  background: var(--color-sand-200, #EAE2D5);
+  color: var(--color-ink-muted, #8C827A);
+  border: 1px solid var(--color-line, #D8CEBC);
   cursor: not-allowed;
+  opacity: 0.95;
 }
 
 /* Lightbox Modal */
@@ -1033,10 +1124,17 @@
   }
 
   /* Gateway / lock screen on mobile */
+  .gatewayContainer {
+    width: 100%;
+    padding: 0;
+  }
+
   .lockGateway {
-    width: 94%;
-    padding: 20px 16px;
-    margin: auto 8px;
+    width: 100%;
+    max-width: 100%;
+    padding: 24px 18px;
+    margin: 0;
+    box-shadow: 0 4px 16px rgba(24, 21, 18, 0.05);
   }
 
   .lockTitle {
@@ -1045,16 +1143,31 @@
 
   .lockDesc {
     font-size: 12.5px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
 
   .scheduleBox {
-    padding: 10px;
-    margin-bottom: 16px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
   }
 
   .scheduleRow {
     font-size: 12px;
+    gap: 8px;
+  }
+
+  .scheduleLabel {
+    font-size: 12px;
+  }
+
+  .scheduleValueIst {
+    font-size: 11.5px;
+    padding: 2px 6px;
+  }
+
+  .scheduleValueHours {
+    font-size: 11px;
+    padding: 2px 6px;
   }
 }
 
@@ -1108,6 +1221,40 @@
   .textInput {
     padding: 0 8px;
     font-size: 12.5px;
+  }
+
+  /* Gateway card compact on small mobile */
+  .lockGateway {
+    padding: 20px 14px;
+    border-radius: 4px;
+  }
+
+  .lockTitle {
+    font-size: 17px;
+  }
+
+  .scheduleBox {
+    padding: 10px 12px;
+  }
+
+  .scheduleRow {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .codeInputRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .codeInput {
+    width: 100%;
+    height: 42px;
+  }
+
+  .unlockBtn {
+    width: 100%;
+    height: 42px;
   }
 }
 
