@@ -169,7 +169,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
-  const validTabs = ['analytics', 'inquiries', 'live_classes', 'programs', 'exams', 'daily_tasks', 'blogs', 'chitchat'];
+  const validTabs = ['analytics', 'inquiries', 'live_classes', 'programs', 'exams', 'daily_tasks', 'blogs', 'chitchat', 'notifications'];
   const activeTab = validTabs.includes(rawTab) ? rawTab : 'analytics';
 
   const setActiveTab = (tabId) => {
@@ -285,6 +285,138 @@ const AdminDashboard = () => {
     savePhonePeSettings(phonePeConfig);
     toast.success('PhonePe Merchant Settings saved successfully!');
     setIsPhonePeSettingsOpen(false);
+  };
+
+  // ─── SITE NOTIFICATIONS ADMIN STATE ───
+  const [siteNotifications, setSiteNotifications] = useState([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [notifForm, setNotifForm] = useState({
+    title: '',
+    description: '',
+    banner_image: '',
+    notification_type: 'info',
+    priority: 0,
+    expires_at: '',
+  });
+  const [editingNotifId, setEditingNotifId] = useState(null);
+  const [isSavingNotif, setIsSavingNotif] = useState(false);
+
+  const NOTIF_TYPES = [
+    { value: 'info',         label: 'ℹ️ Information',    color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
+    { value: 'warning',      label: '⚠️ Warning',        color: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
+    { value: 'alert',        label: '🚨 Alert / Urgent', color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' },
+    { value: 'success',      label: '✅ Success',        color: '#166534', bg: '#F0FDF4', border: '#BBF7D0' },
+    { value: 'announcement', label: '📢 Announcement',   color: '#4338CA', bg: '#EEF2FF', border: '#C7D2FE' },
+    { value: 'maintenance',  label: '🔧 Maintenance',    color: '#374151', bg: '#F3F4F6', border: '#D1D5DB' },
+  ];
+
+  const loadSiteNotifications = async () => {
+    setIsLoadingNotifications(true);
+    try {
+      const { data, error } = await supabase
+        .from('site_notifications')
+        .select('*')
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setSiteNotifications(data);
+      }
+    } catch (e) {
+      console.warn('Load notifications notice:', e);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  const handleSaveNotification = async (e) => {
+    e.preventDefault();
+    if (!notifForm.title.trim()) {
+      toast.warning('Please enter a notification title.');
+      return;
+    }
+    setIsSavingNotif(true);
+    try {
+      const payload = {
+        title: notifForm.title.trim(),
+        description: notifForm.description.trim() || null,
+        banner_image: notifForm.banner_image.trim() || null,
+        notification_type: notifForm.notification_type || 'info',
+        priority: parseInt(notifForm.priority, 10) || 0,
+        expires_at: notifForm.expires_at ? new Date(notifForm.expires_at).toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingNotifId) {
+        const { error } = await supabase
+          .from('site_notifications')
+          .update(payload)
+          .eq('id', editingNotifId);
+        if (error) throw error;
+        toast.success('Notification updated successfully!');
+      } else {
+        payload.is_active = true;
+        payload.created_at = new Date().toISOString();
+        const { error } = await supabase
+          .from('site_notifications')
+          .insert([payload]);
+        if (error) throw error;
+        toast.success('🔔 Notification published successfully!');
+      }
+
+      setNotifForm({ title: '', description: '', banner_image: '', notification_type: 'info', priority: 0, expires_at: '' });
+      setEditingNotifId(null);
+      loadSiteNotifications();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save notification.');
+    } finally {
+      setIsSavingNotif(false);
+    }
+  };
+
+  const handleEditNotification = (notif) => {
+    setEditingNotifId(notif.id);
+    setNotifForm({
+      title: notif.title || '',
+      description: notif.description || '',
+      banner_image: notif.banner_image || '',
+      notification_type: notif.notification_type || 'info',
+      priority: notif.priority || 0,
+      expires_at: notif.expires_at ? notif.expires_at.slice(0, 16) : '',
+    });
+  };
+
+  const handleToggleNotifActive = async (id, currentActive) => {
+    try {
+      const { error } = await supabase
+        .from('site_notifications')
+        .update({ is_active: !currentActive, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      toast.info(`Notification ${!currentActive ? 'activated' : 'deactivated'}.`);
+      loadSiteNotifications();
+    } catch (e) {
+      toast.error('Failed to toggle notification.');
+    }
+  };
+
+  const handleDeleteNotification = async (id) => {
+    requestConfirmation(
+      'Delete Notification',
+      'Are you sure you want to permanently delete this notification?',
+      async () => {
+        try {
+          const { error } = await supabase
+            .from('site_notifications')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          toast.info('Notification deleted.');
+          loadSiteNotifications();
+        } catch (e) {
+          toast.error('Failed to delete notification.');
+        }
+      }
+    );
   };
 
   const toast = useToast();
@@ -525,6 +657,7 @@ const AdminDashboard = () => {
     loadEnrollmentsData();
     loadAdminTaskSubmissions();
     loadAdminTasksData();
+    loadSiteNotifications();
 
     const handleExamUpdate = () => loadExamSubmissions();
     const handleLiveClassUpdate = () => setLiveClasses(getLiveClassesFromStorage());
@@ -2104,6 +2237,16 @@ const AdminDashboard = () => {
         </svg>
       ),
       count: 'Live',
+    },
+    {
+      id: 'notifications',
+      label: 'Site Notifications',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      ),
     },
   ];
 
@@ -7847,6 +7990,475 @@ const AdminDashboard = () => {
         {activeTab === 'chitchat' && (
           <div>
             <AdminChitChatHub />
+          </div>
+        )}
+
+        {/* TAB 8: SITE NOTIFICATIONS MANAGER */}
+        {activeTab === 'notifications' && (
+          <div>
+            {/* HEADER */}
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#181512', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>🔔</span> Site Notifications Manager
+              </h2>
+              <p style={{ margin: 0, fontSize: '13px', color: '#5E554D' }}>
+                Create and manage global notifications that appear to all website visitors. Control banner images, notification types, and expiry times.
+              </p>
+            </div>
+
+            {/* CREATE / EDIT NOTIFICATION FORM */}
+            <div style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2D7C3',
+              borderRadius: '14px',
+              padding: '24px',
+              marginBottom: '24px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#181512', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{editingNotifId ? '✏️' : '📝'}</span>
+                  {editingNotifId ? 'Edit Notification' : 'Create New Notification'}
+                </h3>
+                {editingNotifId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingNotifId(null);
+                      setNotifForm({ title: '', description: '', banner_image: '', notification_type: 'info', priority: 0, expires_at: '' });
+                    }}
+                    style={{ background: '#F3F4F6', border: '1px solid #D1D5DB', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: '#374151' }}
+                  >
+                    ✕ Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSaveNotification} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* NOTIFICATION TYPE SELECTOR */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '8px', color: '#292524' }}>
+                    Notification Type *
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {NOTIF_TYPES.map((t) => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setNotifForm({ ...notifForm, notification_type: t.value })}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '10px',
+                          border: notifForm.notification_type === t.value
+                            ? `2px solid ${t.color}`
+                            : '1.5px solid #E2D7C3',
+                          background: notifForm.notification_type === t.value ? t.bg : '#FAFAF9',
+                          color: notifForm.notification_type === t.value ? t.color : '#57534E',
+                          fontSize: '13px',
+                          fontWeight: notifForm.notification_type === t.value ? '800' : '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          transform: notifForm.notification_type === t.value ? 'scale(1.03)' : 'scale(1)',
+                          boxShadow: notifForm.notification_type === t.value
+                            ? `0 2px 8px ${t.color}22`
+                            : 'none',
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* TITLE + PRIORITY ROW */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                      Notification Title *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Important: System Maintenance Scheduled"
+                      value={notifForm.title}
+                      onChange={(e) => setNotifForm({ ...notifForm, title: e.target.value })}
+                      required
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '10px 14px',
+                        border: '1.5px solid #E2D7C3',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: '600',
+                        color: '#181512',
+                        background: '#FAFAF9',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                      Priority
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="0"
+                      value={notifForm.priority}
+                      onChange={(e) => setNotifForm({ ...notifForm, priority: e.target.value })}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '10px 14px',
+                        border: '1.5px solid #E2D7C3',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: '600',
+                        color: '#181512',
+                        background: '#FAFAF9',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* DESCRIPTION */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                    Description / Message Body
+                  </label>
+                  <textarea
+                    placeholder="Write the notification message here. Supports multi-line text..."
+                    value={notifForm.description}
+                    onChange={(e) => setNotifForm({ ...notifForm, description: e.target.value })}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '10px 14px',
+                      border: '1.5px solid #E2D7C3',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      fontWeight: '500',
+                      color: '#181512',
+                      background: '#FAFAF9',
+                      outline: 'none',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      lineHeight: '1.6',
+                    }}
+                  />
+                </div>
+
+                {/* BANNER IMAGE + EXPIRY ROW */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                      Banner Image URL (Optional)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/banner.jpg"
+                      value={notifForm.banner_image}
+                      onChange={(e) => setNotifForm({ ...notifForm, banner_image: e.target.value })}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '10px 14px',
+                        border: '1.5px solid #E2D7C3',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: '500',
+                        color: '#181512',
+                        background: '#FAFAF9',
+                        outline: 'none',
+                      }}
+                    />
+                    {notifForm.banner_image && (
+                      <div style={{ marginTop: '8px', border: '1px solid #E2D7C3', borderRadius: '6px', overflow: 'hidden', maxHeight: '120px' }}>
+                        <img
+                          src={notifForm.banner_image}
+                          alt="Banner preview"
+                          style={{ width: '100%', maxHeight: '120px', objectFit: 'cover', display: 'block' }}
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                      Auto-Expire Date & Time (Optional)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={notifForm.expires_at}
+                      onChange={(e) => setNotifForm({ ...notifForm, expires_at: e.target.value })}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '10px 14px',
+                        border: '1.5px solid #E2D7C3',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: '500',
+                        color: '#181512',
+                        background: '#FAFAF9',
+                        outline: 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: '11px', color: '#78716C', display: 'block', marginTop: '4px' }}>
+                      Leave empty for no auto-expiry. Notification stays until manually deactivated.
+                    </span>
+                  </div>
+                </div>
+
+                {/* SUBMIT BUTTON */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
+                  <button
+                    type="submit"
+                    disabled={isSavingNotif}
+                    style={{
+                      padding: '10px 28px',
+                      borderRadius: '10px',
+                      border: '2px solid #181512',
+                      background: '#181512',
+                      color: '#FFFFFF',
+                      fontSize: '13.5px',
+                      fontWeight: '800',
+                      cursor: isSavingNotif ? 'not-allowed' : 'pointer',
+                      opacity: isSavingNotif ? 0.6 : 1,
+                      transition: 'all 0.2s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    {isSavingNotif
+                      ? 'Publishing…'
+                      : editingNotifId
+                        ? '💾 Update Notification'
+                        : '🔔 Publish Notification'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* EXISTING NOTIFICATIONS LIST */}
+            <div style={{
+              background: '#FFFFFF',
+              border: '1px solid #E2D7C3',
+              borderRadius: '14px',
+              padding: '24px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#181512', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📋</span> All Notifications ({siteNotifications.length})
+                </h3>
+                <button
+                  type="button"
+                  onClick={loadSiteNotifications}
+                  style={{ background: '#F3F4F6', border: '1px solid #D1D5DB', padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', color: '#374151' }}
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+
+              {isLoadingNotifications ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#78716C', fontSize: '13px' }}>
+                  Loading notifications…
+                </div>
+              ) : siteNotifications.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+                  No notifications created yet. Use the form above to publish your first notification.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {siteNotifications.map((notif) => {
+                    const typeInfo = NOTIF_TYPES.find((t) => t.value === notif.notification_type) || NOTIF_TYPES[0];
+                    const isExpired = notif.expires_at && new Date(notif.expires_at).getTime() < Date.now();
+
+                    return (
+                      <div
+                        key={notif.id}
+                        style={{
+                          border: `1.5px solid ${notif.is_active && !isExpired ? typeInfo.border : '#E5E7EB'}`,
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          opacity: notif.is_active && !isExpired ? 1 : 0.65,
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {/* Type color stripe */}
+                        <div style={{
+                          height: '4px',
+                          background: notif.is_active && !isExpired
+                            ? `linear-gradient(90deg, ${typeInfo.color}, ${typeInfo.color}88)`
+                            : '#D1D5DB',
+                        }} />
+
+                        <div style={{ padding: '16px 18px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                              {/* Type badge + Status */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '3px 10px',
+                                  borderRadius: '14px',
+                                  fontSize: '11px',
+                                  fontWeight: '800',
+                                  background: typeInfo.bg,
+                                  color: typeInfo.color,
+                                  border: `1px solid ${typeInfo.border}`,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.03em',
+                                }}>
+                                  {typeInfo.label}
+                                </span>
+
+                                {notif.is_active && !isExpired ? (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    color: '#166534',
+                                    background: '#F0FDF4',
+                                    border: '1px solid #BBF7D0',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                  }}>
+                                    ● Live
+                                  </span>
+                                ) : isExpired ? (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    color: '#991B1B',
+                                    background: '#FEF2F2',
+                                    border: '1px solid #FCA5A5',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                  }}>
+                                    ❌ Expired
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    color: '#6B7280',
+                                    background: '#F3F4F6',
+                                    border: '1px solid #D1D5DB',
+                                    padding: '2px 8px',
+                                    borderRadius: '10px',
+                                  }}>
+                                    ⏸️ Inactive
+                                  </span>
+                                )}
+
+                                {notif.priority > 0 && (
+                                  <span style={{ fontSize: '10.5px', fontWeight: '700', color: '#B45309', background: '#FFFBEB', border: '1px solid #FDE68A', padding: '2px 7px', borderRadius: '8px' }}>
+                                    Priority: {notif.priority}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Title */}
+                              <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: '800', color: '#181512' }}>
+                                {notif.title}
+                              </h4>
+
+                              {/* Description preview */}
+                              {notif.description && (
+                                <p style={{ margin: '0 0 6px', fontSize: '12.5px', color: '#57534E', lineHeight: '1.5', maxHeight: '42px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {notif.description.slice(0, 180)}{notif.description.length > 180 ? '…' : ''}
+                                </p>
+                              )}
+
+                              {/* Banner preview */}
+                              {notif.banner_image && (
+                                <div style={{ marginTop: '6px', marginBottom: '6px' }}>
+                                  <img
+                                    src={notif.banner_image}
+                                    alt="Banner"
+                                    style={{ maxWidth: '200px', maxHeight: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #E2D7C3' }}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                </div>
+                              )}
+
+                              {/* Meta info */}
+                              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: '#9CA3AF', fontWeight: '600', marginTop: '4px', flexWrap: 'wrap' }}>
+                                <span>Created: {new Date(notif.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                {notif.expires_at && (
+                                  <span>Expires: {new Date(notif.expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleNotifActive(notif.id, notif.is_active)}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '11.5px',
+                                  fontWeight: '700',
+                                  borderRadius: '6px',
+                                  border: '1px solid #E2D7C3',
+                                  background: notif.is_active ? '#FEF3C7' : '#DCFCE7',
+                                  color: notif.is_active ? '#B45309' : '#166534',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                }}
+                                title={notif.is_active ? 'Deactivate notification' : 'Activate notification'}
+                              >
+                                {notif.is_active ? '⏸️ Deactivate' : '▶️ Activate'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEditNotification(notif)}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '11.5px',
+                                  fontWeight: '700',
+                                  borderRadius: '6px',
+                                  border: '1px solid #E2D7C3',
+                                  background: '#F3F4F6',
+                                  color: '#374151',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteNotification(notif.id)}
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '11.5px',
+                                  fontWeight: '700',
+                                  borderRadius: '6px',
+                                  border: '1px solid #FCA5A5',
+                                  background: '#FEF2F2',
+                                  color: '#DC2626',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

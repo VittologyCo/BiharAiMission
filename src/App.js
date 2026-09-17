@@ -33,6 +33,7 @@ import SmoothScroll from './components/SmoothScroll';
 import RegistrationModal from './components/RegistrationModal/RegistrationModal';
 import MouseEffects from './components/MouseEffects/MouseEffects';
 import LiveVisitorCounter from './components/LiveVisitorCounter/LiveVisitorCounter';
+import SiteNotification from './components/SiteNotification/SiteNotification';
 
 import PublicSubmissionPage from './pages/public/PublicSubmissionPage';
 
@@ -80,6 +81,7 @@ const AppLayout = ({
       {!isIsolatedPage && <MouseEffects isGlobal={true} color="#C1552C" interactionMode="burst" duration={0.4} effectSize={80} />}
       <ScrollToTop />
       <BackendStatusBanner />
+      {!isIsolatedPage && <SiteNotification />}
       {!isIsolatedPage && <Banner />}
       {!isIsolatedPage && <Navbar onOpenAuth={onOpenAuth} onOpenRegistration={onOpenRegistration} />}
       {!isIsolatedPage && <MaintenanceBar />}
