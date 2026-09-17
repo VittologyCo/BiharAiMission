@@ -376,20 +376,53 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
                   {sub && (
                     <div style={{
                       marginTop: '12px',
-                      padding: '10px 14px',
-                      background: 'rgba(255, 255, 255, 0.04)',
+                      padding: '12px 16px',
+                      background: '#FFF8F0',
                       borderRadius: '10px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                      fontSize: '12.5px',
-                      color: 'var(--color-sand-100, #F3ECE0)'
+                      border: '1px solid #E2D7C3',
+                      fontSize: '13px',
+                      color: '#181512',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)'
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                         <div>
-                          {sub.file_name && <span>📎 <strong>File:</strong> {sub.file_name} ({sub.file_size || 'Attached'})</span>}
-                          {sub.file_url && !sub.file_url.startsWith('blob:') && <span style={{ marginLeft: sub.file_name ? '14px' : 0 }}>📁 <a href={sub.file_url} target="_blank" rel="noreferrer" style={{ color: '#E28B5C', textDecoration: 'underline' }}>View / Download Document ↗</a></span>}
+                          {sub.file_name && (
+                            <span style={{ fontWeight: '700', color: '#181512' }}>
+                              📎 <strong>File:</strong> {sub.file_name} {sub.file_size ? `(${sub.file_size})` : ''}
+                            </span>
+                          )}
+                          {(sub.file_url || sub.file_path) && !(sub.file_url || '').startsWith('blob:') && (
+                            <span style={{ marginLeft: sub.file_name ? '14px' : 0 }}>
+                              📁 <a
+                                href={sub.file_url || sub.file_path}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: '#C1552C', fontWeight: '800', textDecoration: 'underline' }}
+                              >
+                                View / Download Document ↗
+                              </a>
+                            </span>
+                          )}
+                          {sub.link_url && (
+                            <span style={{ marginLeft: (sub.file_name || sub.file_url) ? '14px' : 0 }}>
+                              🔗 <a
+                                href={sub.link_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: '#C1552C', fontWeight: '800', textDecoration: 'underline' }}
+                              >
+                                Submission Link ↗
+                              </a>
+                            </span>
+                          )}
+                          {sub.text_content && (
+                            <div style={{ marginTop: '6px', fontSize: '12.5px', color: '#443E38', fontStyle: 'italic' }}>
+                              📝 <strong>Notes:</strong> {sub.text_content}
+                            </div>
+                          )}
                         </div>
-                        <div style={{ opacity: 0.7 }}>
-                          Submitted on {new Date(sub.updated_at || sub.created_at).toLocaleDateString()}
+                        <div style={{ fontSize: '12px', color: '#6B6259', fontWeight: '600' }}>
+                          Submitted on {new Date(sub.updated_at || sub.created_at || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </div>
                       </div>
                     </div>
@@ -401,6 +434,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
                       <button
                         type="button"
                         className={styles.reSubmitBtn}
+                        style={{ background: '#FFE4E6', border: '1px solid #F43F5E', color: '#9F1239', fontWeight: '800' }}
                         onClick={() => openSubmitModal(item)}
                       >
                         <span>🔄</span>
@@ -410,7 +444,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
                       <button
                         type="button"
                         className={styles.submitBtn}
-                        style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#6EE7B7' }}
+                        style={{ background: '#DCFCE7', border: '1px solid #10B981', color: '#065F46', fontWeight: '800' }}
                         onClick={() => openSubmitModal(item)}
                       >
                         <span>✓</span>
@@ -420,7 +454,7 @@ export default function AIClasswork({ user: propUser, onSubmissionUpdated }) {
                       <button
                         type="button"
                         className={styles.submitBtn}
-                        style={{ background: 'rgba(232, 178, 61, 0.2)', border: '1px solid rgba(232, 178, 61, 0.4)', color: '#FDE68A' }}
+                        style={{ background: '#FEF3C7', border: '1px solid #F59E0B', color: '#92400E', fontWeight: '800' }}
                         onClick={() => openSubmitModal(item)}
                       >
                         <span>🔄</span>
