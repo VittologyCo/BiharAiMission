@@ -479,7 +479,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 4. Heartbeat check every 3 seconds to actively verify account integrity
+    // 4. Heartbeat check every 60 seconds (reduced from 3s to optimize Supabase Egress bandwidth)
     heartbeatTimer = setInterval(async () => {
       if (isPurgingRef.current) return;
       const isRegInProgress = localStorage.getItem('bihar_ai_registration_in_progress') === 'true';
@@ -500,7 +500,7 @@ export const AuthProvider = ({ children }) => {
           forcePurgeAndLogout('Your account has been deleted by an administrator.');
         }
       } catch (e) {}
-    }, 3000);
+    }, 60000);
 
     // 5. Tab visibility change & window focus check
     const handleFocusCheck = async () => {

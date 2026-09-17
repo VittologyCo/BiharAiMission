@@ -1432,8 +1432,8 @@ export const subscribeToLeaderboardRealtime = (onUpdateCallback) => {
   window.addEventListener('bihar_ai_profile_updated', refreshAndNotify);
   window.addEventListener('storage', handleStorageChange);
 
-  // Periodic heartbeat poll every 8s for rock-solid live update
-  const pollTimer = setInterval(refreshAndNotify, 8000);
+  // Periodic heartbeat poll every 60s (reduced from 8s for Supabase Egress optimization)
+  const pollTimer = setInterval(refreshAndNotify, 60000);
 
   // Return unsubscribe cleanup handler
   return () => {

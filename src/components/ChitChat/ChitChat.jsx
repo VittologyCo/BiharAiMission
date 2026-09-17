@@ -181,7 +181,8 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     };
 
     verifyWithServer();
-    const serverSyncInterval = setInterval(verifyWithServer, 15000);
+    // Reduced polling from 15s to 120s since Supabase Realtime channel handles instant updates
+    const serverSyncInterval = setInterval(verifyWithServer, 120000);
 
     return () => {
       isMounted = false;
