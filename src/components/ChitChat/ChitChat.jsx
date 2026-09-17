@@ -53,6 +53,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
   const [mentionCandidates, setMentionCandidates] = useState([]);
+  const [mobileTab, setMobileTab] = useState('chat'); // 'sidebar' | 'chat'
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
   const messageFeedRef = useRef(null);
@@ -375,6 +376,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     setActiveChannel(channelObj);
     setUnreadCounts((prev) => ({ ...prev, [channelObj.id]: 0 }));
     setMentionAlerts((prev) => ({ ...prev, [channelObj.id]: 0 }));
+    setMobileTab('chat');
   };
 
   // ─── 5. SEARCH USERS FOR FRIEND CONNECTIONS ───
@@ -881,7 +883,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // RENDER: ACTIVE CHIT-CHAT APPLICATION
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${mobileTab === 'sidebar' ? styles.showSidebarMobile : styles.showChatMobile}`}>
       {/* ─── LEFT SIDEBAR: CHANNELS & FRIENDS ─── */}
       <div className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
@@ -889,6 +891,18 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             <h3 className={styles.brandTitle}>
               <span>💬</span> {isHi ? 'गप-शप' : 'Gup-Shup'}
             </h3>
+            {/* Quick button to return to active chat on mobile */}
+            {activeChannel && (
+              <button
+                type="button"
+                className={styles.mobileViewChatBtn}
+                onClick={() => setMobileTab('chat')}
+                title={isHi ? 'सक्रिय चैट पर जाएं' : 'Open active chat'}
+              >
+                <span>{activeChannel.name ? (activeChannel.name.length > 12 ? `${activeChannel.name.slice(0, 10)}…` : activeChannel.name) : 'Chat'}</span>
+                <span>→</span>
+              </button>
+            )}
             {isNightHours ? (
               <span className={`${styles.sessionBadge} ${styles.sessionNight}`} title="Open during nightly chat window">
                 🌙 8PM-8AM IST
@@ -1096,8 +1110,18 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
         {/* CHAT HEADER */}
         <div className={styles.chatHeader}>
           <div className={styles.chatHeaderLeft}>
-            <span style={{ fontSize: '20px' }}>{activeChannel?.icon || '💬'}</span>
-            <div>
+            {/* Mobile Back Button to return to Channels / Friends */}
+            <button
+              type="button"
+              className={styles.mobileBackBtn}
+              onClick={() => setMobileTab('sidebar')}
+              title={isHi ? 'चैनल और मित्र सूची पर वापस जाएं' : 'Back to channels and friends'}
+              aria-label="Back to channels"
+            >
+              ←
+            </button>
+            <span style={{ fontSize: '20px', flexShrink: 0 }}>{activeChannel?.icon || '💬'}</span>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <h4 className={styles.chatHeaderTitle}>{activeChannel?.name || 'Chit-Chat'}</h4>
               <p className={styles.chatHeaderSub}>{activeChannel?.subtitle || 'Community Channel'}</p>
             </div>
@@ -1109,7 +1133,12 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
               : 'Like WhatsApp: All chats and media automatically disappear after 15 days to keep conversations clean and private.'}
           >
             <span>⏳</span>
-            <span>{isHi ? 'संदेश 15 दिनों में स्वतः हट जाते हैं' : 'Messages disappear after 15 days'}</span>
+            <span className={styles.disappearingNoticeText}>
+              {isHi ? 'संदेश 15 दिनों में स्वतः हट जाते हैं' : 'Messages disappear after 15 days'}
+            </span>
+            <span className={styles.disappearingNoticeMobileText}>
+              {isHi ? '15 दिन' : '15d'}
+            </span>
           </div>
         </div>
 
@@ -1327,7 +1356,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
                 isHi ? 'भेज रहे हैं…' : 'Sending…'
               ) : (
                 <>
-                  <span>{isHi ? 'भेजें' : 'Send'}</span>
+                  <span className={styles.sendBtnText}>{isHi ? 'भेजें' : 'Send'}</span>
                   <span>🚀</span>
                 </>
               )}

@@ -801,17 +801,313 @@
   font-weight: 700;
 }
 
-/* Responsive */
-@media (max-width: 860px) {
+/* ─── MOBILE CONTROLS & RESPONSIVENESS ─── */
+.mobileBackBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-sand-100, #F3ECE0);
+  border: 1px solid var(--color-line, #E2D7C3);
+  color: var(--color-ink, #181512);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.mobileBackBtn:hover,
+.mobileBackBtn:active {
+  background: var(--color-sand-200, #E6DCB8);
+  border-color: var(--color-terracotta-500, #C1552C);
+  color: var(--color-terracotta-500, #C1552C);
+}
+
+.mobileViewChatBtn {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-terracotta-500, #C1552C);
+  color: #FFFFFF;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.mobileViewChatBtn:hover,
+.mobileViewChatBtn:active {
+  background: #9B3D1B;
+}
+
+.disappearingNoticeMobileText {
+  display: none;
+}
+
+.sendBtnText {
+  display: inline;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TABLET & MOBILE BREAKPOINTS (≤ 768px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
   .container {
-    flex-direction: column;
-    height: 780px;
+    height: 560px;
+    max-height: 82vh;
+    min-height: 440px;
+    border-radius: 4px;
+    flex-direction: row;
+    position: relative;
   }
-  .sidebar {
-    width: 100%;
-    min-width: 100%;
-    height: 220px;
+
+  /* Show mobile controls */
+  .mobileBackBtn {
+    display: inline-flex;
+  }
+
+  .mobileViewChatBtn {
+    display: inline-flex;
+  }
+
+  /* Master-Detail Toggle for Mobile: Full screen channels or full screen chat */
+  .showSidebarMobile .sidebar {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 100% !important;
     border-right: none;
-    border-bottom: 1px solid var(--color-line, #E2D7C3);
+  }
+
+  .showSidebarMobile .chatMain {
+    display: none !important;
+  }
+
+  .showChatMobile .sidebar {
+    display: none !important;
+  }
+
+  .showChatMobile .chatMain {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Sidebar header spacing */
+  .sidebarHeader {
+    padding: 12px 14px;
+  }
+
+  .brandTitle {
+    font-size: 15px;
+  }
+
+  .channelsScroll {
+    padding: 10px 8px;
+    gap: 12px;
+  }
+
+  .channelItem {
+    padding: 10px 10px;
+    border-radius: 4px;
+  }
+
+  .channelName {
+    font-size: 13px;
+  }
+
+  .channelDesc {
+    font-size: 11px;
+  }
+
+  /* Chat header */
+  .chatHeader {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .chatHeaderTitle {
+    font-size: 14px;
+  }
+
+  .chatHeaderSub {
+    font-size: 10.5px;
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .disappearingNotice {
+    padding: 2px 7px;
+    font-size: 10.5px;
+  }
+
+  /* Message feed */
+  .messageFeed {
+    padding: 14px 10px;
+    gap: 10px;
+  }
+
+  .messageRow {
+    max-width: 90%;
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .bubble {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Media sizing */
+  .chatImage {
+    max-width: 100%;
+    max-height: 200px;
+  }
+
+  .chatVideo {
+    max-width: 100%;
+  }
+
+  .chatAudio {
+    width: 100%;
+    max-width: 240px;
+  }
+
+  .chatFileCard {
+    max-width: 100%;
+    padding: 6px 10px;
+  }
+
+  /* Composer */
+  .composer {
+    padding: 8px 10px;
+  }
+
+  .composerRow {
+    gap: 8px;
+  }
+
+  .attachBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .textInput {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .sendBtn {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
+
+  /* Autocomplete popover on mobile */
+  .mentionPopover {
+    left: 8px;
+    right: 8px;
+    max-height: 180px;
+    bottom: calc(100% + 6px);
+  }
+
+  /* Gateway / lock screen on mobile */
+  .lockGateway {
+    width: 94%;
+    padding: 20px 16px;
+    margin: auto 8px;
+  }
+
+  .lockTitle {
+    font-size: 18px;
+  }
+
+  .lockDesc {
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+
+  .scheduleBox {
+    padding: 10px;
+    margin-bottom: 16px;
+  }
+
+  .scheduleRow {
+    font-size: 12px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SMALL MOBILE PHONES (≤ 480px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .container {
+    height: 520px;
+    max-height: 80vh;
+    border-radius: 2px;
+    margin-left: -2px;
+    margin-right: -2px;
+  }
+
+  /* Compact Disappearing notice on tiny phones */
+  .disappearingNoticeText {
+    display: none;
+  }
+
+  .disappearingNoticeMobileText {
+    display: inline;
+  }
+
+  /* Compact Send Button on tiny phones */
+  .sendBtnText {
+    display: none;
+  }
+
+  .sendBtn {
+    padding: 0 10px;
+    min-width: 36px;
+  }
+
+  .messageRow {
+    max-width: 94%;
+  }
+
+  .chatHeaderSub {
+    max-width: 120px;
+  }
+
+  .composer {
+    padding: 6px 8px;
+  }
+
+  .composerRow {
+    gap: 6px;
+  }
+
+  .textInput {
+    padding: 0 8px;
+    font-size: 12.5px;
+  }
+}
+
