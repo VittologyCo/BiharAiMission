@@ -566,9 +566,17 @@ export const filterGroupsForUser = (allGroups, userDept, userDesignation) => {
     // 2. Designation-restricted custom group
     if (Array.isArray(group.designations) && group.designations.length > 0) {
       if (!cleanDesig) return false;
+      const normUser = cleanDesig.replace(/[^a-z0-9]/g, '');
       const desigMatches = group.designations.some((d) => {
         const cd = (d || '').toLowerCase().trim();
-        return cd && (cleanDesig.includes(cd) || cd.includes(cleanDesig));
+        if (!cd) return false;
+        const normTarget = cd.replace(/[^a-z0-9]/g, '');
+        return (
+          cleanDesig === cd ||
+          cleanDesig.includes(cd) ||
+          cd.includes(cleanDesig) ||
+          (normUser && normTarget && (normUser === normTarget || normUser.includes(normTarget) || normTarget.includes(normUser)))
+        );
       });
       return desigMatches;
     }

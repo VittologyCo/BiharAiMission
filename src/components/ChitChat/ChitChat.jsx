@@ -82,7 +82,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const myEmail = (currentUser?.email || '').toLowerCase().trim();
   const myName = currentUser?.fullName || currentUser?.full_name || 'Member';
   const initialUsername = (currentUser?.username || '').replace(/^@+/, '').trim();
-  const initialDesignation = currentUser?.designation || currentUser?.role_type || currentUser?.department || 'Civic Member';
+  const initialDesignation = (currentUser?.designation || '').trim();
 
   const [actualUsername, setActualUsername] = useState(initialUsername);
   const [isCheckingUsername, setIsCheckingUsername] = useState(!initialUsername);
@@ -95,7 +95,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   const myUsername = actualUsername || userProfile.username || initialUsername;
   const myDesignation = userProfile.designation || initialDesignation;
 
-  // Dynamically sync verified username from Supabase user_details table in real time
+  // Dynamically sync verified username and designation from Supabase user_details table in real time
   useEffect(() => {
     if (!myEmail) {
       setIsCheckingUsername(false);
@@ -112,7 +112,7 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
         setIsCheckingUsername(false);
         if (data) {
           const cleanU = (data.username || '').replace(/^@+/, '').trim();
-          const cleanD = data.designation || data.role_type || data.department;
+          const cleanD = (data.designation || currentUser?.designation || '').trim();
           setActualUsername(cleanU);
           setUserProfile((prev) => ({
             username: cleanU,

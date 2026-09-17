@@ -22,6 +22,9 @@ export default function AdminChitChatHub() {
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupDepts, setNewGroupDepts] = useState('');
   const [newGroupDesignations, setNewGroupDesignations] = useState('');
+  const [availableDesignations, setAvailableDesignations] = useState([]);
+  const [selectedDesignationTags, setSelectedDesignationTags] = useState([]);
+  const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   // ─── 3. OVERSIGHT STATE ───
@@ -55,6 +58,33 @@ export default function AdminChitChatHub() {
     setGroups(list);
   };
 
+  // Load distinct designations directly from user_details table (same as Applications & Inquiries filter)
+  const loadAvailableDesignations = async () => {
+    setIsLoadingDesignations(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_details')
+        .select('designation')
+        .not('designation', 'is', null);
+
+      if (!error && Array.isArray(data)) {
+        const desigSet = new Set();
+        data.forEach((row) => {
+          if (row.designation && typeof row.designation === 'string') {
+            const trimmed = row.designation.trim();
+            if (trimmed) desigSet.add(trimmed);
+          }
+        });
+        const sortFn = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+        setAvailableDesignations(Array.from(desigSet).sort(sortFn));
+      }
+    } catch (err) {
+      console.warn('Failed to load designations for group selector:', err);
+    } finally {
+      setIsLoadingDesignations(false);
+    }
+  };
+
   // Load oversight messages
   const loadOversightMessages = async (groupId) => {
     setIsLoadingMessages(true);
@@ -78,6 +108,7 @@ export default function AdminChitChatHub() {
   useEffect(() => {
     loadAccessCodes();
     loadGroups();
+    loadAvailableDesignations();
 
     // 1-second interval to tick countdown timers in real time across the table
     const timer = setInterval(() => {
@@ -203,10 +234,11 @@ export default function AdminChitChatHub() {
       .split(',')
       .map(d => d.trim())
       .filter(Boolean);
-    const desigsArray = newGroupDesignations
+    const manualDesigs = newGroupDesignations
       .split(',')
       .map(d => d.trim())
       .filter(Boolean);
+    const desigsArray = Array.from(new Set([...selectedDesignationTags, ...manualDesigs]));
 
     setIsCreatingGroup(true);
     try {
@@ -228,6 +260,7 @@ export default function AdminChitChatHub() {
         setNewGroupDesc('');
         setNewGroupDepts('');
         setNewGroupDesignations('');
+        setSelectedDesignationTags([]);
         loadGroups();
       } else {
         toast?.error(error.message || 'Failed to create group.');
@@ -599,54 +632,145 @@ export default function AdminChitChatHub() {
             <p style={{ fontSize: '12.5px', color: '#5E554D', margin: '0 0 14px' }}>
               Create specific groups for specialized cohorts, or club multiple departments together (e.g. "Revenue + Police", "Agriculture + Rural Tech").
             </p>
-            <form onSubmit={handleCreateGroup} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>Group Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 🌾 Agri-Revenue Drone Cohort"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  className={styles.textInput}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  required
-                />
+            <form onSubmit={handleCreateGroup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+                {/* 1. Group Name */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                    Group Name *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Revenue Officer, B.P.R.O. Forum, or Agri Tech"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className={styles.textInput}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    required
+                  />
+                </div>
+
+                {/* 2. Target Designation Dropdown (Same options as Applications & Inquiries filter) */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                    Target Designation (Choose from Profile Designations)
+                  </label>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      if (!selectedDesignationTags.includes(val)) {
+                        const next = [...selectedDesignationTags, val];
+                        setSelectedDesignationTags(next);
+                        if (!newGroupName.trim()) {
+                          setNewGroupName(val);
+                        }
+                        if (!newGroupDesc.trim()) {
+                          setNewGroupDesc(`Official discussion and collaboration group for ${val}s across Bihar.`);
+                        }
+                      }
+                    }}
+                    className={styles.textInput}
+                    style={{ width: '100%', boxSizing: 'border-box', cursor: 'pointer', backgroundColor: '#FFFFFF' }}
+                  >
+                    <option value="">
+                      {isLoadingDesignations
+                        ? 'Loading profile designations…'
+                        : `-- Choose Designation Option (${availableDesignations.length} available) --`}
+                    </option>
+                    {availableDesignations.map((desig) => (
+                      <option key={desig} value={desig}>
+                        💼 {desig}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>Departments to Club (comma-separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Agriculture, Revenue, Technical"
-                  value={newGroupDepts}
-                  onChange={(e) => setNewGroupDepts(e.target.value)}
-                  className={styles.textInput}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-              </div>
+              {/* Active Selected Designation Chips */}
+              {selectedDesignationTags.length > 0 && (
+                <div style={{
+                  padding: '10px 14px',
+                  backgroundColor: '#FEF3C7',
+                  border: '1px solid #FCD34D',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11.5px', fontWeight: '800', color: '#92400E' }}>
+                      Selected Profile Designations for this Group:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDesignationTags([])}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#DC2626',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Clear Selection
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {selectedDesignationTags.map((tag) => (
+                      <span
+                        key={tag}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          backgroundColor: '#FFFFFF',
+                          color: '#B45309',
+                          border: '1px solid #F59E0B',
+                          borderRadius: '16px',
+                          padding: '3px 10px',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        🎖️ {tag}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDesignationTags(selectedDesignationTags.filter(t => t !== tag))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#DC2626',
+                            cursor: 'pointer',
+                            fontWeight: '900',
+                            padding: 0,
+                            lineHeight: 1
+                          }}
+                          title="Remove designation"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#78350F' }}>
+                    🔒 <strong>Strict Visibility:</strong> ONLY registered users who have set {selectedDesignationTags.map(t => `"${t}"`).join(' or ')} in their profile will see and enter this group.
+                  </span>
+                </div>
+              )}
 
+              {/* 3. Description / Purpose */}
               <div>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>
-                  Target Designations (Optional, comma-separated)
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', marginBottom: '6px', color: '#292524' }}>
+                  Description / Purpose
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Revenue Officer, BPRO, Circle Officer"
-                  value={newGroupDesignations}
-                  onChange={(e) => setNewGroupDesignations(e.target.value)}
-                  className={styles.textInput}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                />
-                <span style={{ fontSize: '10.5px', color: '#B45309', display: 'block', marginTop: '2px' }}>
-                  * If specified, ONLY registered users with these designations will see and enter this group.
-                </span>
-              </div>
-
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px' }}>Description / Purpose</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Collaborative taskforce for state land and crop AI monitoring"
+                  placeholder="e.g. Official discussion and collaboration group for Revenue Officers across Bihar"
                   value={newGroupDesc}
                   onChange={(e) => setNewGroupDesc(e.target.value)}
                   className={styles.textInput}
@@ -654,9 +778,39 @@ export default function AdminChitChatHub() {
                 />
               </div>
 
+              {/* Optional: Additional Manual Designations or Departments */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
+                    Additional Manual Designations (Optional, comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Circle Officer, BPRO"
+                    value={newGroupDesignations}
+                    onChange={(e) => setNewGroupDesignations(e.target.value)}
+                    className={styles.textInput}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '700', marginBottom: '4px', color: '#5E554D' }}>
+                    Departments to Club (Optional, comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Revenue, General Administration"
+                    value={newGroupDepts}
+                    onChange={(e) => setNewGroupDepts(e.target.value)}
+                    className={styles.textInput}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
               <div>
-                <button type="submit" disabled={isCreatingGroup} className={styles.primaryBtn}>
-                  {isCreatingGroup ? 'Creating…' : '+ Create Group'}
+                <button type="submit" disabled={isCreatingGroup} className={styles.primaryBtn} style={{ padding: '10px 22px', fontSize: '13.5px' }}>
+                  {isCreatingGroup ? 'Creating Group…' : '+ Create Group'}
                 </button>
               </div>
             </form>

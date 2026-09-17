@@ -3180,6 +3180,7 @@ export default function UserProfilePage({ onOpenAuth, onOpenRegistration, onOpen
               currentUser={{
                 ...currentUser,
                 ...formData,
+                designation: (formData.designation || existingSubmission?.designation || currentUser?.designation || '').trim(),
                 username: (formData.username || existingSubmission?.username || currentUser?.username || '').replace(/^@+/, '').trim()
               }}
               isHi={isHi}
