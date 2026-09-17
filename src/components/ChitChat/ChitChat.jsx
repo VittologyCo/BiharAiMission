@@ -764,30 +764,22 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
     });
   };
 
-  // ─── 5. ATTACHMENT PICKER & UPLOAD ───
+  // ─── 5. ATTACHMENT PICKER & UPLOAD (LOCKED — COMING SOON) ───
+  const handleAttachClick = () => {
+    toast?.info(
+      isHi
+        ? '🔒 फोटो और फाइल अपलोड सुविधा जल्द ही उपलब्ध होगी!'
+        : '🔒 Photo & File upload option is coming soon!'
+    );
+  };
+
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check size limit: 100MB
-    if (file.size > 100 * 1024 * 1024) {
-      toast?.warning(isHi ? 'फ़ाइल का आकार 100MB से कम होना चाहिए।' : 'File size must be under 100MB.');
-      return;
-    }
-
-    const ext = file.name.split('.').pop().toLowerCase();
-    let type = 'file';
-    if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext)) type = 'image';
-    else if (['mp4', 'webm', 'mov', 'm4v', 'avi'].includes(ext)) type = 'video';
-    else if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) type = 'audio';
-
-    setPendingFile({
-      file,
-      name: file.name,
-      size: `${(file.size / 1024).toFixed(1)} KB`,
-      type,
-      previewUrl: type === 'image' ? URL.createObjectURL(file) : null
-    });
+    toast?.info(
+      isHi
+        ? '🔒 फोटो और फाइल अपलोड सुविधा जल्द ही उपलब्ध होगी!'
+        : '🔒 Photo & File upload option is coming soon!'
+    );
+    if (e?.target) e.target.value = '';
   };
 
   // ─── 6. SEND MESSAGE ───
@@ -1626,10 +1618,27 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
             <button
               type="button"
               className={styles.attachBtn}
-              onClick={() => fileInputRef.current?.click()}
-              title={isHi ? 'फ़ाइल संलग्न करें (फोटो, वीडियो, ऑडियो, डॉक्युमेंट)' : 'Attach Image, Video, Audio, or File'}
+              onClick={handleAttachClick}
+              title={isHi ? '🔒 फोटो और फाइल अपलोड (जल्द आ रहा है)' : '🔒 Photo & File upload (Coming Soon)'}
+              style={{ position: 'relative' }}
             >
               📎
+              <span style={{
+                position: 'absolute',
+                top: '-3px',
+                right: '-3px',
+                fontSize: '10px',
+                lineHeight: '1',
+                background: '#181512',
+                color: '#F59E0B',
+                borderRadius: '50%',
+                width: '14px',
+                height: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid #E2D7C3'
+              }}>🔒</span>
             </button>
 
             <input
