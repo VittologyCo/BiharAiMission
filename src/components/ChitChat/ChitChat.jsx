@@ -20,6 +20,8 @@ import {
   getLocalSessionPass,
   saveLocalSessionPass,
   clearLocalSessionPass,
+  syncAndVerifySessionPass,
+  formatTimeRemaining,
   playChatNotificationSound,
   getChannelReadTimestamp,
   markChannelAsRead,
@@ -160,6 +162,86 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
   // ─── 1. EVALUATE UNLOCK STATUS & COUNTDOWN TIMER ───
   const isUnlocked = Boolean(isNightHours || (sessionPass && new Date(sessionPass.expiresAt).getTime() > Date.now()));
 
+  // Active sync on mount & periodic re-validation with server DB
+  useEffect(() => {
+    let isMounted = true;
+    const verifyWithServer = async () => {
+      const current = getLocalSessionPass();
+      if (current && current.code) {
+        const synced = await syncAndVerifySessionPass(current);
+        if (isMounted) {
+          setSessionPass(synced);
+          if (!synced) {
+            setRemainingTimeStr('');
+          } else {
+            setRemainingTimeStr(formatTimeRemaining(synced.expiresAt));
+          }
+        }
+      }
+    };
+
+    verifyWithServer();
+    const serverSyncInterval = setInterval(verifyWithServer, 15000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(serverSyncInterval);
+    };
+  }, []);
+
+  // Supabase Realtime listener for active access code changes (pause, expire, delete)
+  useEffect(() => {
+    const accessCodeChannel = supabase
+      .channel('realtime_chitchat_access_codes_client')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chitchat_access_codes' },
+        (payload) => {
+          const currentPass = getLocalSessionPass();
+          if (!currentPass || !currentPass.code) return;
+
+          if (payload.eventType === 'DELETE' && payload.old?.code === currentPass.code) {
+            clearLocalSessionPass();
+            setSessionPass(null);
+            setRemainingTimeStr('');
+            toast?.info(isHi ? 'प्रशासक द्वारा आपका एक्सेस कोड हटा दिया गया है।' : 'Your access code was removed by Admin.');
+          } else if (payload.new && payload.new.code === currentPass.code) {
+            if (!payload.new.is_active) {
+              clearLocalSessionPass();
+              setSessionPass(null);
+              setRemainingTimeStr('');
+              toast?.info(isHi ? 'प्रशासक द्वारा आपका एक्सेस कोड रोक दिया गया है।' : 'Your access code was paused by Admin.');
+            } else if (payload.new.expires_at) {
+              const expMs = new Date(payload.new.expires_at).getTime();
+              if (Date.now() >= expMs) {
+                clearLocalSessionPass();
+                setSessionPass(null);
+                setRemainingTimeStr('');
+                toast?.info(isHi ? 'आपकी समय-सीमा समाप्त हो गई है।' : 'Your access pass session has expired.');
+              } else {
+                const updated = {
+                  ...currentPass,
+                  expiresAt: payload.new.expires_at,
+                  durationMinutes: payload.new.duration_minutes || currentPass.durationMinutes
+                };
+                saveLocalSessionPass(updated);
+                setSessionPass(updated);
+                setRemainingTimeStr(formatTimeRemaining(payload.new.expires_at));
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(accessCodeChannel);
+      } catch (_) {}
+    };
+  }, [isHi]);
+
+  // 1-second countdown ticker for session pass and IST clock
   useEffect(() => {
     const timer = setInterval(() => {
       const night = isWithinNightChatHours();
@@ -170,12 +252,9 @@ export default function ChitChat({ currentUser, isHi = false, onGoToProfile }) {
       setSessionPass(currentPass);
 
       if (currentPass && currentPass.expiresAt) {
-        const diffMs = new Date(currentPass.expiresAt).getTime() - Date.now();
-        if (diffMs > 0) {
-          const totalSecs = Math.floor(diffMs / 1000);
-          const mins = Math.floor(totalSecs / 60);
-          const secs = totalSecs % 60;
-          setRemainingTimeStr(`${mins}m ${secs < 10 ? '0' : ''}${secs}s`);
+        const remaining = formatTimeRemaining(currentPass.expiresAt);
+        if (remaining && remaining !== 'Expired') {
+          setRemainingTimeStr(remaining);
         } else {
           // Pass expired!
           clearLocalSessionPass();

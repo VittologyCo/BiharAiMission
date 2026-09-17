@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../utils/supabase';
-import { fetchChitChatGroups, formatMessageTime, getChitChatStorageServerUrl } from '../../services/chitchatService';
+import { fetchChitChatGroups, formatMessageTime, formatTimeRemaining, getChitChatStorageServerUrl } from '../../services/chitchatService';
 import { useToast } from '../../context/ToastContext';
 import styles from './AdminChitChatHub.module.css';
 
 export default function AdminChitChatHub() {
   const toast = useToast();
   const [activeSubTab, setActiveSubTab] = useState('codes'); // 'codes' | 'groups' | 'oversight' | 'purge'
+  const [nowTick, setNowTick] = useState(Date.now());
 
   // ─── 1. TIMED 6-DIGIT ACCESS CODES STATE ───
   const [accessCodes, setAccessCodes] = useState([]);
@@ -77,6 +78,30 @@ export default function AdminChitChatHub() {
   useEffect(() => {
     loadAccessCodes();
     loadGroups();
+
+    // 1-second interval to tick countdown timers in real time across the table
+    const timer = setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    // Supabase Realtime subscription so new claims / status updates appear instantly
+    const channel = supabase
+      .channel('admin_live_access_codes_hub')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chitchat_access_codes' },
+        () => {
+          loadAccessCodes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(timer);
+      try {
+        supabase.removeChannel(channel);
+      } catch (_) {}
+    };
   }, []);
 
   useEffect(() => {
@@ -413,7 +438,7 @@ export default function AdminChitChatHub() {
                   <th>Duration</th>
                   <th>Status</th>
                   <th>Users Claimed</th>
-                  <th>Expires At</th>
+                  <th>Timing & Live Countdown</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -429,6 +454,10 @@ export default function AdminChitChatHub() {
                       ? c.claimed_count
                       : claimedList.length;
 
+                    const expMs = c.expires_at ? new Date(c.expires_at).getTime() : 0;
+                    const isExpired = expMs > 0 && nowTick >= expMs;
+                    const remainingStr = !isExpired && expMs > 0 ? formatTimeRemaining(c.expires_at) : '';
+
                     return (
                       <tr key={c.id}>
                         <td>
@@ -437,10 +466,12 @@ export default function AdminChitChatHub() {
                         </td>
                         <td><strong>{c.duration_minutes} mins</strong></td>
                         <td>
-                          {c.is_active ? (
+                          {isExpired ? (
+                            <span style={{ color: '#DC2626', fontWeight: '800' }}>● Expired</span>
+                          ) : c.is_active ? (
                             <span style={{ color: '#16A34A', fontWeight: '800' }}>● Active (Multi-User)</span>
                           ) : (
-                            <span style={{ color: '#DC2626', fontWeight: '700' }}>Paused / Inactive</span>
+                            <span style={{ color: '#D97706', fontWeight: '700' }}>⏸️ Paused</span>
                           )}
                         </td>
                         <td>
@@ -463,26 +494,90 @@ export default function AdminChitChatHub() {
                             👥 {userCount} {userCount === 1 ? 'user' : 'users'}
                           </span>
                         </td>
-                        <td>{c.expires_at ? formatMessageTime(c.expires_at) : '—'}</td>
                         <td>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleCodeActive(c.id, c.is_active)}
-                              style={{
-                                padding: '5px 9px',
+                          {isExpired ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              color: '#991B1B',
+                              backgroundColor: '#FEE2E2',
+                              border: '1px solid #FCA5A5',
+                              fontSize: '11.5px',
+                              fontWeight: '800',
+                              padding: '3px 8px',
+                              borderRadius: '6px'
+                            }}>
+                              ❌ Expired ({formatMessageTime(c.expires_at)})
+                            </span>
+                          ) : expMs > 0 && c.is_active ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                color: '#065F46',
+                                backgroundColor: '#ECFDF5',
+                                border: '1px solid #A7F3D0',
+                                fontSize: '12px',
+                                fontWeight: '800',
+                                padding: '3px 9px',
+                                borderRadius: '12px',
+                                width: 'fit-content',
+                                boxShadow: '0 1px 3px rgba(16, 185, 129, 0.15)'
+                              }}>
+                                ⏳ {remainingStr} left
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                                Expires {formatMessageTime(c.expires_at)}
+                              </span>
+                            </div>
+                          ) : expMs > 0 && !c.is_active ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                color: '#B45309',
+                                backgroundColor: '#FEF3C7',
+                                border: '1px solid #FDE68A',
                                 fontSize: '11.5px',
                                 fontWeight: '700',
-                                borderRadius: '4px',
-                                border: '1px solid var(--color-line, #E2D7C3)',
-                                background: c.is_active ? '#FEF3C7' : '#DCFCE7',
-                                color: c.is_active ? '#B45309' : '#166534',
-                                cursor: 'pointer'
-                              }}
-                              title={c.is_active ? 'Pause / Deactivate this code' : 'Reactivate this code'}
-                            >
-                              {c.is_active ? '⏸️ Pause' : '▶️ Activate'}
-                            </button>
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                width: 'fit-content'
+                              }}>
+                                ⏸️ Paused ({remainingStr} left)
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                                Original: {formatMessageTime(c.expires_at)}
+                              </span>
+                            </div>
+                          ) : (
+                            c.expires_at ? formatMessageTime(c.expires_at) : '—'
+                          )}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            {!isExpired && (
+                              <button
+                                type="button"
+                                onClick={() => handleToggleCodeActive(c.id, c.is_active)}
+                                style={{
+                                  padding: '5px 9px',
+                                  fontSize: '11.5px',
+                                  fontWeight: '700',
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--color-line, #E2D7C3)',
+                                  background: c.is_active ? '#FEF3C7' : '#DCFCE7',
+                                  color: c.is_active ? '#B45309' : '#166534',
+                                  cursor: 'pointer'
+                                }}
+                                title={c.is_active ? 'Pause / Deactivate this code' : 'Reactivate this code'}
+                              >
+                                {c.is_active ? '⏸️ Pause' : '▶️ Activate'}
+                              </button>
+                            )}
                             <button type="button" onClick={() => handleDeleteCode(c.id)} className={styles.dangerBtn}>Delete</button>
                           </div>
                         </td>

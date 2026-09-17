@@ -77,6 +77,28 @@ export const formatMessageTime = (isoString) => {
 };
 
 /**
+ * Formats remaining duration until ISO expiry into a real-time ticking string (e.g. "59m 42s" or "1h 15m 08s")
+ * Returns empty string if invalid or 'Expired' if time has elapsed.
+ */
+export const formatTimeRemaining = (expiresAtIso) => {
+  if (!expiresAtIso) return '';
+  try {
+    const diffMs = new Date(expiresAtIso).getTime() - Date.now();
+    if (diffMs <= 0) return 'Expired';
+    const totalSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+    }
+    return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+  } catch {
+    return '';
+  }
+};
+
+/**
  * Resolve local storage server URL for Chit-Chat file uploads
  */
 export const getChitChatStorageServerUrl = () => {
@@ -647,6 +669,9 @@ export const claimAdminAccessCode = async (userEmail, codeStr) => {
 
       // Enforce global expiration: reject if already expired
       if (new Date(globalExpiresAt).getTime() <= Date.now()) {
+        try {
+          await supabase.from('chitchat_access_codes').update({ is_active: false }).eq('id', codeRec.id);
+        } catch (_) {}
         return {
           success: false,
           error: 'This access code has already expired. Please ask the Admin for a new active code.'
@@ -755,11 +780,15 @@ export const getLocalSessionPass = () => {
     const raw = localStorage.getItem(PASS_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed.expiresAt) return null;
+    if (!parsed || !parsed.expiresAt) {
+      localStorage.removeItem(PASS_STORAGE_KEY);
+      return null;
+    }
 
     const expiresTime = new Date(parsed.expiresAt).getTime();
-    if (Date.now() > expiresTime) {
-      // Expired
+    if (isNaN(expiresTime) || Date.now() >= expiresTime) {
+      // Expired: auto purge stale pass from storage
+      localStorage.removeItem(PASS_STORAGE_KEY);
       return null;
     }
     return parsed;
@@ -778,6 +807,64 @@ export const clearLocalSessionPass = () => {
   try {
     localStorage.removeItem(PASS_STORAGE_KEY);
   } catch (e) {}
+};
+
+/**
+ * Authoritatively verifies and synchronizes the local session pass with the server DB
+ * (Supabase chitchat_access_codes table).
+ * - If code is deleted, paused, or server expires_at is past: clears local storage and returns null.
+ * - If active on server: updates local storage to match the exact server expires_at and returns synced pass.
+ */
+export const syncAndVerifySessionPass = async (userPass) => {
+  const currentPass = userPass || getLocalSessionPass();
+  if (!currentPass || !currentPass.code) {
+    clearLocalSessionPass();
+    return null;
+  }
+
+  try {
+    const cleanCode = String(currentPass.code).trim().toUpperCase();
+    const { data: codeRec, error } = await supabase
+      .from('chitchat_access_codes')
+      .select('id, code, is_active, expires_at, duration_minutes, created_at')
+      .eq('code', cleanCode)
+      .maybeSingle();
+
+    if (error || !codeRec) {
+      // Code no longer exists in DB or error
+      clearLocalSessionPass();
+      return null;
+    }
+
+    if (!codeRec.is_active) {
+      // Admin paused this code
+      clearLocalSessionPass();
+      return null;
+    }
+
+    const durationMins = codeRec.duration_minutes || 60;
+    const authoritativeExpiresAt = codeRec.expires_at ||
+      new Date(new Date(codeRec.created_at || Date.now()).getTime() + durationMins * 60 * 1000).toISOString();
+
+    const serverExpiresMs = new Date(authoritativeExpiresAt).getTime();
+    if (isNaN(serverExpiresMs) || Date.now() >= serverExpiresMs) {
+      // Authoritatively expired on server!
+      clearLocalSessionPass();
+      return null;
+    }
+
+    // Force synchronization of localStorage to match server's authoritative expires_at
+    const syncedPass = {
+      code: codeRec.code,
+      durationMinutes: durationMins,
+      expiresAt: authoritativeExpiresAt
+    };
+    saveLocalSessionPass(syncedPass);
+    return syncedPass;
+  } catch (err) {
+    console.warn('Session pass server sync notice:', err);
+    return getLocalSessionPass();
+  }
 };
 
 /**
