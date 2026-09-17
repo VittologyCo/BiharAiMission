@@ -313,12 +313,11 @@ export const fetchExamSubmissionsFromSupabase = async (userEmail = null) => {
         let all = [];
         let p = 0;
         const size = 1000;
-        const selectCols = 'id, credential_id, candidate_name, candidate_email, candidate_designation, masterclass_title, program_title, exam_id, masterclass_id, program_id, score, total, percentage, warning_count, penalty_deduction, attempts_count, attempts, status, is_approved, is_passed, submitted_at';
         while (true) {
           try {
             let query = supabase
               .from(table)
-              .select(selectCols)
+              .select('*')
               .order('submitted_at', { ascending: false });
 
             if (userEmail && typeof userEmail === 'string' && userEmail.trim()) {

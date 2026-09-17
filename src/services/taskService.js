@@ -115,7 +115,7 @@ export const getDailyTasks = async () => {
   try {
     const { data, error } = await supabase
       .from('daily_tasks')
-      .select('id, num, tool_name, title, classwork, instructions, final_submission, category, is_active')
+      .select('*')
       .eq('is_active', true)
       .order('num', { ascending: true });
 
@@ -512,7 +512,7 @@ export const getUserTaskSubmissions = async (userEmail) => {
 
       const { data, error } = await supabase
         .from('daily_task_submissions')
-        .select('id, user_email, task_num, submission_type, text_content, link_url, image_url, audio_url, file_path, status, is_passed, score, feedback, points, created_at, updated_at')
+        .select('*')
         .ilike('user_email', cleanEmail)
         .order('created_at', { ascending: false });
 
@@ -1267,7 +1267,7 @@ export const fetchRealtimeLeaderboardData = async () => {
         const to = from + S_CHUNK - 1;
         const { data: chunk, error: subsError } = await supabase
           .from('daily_task_submissions')
-          .select('user_email, status, is_passed, score, points')
+          .select('*')
           .order('created_at', { ascending: false })
           .range(from, to);
 
